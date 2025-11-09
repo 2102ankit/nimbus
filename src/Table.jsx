@@ -48,21 +48,32 @@ import {
   X
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import React from "react";
+import {
+  Children,
+  cloneElement,
+  createContext,
+  forwardRef,
+  Fragment,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // ============ THEME CONTEXT ============
-const ThemeContext = React.createContext();
+const ThemeContext = createContext();
 
 const useTheme = () => {
-  const context = React.useContext(ThemeContext);
+  const context = useContext(ThemeContext);
   if (!context) throw new Error("useTheme must be used within ThemeProvider");
   return context;
 };
 
 const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = React.useState(false);
-  const [density, setDensity] = React.useState("normal"); // compact, normal, comfortable
-  const [stripedRows, setStripedRows] = React.useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const [density, setDensity] = useState("normal"); // compact, normal, comfortable
+  const [stripedRows, setStripedRows] = useState(false);
 
   const toggleDark = () => setIsDark(!isDark);
   const toggleStripes = () => setStripedRows(!stripedRows);
@@ -85,8 +96,8 @@ const ThemeProvider = ({ children }) => {
 
 // ============ EDIT HISTORY ============
 const useEditHistory = () => {
-  const [history, setHistory] = React.useState([]);
-  const [currentIndex, setCurrentIndex] = React.useState(-1);
+  const [history, setHistory] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
 
   const addEdit = (edit) => {
     const newHistory = history.slice(0, currentIndex + 1);
@@ -152,27 +163,25 @@ const Button = ({
   );
 };
 
-const Input = React.forwardRef(
-  ({ className = "", type = "text", ...props }, ref) => {
-    const { isDark } = useTheme();
-    return (
-      <input
-        ref={ref}
-        type={type}
-        className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 ${
-          isDark
-            ? "border-slate-600 bg-slate-800 text-slate-100 focus-visible:ring-slate-500"
-            : "border-slate-200 bg-white focus-visible:ring-slate-950"
-        } ${className}`}
-        {...props}
-      />
-    );
-  }
-);
+const Input = forwardRef(({ className = "", type = "text", ...props }, ref) => {
+  const { isDark } = useTheme();
+  return (
+    <input
+      ref={ref}
+      type={type}
+      className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 ${
+        isDark
+          ? "border-slate-600 bg-slate-800 text-slate-100 focus-visible:ring-slate-500"
+          : "border-slate-200 bg-white focus-visible:ring-slate-950"
+      } ${className}`}
+      {...props}
+    />
+  );
+});
 
 const Checkbox = ({ checked, onCheckedChange, indeterminate, ...props }) => {
-  const ref = React.useRef(null);
-  React.useEffect(() => {
+  const ref = useRef(null);
+  useEffect(() => {
     if (ref.current) ref.current.indeterminate = indeterminate;
   }, [indeterminate]);
   return (
@@ -188,9 +197,9 @@ const Checkbox = ({ checked, onCheckedChange, indeterminate, ...props }) => {
 };
 
 const Dropdown = ({ children }) => {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
     const handleClickOutside = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
@@ -199,15 +208,15 @@ const Dropdown = ({ children }) => {
   }, [open]);
   return (
     <div ref={ref} className="relative">
-      {React.Children.map(children, (child) =>
-        React.cloneElement(child, { open, setOpen })
+      {Children.map(children, (child) =>
+        cloneElement(child, { open, setOpen })
       )}
     </div>
   );
 };
 
 const DropdownTrigger = ({ children, open, setOpen }) =>
-  React.cloneElement(children, {
+  cloneElement(children, {
     onClick: (e) => {
       e.stopPropagation();
       setOpen(!open);
@@ -255,10 +264,10 @@ const DropdownSeparator = () => {
 
 // ============ CELL EDITORS ============
 const TextEditor = ({ value, onChange, onComplete }) => {
-  const [val, setVal] = React.useState(value);
-  const ref = React.useRef(null);
+  const [val, setVal] = useState(value);
+  const ref = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     ref.current?.focus();
     ref.current?.select();
   }, []);
@@ -288,10 +297,10 @@ const TextEditor = ({ value, onChange, onComplete }) => {
 };
 
 const NumberEditor = ({ value, onChange, onComplete }) => {
-  const [val, setVal] = React.useState(value);
-  const ref = React.useRef(null);
+  const [val, setVal] = useState(value);
+  const ref = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     ref.current?.focus();
     ref.current?.select();
   }, []);
@@ -322,9 +331,9 @@ const NumberEditor = ({ value, onChange, onComplete }) => {
 };
 
 const SelectEditor = ({ value, options, onChange, onComplete }) => {
-  const ref = React.useRef(null);
+  const ref = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     ref.current?.focus();
   }, []);
 
@@ -351,10 +360,10 @@ const SelectEditor = ({ value, options, onChange, onComplete }) => {
 };
 
 const DateEditor = ({ value, onChange, onComplete }) => {
-  const [val, setVal] = React.useState(value);
-  const ref = React.useRef(null);
+  const [val, setVal] = useState(value);
+  const ref = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     ref.current?.focus();
   }, []);
 
@@ -392,8 +401,8 @@ const EditableCell = ({
   editorType = "text",
   options = [],
 }) => {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [cellValue, setCellValue] = React.useState(value);
+  const [isEditing, setIsEditing] = useState(false);
+  const [cellValue, setCellValue] = useState(value);
 
   const handleComplete = () => setIsEditing(false);
 
@@ -527,9 +536,9 @@ const EnhancedToolbar = ({
     stripedRows,
     toggleStripes,
   } = useTheme();
-  const [filterColumn, setFilterColumn] = React.useState("");
-  const [filterValue, setFilterValue] = React.useState("");
-  const [searchTimeout, setSearchTimeout] = React.useState(null);
+  const [filterColumn, setFilterColumn] = useState("");
+  const [filterValue, setFilterValue] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState(null);
 
   const filterableColumns = columns.filter(
     (c) => c.enableColumnFilter !== false
@@ -553,7 +562,7 @@ const EnhancedToolbar = ({
     const rows = table.getFilteredRowModel().rows.map((r) => r.original);
     const cols = table
       .getVisibleLeafColumns()
-      .filter((c) => !["select", "actions", "expand", "rowNum"].includes(c.id));
+      .filter((c) => !["select", "actions", "rowNum"].includes(c.id));
     onExport(format, rows, cols);
   };
 
@@ -713,7 +722,7 @@ const EnhancedToolbar = ({
               .filter(
                 (c) =>
                   c.enableGrouping !== false &&
-                  !["select", "actions", "expand", "rowNum"].includes(c.id)
+                  !["select", "actions", "rowNum", "id"].includes(c.id)
               )
               .map((col) => {
                 const isGrouped = table.getState().grouping.includes(col.id);
@@ -1150,35 +1159,35 @@ const generateData = () => {
       .toISOString()
       .split("T")[0],
     performance: Math.floor(Math.random() * 100),
-    subRows:
-      Math.random() > 0.7
-        ? Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, j) => ({
-            id: `usr_${String(i + 1).padStart(5, "0")}_${j}`,
-            name: `Sub ${first[Math.floor(Math.random() * first.length)]}`,
-            email: `sub${i + 1}_${j}@example.com`,
-            status: statuses[Math.floor(Math.random() * statuses.length)],
-            role: roles[Math.floor(Math.random() * roles.length)],
-            department: depts[Math.floor(Math.random() * depts.length)],
-            salary: Math.floor(Math.random() * 50000) + 30000,
-            joinDate: new Date(
-              2021 + Math.floor(Math.random() * 4),
-              Math.floor(Math.random() * 12),
-              Math.floor(Math.random() * 28)
-            )
-              .toISOString()
-              .split("T")[0],
-            performance: Math.floor(Math.random() * 100),
-          }))
-        : undefined,
+    // subRows:
+    //   Math.random() > 0.7
+    //     ? Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, j) => ({
+    //         id: `usr_${String(i + 1).padStart(5, "0")}_${j}`,
+    //         name: `Sub ${first[Math.floor(Math.random() * first.length)]}`,
+    //         email: `sub${i + 1}_${j}@example.com`,
+    //         status: statuses[Math.floor(Math.random() * statuses.length)],
+    //         role: roles[Math.floor(Math.random() * roles.length)],
+    //         department: depts[Math.floor(Math.random() * depts.length)],
+    //         salary: Math.floor(Math.random() * 50000) + 30000,
+    //         joinDate: new Date(
+    //           2021 + Math.floor(Math.random() * 4),
+    //           Math.floor(Math.random() * 12),
+    //           Math.floor(Math.random() * 28)
+    //         )
+    //           .toISOString()
+    //           .split("T")[0],
+    //         performance: Math.floor(Math.random() * 100),
+    //       }))
+    //     : undefined,
   }));
 };
 
 // ============ MAIN COMPONENT ============
 function CompleteDataGrid() {
   const { isDark, density, stripedRows } = useTheme();
-  const [data, setData] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [globalFilter, setGlobalFilter] = React.useState("");
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [globalFilter, setGlobalFilter] = useState("");
   const editHistory = useEditHistory();
 
   // Load preferences
@@ -1207,7 +1216,7 @@ function CompleteDataGrid() {
     }
   };
 
-  const [prefs, setPrefs] = React.useState(loadPrefs);
+  const [prefs, setPrefs] = useState(loadPrefs);
 
   const savePrefs = (newPrefs) => {
     const merged = { ...prefs, ...newPrefs };
@@ -1223,7 +1232,7 @@ function CompleteDataGrid() {
     }, 1000);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -1244,7 +1253,7 @@ function CompleteDataGrid() {
     );
   };
 
-  const columns = React.useMemo(
+  const columns = useMemo(
     () => [
       {
         id: "rowNum",
@@ -1258,28 +1267,8 @@ function CompleteDataGrid() {
         enableSorting: false,
         enableHiding: false,
         enableResizing: false,
-      },
-      {
-        id: "expand",
-        header: "",
-        cell: ({ row }) =>
-          row.getCanExpand() ? (
-            <button
-            onClick={() => row.toggleExpanded()}
-            className="p-1 hover:bg-slate-100 rounded"
-            >
-              {console.log(row)}
-              {row.getIsExpanded() ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRightIcon className="h-4 w-4" />
-              )}
-            </button>
-          ) : null,
-        size: 50,
-        enableSorting: false,
-        enableHiding: false,
-        enableResizing: false,
+        enableGrouping: false,
+        enableColumnFilter: false,
       },
       {
         id: "select",
@@ -1300,6 +1289,35 @@ function CompleteDataGrid() {
         enableSorting: false,
         enableHiding: false,
         enableResizing: false,
+        enableGrouping: false,
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: "id",
+        id: "id",
+        header: "ID",
+        cell: ({ row, getValue }) => (
+          <div className="flex items-center gap-2">
+            {row.getCanExpand() ? (
+              <button
+                onClick={() => row.toggleExpanded()}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+              >
+                {row.getIsExpanded() ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRightIcon className="h-4 w-4" />
+                )}
+              </button>
+            ) : (
+              <div className="w-6" />
+            )}
+            <span className="font-mono text-xs">{getValue()}</span>
+          </div>
+        ),
+        enableColumnFilter: true,
+        size: 150,
+        enableGrouping: false,
       },
       {
         accessorKey: "name",
@@ -1514,32 +1532,34 @@ function CompleteDataGrid() {
         : col.header,
   }));
 
-  const [sorting, setSorting] = React.useState(prefs.sorting);
-  const [columnFilters, setColumnFilters] = React.useState([]);
-  const [columnVisibility, setColumnVisibility] = React.useState(
+  const [sorting, setSorting] = useState(prefs.sorting);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnVisibility, setColumnVisibility] = useState(
     prefs.columnVisibility
   );
-  const [rowSelection, setRowSelection] = React.useState({});
-  const [columnOrder, setColumnOrder] = React.useState(prefs.columnOrder);
-  const [columnSizing, setColumnSizing] = React.useState(prefs.columnSizing);
-  const [columnPinning, setColumnPinning] = React.useState(prefs.columnPinning);
-  const [expanded, setExpanded] = React.useState({});
-  const [grouping, setGrouping] = React.useState([]);
+  const [rowSelection, setRowSelection] = useState({});
+  const [columnOrder, setColumnOrder] = useState(prefs.columnOrder);
+  const [columnSizing, setColumnSizing] = useState(prefs.columnSizing);
+  const [columnPinning, setColumnPinning] = useState(prefs.columnPinning);
+  const [expanded, setExpanded] = useState({});
+  const [grouping, setGrouping] = useState([]);
+
+  console.log(grouping);
 
   // Auto-save preferences
-  React.useEffect(() => {
+  useEffect(() => {
     savePrefs({ sorting });
   }, [sorting]);
-  React.useEffect(() => {
+  useEffect(() => {
     savePrefs({ columnVisibility });
   }, [columnVisibility]);
-  React.useEffect(() => {
+  useEffect(() => {
     savePrefs({ columnOrder });
   }, [columnOrder]);
-  React.useEffect(() => {
+  useEffect(() => {
     savePrefs({ columnSizing });
   }, [columnSizing]);
-  React.useEffect(() => {
+  useEffect(() => {
     savePrefs({ columnPinning });
   }, [columnPinning]);
 
@@ -1596,9 +1616,9 @@ function CompleteDataGrid() {
   });
 
   // Keyboard navigation
-  const [focusedCell, setFocusedCell] = React.useState({ row: 0, col: 0 });
+  const [focusedCell, setFocusedCell] = useState({ row: 0, col: 0 });
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e) => {
       const rows = table.getRowModel().rows;
       const columns = table.getVisibleLeafColumns();
@@ -1873,6 +1893,7 @@ function CompleteDataGrid() {
                 <tbody>
                   <AnimatePresence mode="popLayout">
                     {table.getRowModel().rows.map((row, idx) => {
+                      console.log(row);
                       const isGrouped = row.getIsGrouped();
                       const isStriped = stripedRows && idx % 2 === 1;
 
@@ -1929,6 +1950,55 @@ function CompleteDataGrid() {
                                   ({row.subRows.length}{" "}
                                   {row.subRows.length === 1 ? "item" : "items"})
                                 </span>
+
+                                {/* Show aggregations for grouped rows */}
+                                <div className="ml-auto flex gap-4 text-xs">
+                                  {row.subRows.length > 0 && (
+                                    <>
+                                      <span
+                                        className={
+                                          isDark
+                                            ? "text-green-400"
+                                            : "text-green-700"
+                                        }
+                                      >
+                                        Total Salary:{" "}
+                                        <strong>
+                                          {new Intl.NumberFormat("en-US", {
+                                            style: "currency",
+                                            currency: "USD",
+                                          }).format(
+                                            row.subRows.reduce(
+                                              (sum, r) =>
+                                                sum + (r.original.salary || 0),
+                                              0
+                                            )
+                                          )}
+                                        </strong>
+                                      </span>
+                                      <span
+                                        className={
+                                          isDark
+                                            ? "text-blue-400"
+                                            : "text-blue-700"
+                                        }
+                                      >
+                                        Avg Performance:{" "}
+                                        <strong>
+                                          {Math.round(
+                                            row.subRows.reduce(
+                                              (sum, r) =>
+                                                sum +
+                                                (r.original.performance || 0),
+                                              0
+                                            ) / row.subRows.length
+                                          )}
+                                          %
+                                        </strong>
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
                             </td>
                           </motion.tr>
@@ -1936,7 +2006,7 @@ function CompleteDataGrid() {
                       }
 
                       return (
-                        <React.Fragment key={row.id}>
+                        <Fragment key={row.id}>
                           <motion.tr
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -2163,7 +2233,7 @@ function CompleteDataGrid() {
                               </td>
                             </motion.tr>
                           )}
-                        </React.Fragment>
+                        </Fragment>
                       );
                     })}
                   </AnimatePresence>
@@ -2398,6 +2468,17 @@ function CompleteDataGrid() {
             Filters, Range Filters, Export (CSV/Excel/JSON), Expandable Details,
             Performance Sparklines, Status Badges, Keyboard Navigation, Status
             Bar, Auto-Save Preferences
+          </div>
+          <div
+            className={`mt-2 p-2 rounded text-xs ${
+              isDark ? "bg-slate-800 text-slate-300" : "bg-white text-slate-700"
+            }`}
+          >
+            <strong>💡 Tip:</strong> When you use the "Group" button to group by
+            a column (like Department or Status), the table shows group summary
+            rows with aggregated totals. Click the expand icon on group rows to
+            see individual items. Clear grouping to see all rows with edit
+            options. The ID column now includes the expand/collapse button!
           </div>
         </div>
       </div>
