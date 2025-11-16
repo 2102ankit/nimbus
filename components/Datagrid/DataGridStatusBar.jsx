@@ -13,56 +13,82 @@ export function DataGridStatusBar({ table }) {
       label: "Total Rows",
       value: totalRows,
       icon: BarChart3,
-      color: "text-blue-600 dark:text-blue-400",
-      bgColor: "bg-blue-50 dark:bg-blue-900/20",
+      colorVar: "primary",
     },
     {
       label: "Selected",
       value: selectedRows,
       icon: CheckSquare,
-      color: "text-green-600 dark:text-green-400",
-      bgColor: "bg-green-50 dark:bg-green-900/20",
+      colorVar: "chart-2", // green
     },
     {
       label: "Active Filters",
       value: activeFilters,
       icon: Filter,
-      color: "text-purple-600 dark:text-purple-400",
-      bgColor: "bg-purple-50 dark:bg-purple-900/20",
+      colorVar: "chart-5", // purple
     },
     {
       label: "Grouped By",
       value: groupedColumns || "-",
       icon: Layers,
-      color: "text-amber-600 dark:text-amber-400",
-      bgColor: "bg-amber-50 dark:bg-amber-900/20",
+      colorVar: "chart-3", // amber
     },
     {
       label: "Sort Columns",
       value: sortedColumns || "-",
       icon: SortAsc,
-      color: "text-pink-600 dark:text-pink-400",
-      bgColor: "bg-pink-50 dark:bg-pink-900/20",
+      colorVar: "chart-4", // pink
     },
   ];
 
   return (
-    <div className="p-5 rounded-lg border-2 bg-card border-border shadow-lg">
+    <div
+      className="p-5 rounded-lg border-2 shadow-lg"
+      style={{
+        backgroundColor: "var(--color-card)",
+        borderColor: "var(--color-border)",
+      }}
+    >
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
+          const bgLight = `color-mix(in oklch, var(--color-${stat.colorVar}), transparent 90%)`;
+          const bgDark = `color-mix(in oklch, var(--color-${stat.colorVar}), transparent 80%)`;
+          const hoverBorder = `color-mix(in oklch, var(--color-${stat.colorVar}), transparent 70%)`;
+
           return (
             <div
               key={stat.label}
-              className={`${stat.bgColor} rounded-lg p-4 border-2 border-transparent hover:border-primary/30 transition-all hover:shadow-md`}
+              className="rounded-lg p-4 border-2 border-transparent transition-all hover:shadow-md"
+              style={{
+                backgroundColor: bgLight,
+                borderColor: "transparent",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = bgDark;
+                e.currentTarget.style.borderColor = hoverBorder;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = bgLight;
+                e.currentTarget.style.borderColor = "transparent";
+              }}
             >
               <div className="flex items-center gap-2 mb-2">
-                <Icon className={`h-4 w-4 ${stat.color}`} />
-                <div className="text-xs uppercase font-bold text-slate-500 dark:text-slate-400">
+                <Icon
+                  className="h-4 w-4"
+                  style={{ color: `var(--color-${stat.colorVar})` }}
+                />
+                <div
+                  className="text-xs uppercase font-bold"
+                  style={{ color: "var(--color-muted-foreground)" }}
+                >
                   {stat.label}
                 </div>
               </div>
-              <div className={`text-3xl font-bold ${stat.color}`}>
+              <div
+                className="text-3xl font-bold"
+                style={{ color: `var(--color-${stat.colorVar})` }}
+              >
                 {stat.value}
               </div>
             </div>

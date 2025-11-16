@@ -122,7 +122,7 @@ export function ColumnHeader({
     >
       {/* Drag Handle */}
       {enableDrag && (
-        <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
       )}
@@ -264,9 +264,9 @@ export function ColumnHeader({
         <div
           onMouseDown={handleResizeMouseDown}
           onTouchStart={handleResizeMouseDown}
-          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none ${
-            isResizing ? "bg-primary" : "hover:bg-primary/50"
-          } transition-colors`}
+          className={`absolute -right-3 -top-2 h-12 w-2 cursor-col-resize touch-none 
+            select-none transition-colors`}
+          // ${isResizing ? "bg-primary" : "hover:bg-primary/50"}
           style={{ userSelect: "none" }}
         />
       )}

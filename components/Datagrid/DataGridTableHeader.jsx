@@ -9,7 +9,13 @@ export function DataGridTableHeader({
   getRightPosition,
 }) {
   return (
-    <thead className="sticky top-0 z-20 bg-gradient-to-r from-muted to-background border-b-2 border-border">
+    <thead
+      className="sticky top-0 z-20 border-b-2"
+      style={{
+        background: `var(--color-background)`,
+        borderBottomColor: "var(--color-border)",
+      }}
+    >
       {table.getHeaderGroups().map((headerGroup) => (
         <tr key={headerGroup.id}>
           {headerGroup.headers.map((header) => {
@@ -24,28 +30,30 @@ export function DataGridTableHeader({
             return (
               <th
                 key={header.id}
-                className={`text-left align-middle font-bold text-slate-700 dark:text-slate-300 ${getDensityPadding()} ${getHeaderBorderClasses()} ${
-                  isPinned
-                    ? `sticky z-30 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 ${
-                        isPinned === "left"
-                          ? "shadow-[2px_0_8px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.3)]"
-                          : "shadow-[-2px_0_8px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_8px_rgba(0,0,0,0.3)]"
-                      }`
-                    : ""
-                }`}
+                className={`text-left align-middle font-bold ${getDensityPadding()} ${getHeaderBorderClasses()} ${
+                  isPinned ? "sticky z-30" : ""
+                }
+                  bg-card
+                  `}
                 style={{
+                  color: "var(--color-foreground)",
                   width: header.getSize(),
                   minWidth: header.getSize(),
                   maxWidth: header.getSize(),
                   left: leftPos !== undefined ? `${leftPos}px` : undefined,
                   right: rightPos !== undefined ? `${rightPos}px` : undefined,
+                  boxShadow: isPinned
+                    ? isPinned === "left"
+                      ? "2px 0 8px rgba(0,0,0,0.1)"
+                      : "-2px 0 8px rgba(0,0,0,0.1)"
+                    : "none",
                 }}
               >
                 {header.isPlaceholder
                   ? null
                   : flexRender(
                       header.column.columnDef.header,
-                      header.getContext(),
+                      header.getContext()
                     )}
               </th>
             );

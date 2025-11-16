@@ -48,12 +48,12 @@ const AdvancedDataGrid = () => {
   const [sorting, setSorting] = useState(prefs.sorting || []);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState(
-    prefs.columnVisibility || {},
+    prefs.columnVisibility || {}
   );
   const [columnOrder, setColumnOrder] = useState(prefs.columnOrder || []);
   const [columnSizing, setColumnSizing] = useState(prefs.columnSizing || {});
   const [columnPinning, setColumnPinning] = useState(
-    prefs.columnPinning || { left: [], right: [] },
+    prefs.columnPinning || { left: [], right: [] }
   );
 
   // Save preferences automatically
@@ -63,7 +63,7 @@ const AdvancedDataGrid = () => {
       savePreferences(merged);
       setPrefs(merged);
     },
-    [prefs],
+    [prefs]
   );
 
   useEffect(() => {
@@ -99,7 +99,7 @@ const AdvancedDataGrid = () => {
   const columns = useMemo(() => createColumns(), []);
   const columnsWithHeaders = useMemo(
     () => addHeadersToColumns(columns),
-    [columns],
+    [columns]
   );
 
   // Initialize table
@@ -207,13 +207,16 @@ const AdvancedDataGrid = () => {
     const borders = [];
     if (showRowLines) borders.push("border-b");
     if (showGridLines) borders.push("border-r");
-    return borders.join(" ") + " border-slate-200 dark:border-slate-700";
+    return borders.join(" ") + " border-[var(--color-border)]";
   };
 
   const getHeaderBorderClasses = () => {
     const borders = ["border-b-2"];
-    if (showHeaderLines || showGridLines) borders.push("border-r");
-    return borders.join(" ") + " border-slate-300 dark:border-slate-600";
+    if (showHeaderLines || showGridLines) borders.push("border-r-2");
+    return (
+      borders.join(" ") +
+      " border-[color-mix(in_oklch,var(--color-border),transparent_50%)]"
+    );
   };
 
   // Position helpers
@@ -221,21 +224,33 @@ const AdvancedDataGrid = () => {
   const getRightPos = (column) => getRightPosition(column, table);
 
   return (
-    <div className="w-full min-h-screen bg-background p-8 transition-colors">
+    <div
+      className="w-full min-h-screen transition-colors p-8"
+      style={{ backgroundColor: "var(--color-background)" }}
+    >
       <div className="max-w-[1600px] mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-4xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+        <div className="mb-6 w-full text-center">
+          <h1 className="text-4xl font-black mb-2 bg-clip-text text-primary">
             Advanced Enterprise DataGrid
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p
+            className="text-lg max-w-2xl mx-auto tracking-tighter leading-tight"
+            style={{ color: "var(--color-muted-foreground)" }}
+          >
             Complete table with Advanced Filters, Multi-Column Sort, Column
             Reordering, Pinning, Resizing, Row Expansion, Grouping & More
           </p>
         </div>
 
         {/* Main Table Container */}
-        <div className="border-2 rounded-xl shadow-2xl overflow-hidden bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+        <div
+          className="border-2 rounded-xl shadow-2xl overflow-hidden"
+          style={{
+            backgroundColor: "var(--color-card)",
+            borderColor: "var(--color-border)",
+          }}
+        >
           <DataGridToolbar
             table={table}
             columns={columns}

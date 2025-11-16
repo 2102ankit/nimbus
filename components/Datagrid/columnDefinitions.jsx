@@ -31,16 +31,35 @@ export const createColumns = () => [
     cell: ({ row }) => (
       <button
         onClick={() => row.toggleExpanded()}
-        className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+        className="p-1 rounded-md transition-colors"
+        style={{
+          backgroundColor:
+            "color-mix(in oklch, var(--color-muted), transparent 90%)",
+          color: "var(--color-foreground)",
+        }}
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.backgroundColor =
+            "color-mix(in oklch, var(--color-muted), transparent 70%)")
+        }
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.backgroundColor =
+            "color-mix(in oklch, var(--color-muted), transparent 90%)")
+        }
       >
         {row.getIsExpanded() ? (
-          <ChevronDown className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+          <ChevronDown
+            className="h-4 w-4"
+            style={{ color: "var(--color-muted-foreground)" }}
+          />
         ) : (
-          <ChevronRight className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+          <ChevronRight
+            className="h-4 w-4"
+            style={{ color: "var(--color-muted-foreground)" }}
+          />
         )}
       </button>
     ),
-    size: 150,
+    size: 100,
     enableSorting: false,
     enableHiding: false,
     enableResizing: false,
@@ -76,16 +95,39 @@ export const createColumns = () => [
     cell: ({ getValue }) => {
       const status = getValue();
       const colors = {
-        Active:
-          "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 border-green-300 dark:border-green-700",
-        Inactive: "bg-muted text-muted-foreground border-border",
-        Pending:
-          "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 border-amber-300 dark:border-amber-700",
-        Suspended: "bg-destructive/10 text-destructive border-destructive/30",
+        Active: {
+          bg: "color-mix(in oklch, var(--color-chart-2), transparent 90%)",
+          text: "var(--color-chart-2)",
+          border: "color-mix(in oklch, var(--color-chart-2), transparent 70%)",
+        },
+        Inactive: {
+          bg: "var(--color-muted)",
+          text: "var(--color-muted-foreground)",
+          border: "var(--color-border)",
+        },
+        Pending: {
+          bg: "color-mix(in oklch, var(--color-chart-3), transparent 90%)",
+          text: "var(--color-chart-3)",
+          border: "color-mix(in oklch, var(--color-chart-3), transparent 70%)",
+        },
+        Suspended: {
+          bg: "color-mix(in oklch, var(--color-destructive), transparent 90%)",
+          text: "var(--color-destructive)",
+          border:
+            "color-mix(in oklch, var(--color-destructive), transparent 70%)",
+        },
       };
+
+      const style = colors[status] || colors.Inactive;
+
       return (
         <Badge
-          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm border-2 ${colors[status]}`}
+          className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm border-2"
+          style={{
+            backgroundColor: style.bg,
+            color: style.text,
+            borderColor: style.border,
+          }}
         >
           {status}
         </Badge>
@@ -97,7 +139,7 @@ export const createColumns = () => [
     enableGrouping: true,
     aggregationFn: "count",
     aggregatedCell: ({ getValue }) => (
-      <span className="font-bold text-blue-700 dark:text-blue-400">
+      <span className="font-bold" style={{ color: "var(--color-primary)" }}>
         {getValue()} items
       </span>
     ),
@@ -131,7 +173,7 @@ export const createColumns = () => [
     enableColumnFilter: true,
     aggregationFn: "sum",
     aggregatedCell: ({ getValue }) => (
-      <span className="font-bold text-green-700 dark:text-green-400">
+      <span className="font-bold" style={{ color: "var(--color-chart-2)" }}>
         Total:{" "}
         {new Intl.NumberFormat("en-US", {
           style: "currency",
@@ -146,23 +188,30 @@ export const createColumns = () => [
     cell: ({ getValue }) => {
       const value = getValue();
       const getColor = (val) => {
-        if (val >= 80) return "bg-green-500 dark:bg-green-400";
-        if (val >= 60) return "bg-blue-500 dark:bg-blue-400";
-        if (val >= 40) return "bg-yellow-500 dark:bg-yellow-400";
-        return "bg-red-500 dark:bg-red-400";
+        if (val >= 80) return "var(--color-chart-2)"; // green
+        if (val >= 60) return "var(--color-primary)"; // blue
+        if (val >= 40) return "var(--color-chart-3)"; // yellow
+        return "var(--color-destructive)"; // red
       };
 
       return (
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+          <div
+            className="flex-1 rounded-full h-2.5 overflow-hidden"
+            style={{ backgroundColor: "var(--color-muted)" }}
+          >
             <div
-              className={`${getColor(
-                value,
-              )} h-2.5 rounded-full transition-all duration-300`}
-              style={{ width: `${value}%` }}
+              className="h-2.5 rounded-full transition-all duration-300"
+              style={{
+                backgroundColor: getColor(value),
+                width: `${value}%`,
+              }}
             />
           </div>
-          <span className="text-xs font-bold w-10 text-slate-700 dark:text-slate-300">
+          <span
+            className="text-xs font-bold w-10"
+            style={{ color: "var(--color-foreground)" }}
+          >
             {value}%
           </span>
         </div>
@@ -173,7 +222,7 @@ export const createColumns = () => [
     enableColumnFilter: true,
     aggregationFn: "mean",
     aggregatedCell: ({ getValue }) => (
-      <span className="font-bold text-blue-700 dark:text-blue-400">
+      <span className="font-bold" style={{ color: "var(--color-primary)" }}>
         Avg: {Math.round(getValue())}%
       </span>
     ),
@@ -199,6 +248,9 @@ export const addHeadersToColumns = (columns) => {
               title={col.header}
               table={table}
               dataType={col.meta?.dataType}
+              enableSort={col.enableSorting}
+              enableFilter={col.enableColumnFilter}
+              enableResize={col.enableResizing}
             />
           )
         : col.header,

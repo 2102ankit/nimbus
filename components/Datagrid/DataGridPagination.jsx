@@ -21,24 +21,51 @@ export function DataGridPagination({ table }) {
   };
 
   return (
-    <div className="flex items-center justify-between px-5 py-4 border-t-2 border-border bg-gradient-to-r from-background to-muted">
+    <div
+      className="flex items-center justify-between px-5 py-4 border-t-2"
+      style={{
+        background: `var(--color-muted)`,
+        borderTopColor: "var(--color-border)",
+      }}
+    >
       {/* Selected Rows Info */}
       <div className="flex items-center gap-5">
-        <div className="text-sm font-medium text-muted-foreground">
-          <span className="font-bold text-primary">{selectedRows}</span> of{" "}
-          <span className="font-bold text-foreground">{totalRows}</span> row(s)
-          selected
+        <div
+          className="text-sm font-medium"
+          style={{ color: "var(--color-muted-foreground)" }}
+        >
+          <span className="font-bold" style={{ color: "var(--color-primary)" }}>
+            {selectedRows}
+          </span>{" "}
+          of{" "}
+          <span
+            className="font-bold"
+            style={{ color: "var(--color-foreground)" }}
+          >
+            {totalRows}
+          </span>{" "}
+          row(s) selected
         </div>
 
         {/* Page Size Selector */}
         <div className="flex items-center gap-2.5">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+          <span
+            className="text-sm font-medium"
+            style={{ color: "var(--color-muted-foreground)" }}
+          >
             Rows per page:
           </span>
           <select
             value={pageSize}
             onChange={handlePageSizeChange}
-            className="h-9 rounded-md border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1 text-sm font-medium text-slate-900 dark:text-slate-100 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="h-9 rounded-md border-2 px-3 py-1 text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2"
+            style={{
+              backgroundColor: "var(--color-card)",
+              borderColor: "var(--color-border)",
+              color: "var(--color-foreground)",
+              ringColor: "var(--color-ring)",
+              accentColor: "var(--color-primary)",
+            }}
           >
             {[10, 20, 30, 50, 100].map((size) => (
               <option key={size} value={size}>
@@ -52,13 +79,22 @@ export function DataGridPagination({ table }) {
       {/* Pagination Controls */}
       <div className="flex items-center gap-3">
         {/* Page Info */}
-        <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mr-2">
+        <div
+          className="text-sm font-medium mr-2"
+          style={{ color: "var(--color-muted-foreground)" }}
+        >
           Page{" "}
-          <span className="font-bold text-slate-900 dark:text-slate-100">
+          <span
+            className="font-bold"
+            style={{ color: "var(--color-foreground)" }}
+          >
             {pageIndex + 1}
           </span>{" "}
           of{" "}
-          <span className="font-bold text-slate-900 dark:text-slate-100">
+          <span
+            className="font-bold"
+            style={{ color: "var(--color-foreground)" }}
+          >
             {pageCount}
           </span>
         </div>
@@ -69,7 +105,17 @@ export function DataGridPagination({ table }) {
           size="icon"
           onClick={() => table.setPageIndex(0)}
           disabled={!canPreviousPage}
-          className="h-9 w-9 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+          className="h-9 w-9 border-2 shadow-sm"
+          style={{ borderColor: "var(--color-border)" }}
+          onMouseEnter={(e) =>
+            !canPreviousPage &&
+            (e.currentTarget.style.backgroundColor =
+              "color-mix(in oklch, var(--color-muted), transparent 90%)")
+          }
+          onMouseLeave={(e) =>
+            !canPreviousPage &&
+            (e.currentTarget.style.backgroundColor = "transparent")
+          }
           title="First page"
         >
           <ChevronsLeft className="h-4 w-4" />
@@ -80,7 +126,17 @@ export function DataGridPagination({ table }) {
           size="icon"
           onClick={() => table.previousPage()}
           disabled={!canPreviousPage}
-          className="h-9 w-9 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+          className="h-9 w-9 border-2 shadow-sm"
+          style={{ borderColor: "var(--color-border)" }}
+          onMouseEnter={(e) =>
+            !canPreviousPage &&
+            (e.currentTarget.style.backgroundColor =
+              "color-mix(in oklch, var(--color-muted), transparent 90%)")
+          }
+          onMouseLeave={(e) =>
+            !canPreviousPage &&
+            (e.currentTarget.style.backgroundColor = "transparent")
+          }
           title="Previous page"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -91,7 +147,17 @@ export function DataGridPagination({ table }) {
           size="icon"
           onClick={() => table.nextPage()}
           disabled={!canNextPage}
-          className="h-9 w-9 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+          className="h-9 w-9 border-2 shadow-sm"
+          style={{ borderColor: "var(--color-border)" }}
+          onMouseEnter={(e) =>
+            !canNextPage &&
+            (e.currentTarget.style.backgroundColor =
+              "color-mix(in oklch, var(--color-muted), transparent 90%)")
+          }
+          onMouseLeave={(e) =>
+            !canNextPage &&
+            (e.currentTarget.style.backgroundColor = "transparent")
+          }
           title="Next page"
         >
           <ChevronRight className="h-4 w-4" />
@@ -102,7 +168,17 @@ export function DataGridPagination({ table }) {
           size="icon"
           onClick={() => table.setPageIndex(pageCount - 1)}
           disabled={!canNextPage}
-          className="h-9 w-9 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+          className="h-9 w-9 border-2 shadow-sm"
+          style={{ borderColor: "var(--color-border)" }}
+          onMouseEnter={(e) =>
+            !canNextPage &&
+            (e.currentTarget.style.backgroundColor =
+              "color-mix(in oklch, var(--color-muted), transparent 90%)")
+          }
+          onMouseLeave={(e) =>
+            !canNextPage &&
+            (e.currentTarget.style.backgroundColor = "transparent")
+          }
           title="Last page"
         >
           <ChevronsRight className="h-4 w-4" />

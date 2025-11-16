@@ -14,8 +14,14 @@ export function LoadingState() {
           animate={{ opacity: 1 }}
           className="flex flex-col items-center justify-center py-16"
         >
-          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-          <p className="text-sm font-medium text-muted-foreground">
+          <Loader2
+            className="h-10 w-10 animate-spin mb-4"
+            style={{ color: "var(--color-primary)" }}
+          />
+          <p
+            className="text-sm font-medium"
+            style={{ color: "var(--color-muted-foreground)" }}
+          >
             Loading data...
           </p>
         </motion.div>
@@ -34,12 +40,21 @@ export function EmptyState() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center justify-center py-16"
         >
-          <div className="rounded-full p-5 mb-4 bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700">
+          <div
+            className="rounded-full p-5 mb-4 border-2"
+            style={{
+              backgroundColor:
+                "color-mix(in oklch, var(--color-muted), transparent 90%)",
+              borderColor:
+                "color-mix(in oklch, var(--color-border), transparent 50%)",
+            }}
+          >
             <svg
-              className="h-12 w-12 text-slate-400 dark:text-slate-500"
+              className="h-12 w-12"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              style={{ color: "var(--color-muted-foreground)" }}
             >
               <path
                 strokeLinecap="round"
@@ -49,10 +64,16 @@ export function EmptyState() {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-bold mb-1 text-slate-900 dark:text-slate-100">
+          <h3
+            className="text-lg font-bold mb-1"
+            style={{ color: "var(--color-foreground)" }}
+          >
             No results found
           </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p
+            className="text-sm"
+            style={{ color: "var(--color-muted-foreground)" }}
+          >
             Try adjusting your filters or search
           </p>
         </motion.div>
@@ -69,7 +90,23 @@ export function GroupRow({ row, getDensityPadding }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="font-semibold bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800 hover:from-slate-200 hover:to-slate-100 dark:hover:from-slate-600 dark:hover:to-slate-700 border-b-2 border-slate-300 dark:border-slate-600 transition-all"
+      className="font-semibold border-b-2 transition-all"
+      style={{
+        background: `linear-gradient(to right, 
+          color-mix(in oklch, var(--color-muted), transparent 90%), 
+          color-mix(in oklch, var(--color-muted), transparent 95%))`,
+        borderBottomColor: "var(--color-border)",
+      }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background = `linear-gradient(to right, 
+          color-mix(in oklch, var(--color-muted), transparent 80%), 
+          color-mix(in oklch, var(--color-muted), transparent 85%))`)
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.background = `linear-gradient(to right, 
+          color-mix(in oklch, var(--color-muted), transparent 90%), 
+          color-mix(in oklch, var(--color-muted), transparent 95%))`)
+      }
     >
       <td
         colSpan={row.getVisibleCells().length}
@@ -78,22 +115,47 @@ export function GroupRow({ row, getDensityPadding }) {
         <div className="flex items-center gap-3">
           <button
             onClick={() => row.toggleExpanded()}
-            className="p-1.5 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
+            className="p-1.5 rounded-md transition-colors"
+            style={{
+              backgroundColor: "transparent",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor =
+                "color-mix(in oklch, var(--color-muted), transparent 70%)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
           >
             {row.getIsExpanded() ? (
-              <ChevronDown className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+              <ChevronDown
+                className="h-4 w-4"
+                style={{ color: "var(--color-foreground)" }}
+              />
             ) : (
-              <ChevronRight className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+              <ChevronRight
+                className="h-4 w-4"
+                style={{ color: "var(--color-foreground)" }}
+              />
             )}
           </button>
-          <Layers className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-          <span className="text-slate-900 dark:text-slate-100">
+          <Layers
+            className="h-4 w-4"
+            style={{ color: "var(--color-muted-foreground)" }}
+          />
+          <span style={{ color: "var(--color-foreground)" }}>
             {row.groupingColumnId}:{" "}
-            <strong className="text-blue-700 dark:text-blue-400">
+            <strong style={{ color: "var(--color-primary)" }}>
               {row.groupingValue}
             </strong>
           </span>
-          <span className="text-sm ml-2 px-2.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 font-medium">
+          <span
+            className="text-sm ml-2 px-2.5 py-0.5 rounded-full font-medium"
+            style={{
+              backgroundColor: "var(--color-muted)",
+              color: "var(--color-muted-foreground)",
+            }}
+          >
             {row.subRows.length} {row.subRows.length === 1 ? "item" : "items"}
           </span>
         </div>
@@ -124,11 +186,24 @@ export function DataRow({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.15, delay: idx * 0.01 }}
-        className={`transition-all hover:bg-slate-50 dark:hover:bg-slate-700/50 ${
-          row.getIsSelected()
-            ? "bg-blue-50 dark:bg-blue-950/50 border-l-4 border-l-blue-500 dark:border-l-blue-400"
-            : ""
-        }`}
+        className="transition-all"
+        style={{
+          backgroundColor: row.getIsSelected()
+            ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
+            : "transparent",
+          borderLeft: row.getIsSelected()
+            ? `4px solid var(--color-primary)`
+            : "none",
+        }}
+        onMouseEnter={(e) =>
+          !row.getIsSelected() &&
+          (e.currentTarget.style.backgroundColor =
+            "color-mix(in oklch, var(--color-muted), transparent 95%)")
+        }
+        onMouseLeave={(e) =>
+          !row.getIsSelected() &&
+          (e.currentTarget.style.backgroundColor = "transparent")
+        }
       >
         {row.getVisibleCells().map((cell) => {
           const isPinned = cell.column.getIsPinned();
@@ -140,31 +215,41 @@ export function DataRow({
           return (
             <td
               key={cell.id}
-              className={`align-middle text-slate-700 dark:text-slate-300 ${getDensityPadding()} ${getCellBorderClasses()} ${
-                isPinned
-                  ? `sticky z-10 bg-white dark:bg-slate-800 ${
-                      row.getIsSelected()
-                        ? "bg-blue-50 dark:bg-blue-950/50"
-                        : ""
-                    } ${
-                      isPinned === "left"
-                        ? "shadow-[2px_0_5px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_5px_rgba(0,0,0,0.2)]"
-                        : "shadow-[-2px_0_5px_rgba(0,0,0,0.05)] dark:shadow-[-2px_0_5px_rgba(0,0,0,0.2)]"
-                    }`
-                  : ""
+              className={`align-middle ${getDensityPadding()} ${getCellBorderClasses()} ${
+                isPinned ? "sticky z-10" : ""
               }`}
               style={{
+                color: "var(--color-foreground)",
                 width: cell.column.getSize(),
                 minWidth: cell.column.getSize(),
                 maxWidth: cell.column.getSize(),
                 left: leftPos !== undefined ? `${leftPos}px` : undefined,
                 right: rightPos !== undefined ? `${rightPos}px` : undefined,
+                backgroundColor: isPinned
+                  ? row.getIsSelected()
+                    ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
+                    : "var(--color-card)"
+                  : "inherit",
+                boxShadow: isPinned
+                  ? isPinned === "left"
+                    ? "2px 0 5px rgba(0,0,0,0.05)"
+                    : "-2px 0 5px rgba(0,0,0,0.05)"
+                  : "none",
               }}
             >
               {cell.getIsGrouped() ? (
                 <button
                   onClick={() => row.toggleExpanded()}
-                  className="flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="flex items-center gap-2 font-semibold transition-colors"
+                  style={{
+                    color: "var(--color-foreground)",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "var(--color-primary)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "var(--color-foreground)")
+                  }
                 >
                   {row.getIsExpanded() ? (
                     <ChevronDown className="h-4 w-4" />
@@ -178,7 +263,7 @@ export function DataRow({
                 flexRender(
                   cell.column.columnDef.aggregatedCell ??
                     cell.column.columnDef.cell,
-                  cell.getContext(),
+                  cell.getContext()
                 )
               ) : cell.getIsPlaceholder() ? null : (
                 flexRender(cell.column.columnDef.cell, cell.getContext())
@@ -188,6 +273,7 @@ export function DataRow({
         })}
       </motion.tr>
 
+      {/* Expanded Row Details */}
       {row.getIsExpanded() && !isGrouped && (
         <motion.tr
           initial={{ opacity: 0, height: 0 }}
@@ -195,12 +281,24 @@ export function DataRow({
           exit={{ opacity: 0, height: 0 }}
         >
           <td colSpan={row.getVisibleCells().length} className="p-0">
-            <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950/30 border-y-2 border-blue-200 dark:border-blue-800 p-6">
-              <div className="grid grid-cols-2 gap-6">
+            <div
+              className="border-y-2 p-6"
+              style={{
+                background: `linear-gradient(to right, 
+                  color-mix(in oklch, var(--color-muted), transparent 95%), 
+                  color-mix(in oklch, var(--color-primary), transparent 95%))`,
+                borderColor:
+                  "color-mix(in oklch, var(--color-primary), transparent 80%)",
+              }}
+            >
+              <div className="flex gap-92">
                 <div>
-                  <h4 className="font-bold text-sm mb-3 text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <h4
+                    className="font-bold text-sm mb-3 flex items-center gap-2"
+                    style={{ color: "var(--color-foreground)" }}
+                  >
                     <svg
-                      className="h-4 w-4"
+                      className="h-4 w-6"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -209,18 +307,24 @@ export function DataRow({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    Full Details
+                    <span>Full Details</span>
                   </h4>
                   <div className="space-y-2 text-sm">
                     {Object.entries(row.original).map(([key, value]) => (
                       <div key={key} className="flex">
-                        <span className="font-semibold w-32 text-slate-600 dark:text-slate-400">
+                        <span
+                          className="font-semibold w-32"
+                          style={{ color: "var(--color-muted-foreground)" }}
+                        >
                           {key}:
                         </span>
-                        <span className="text-slate-900 dark:text-slate-100 font-medium">
+                        <span
+                          className="font-medium"
+                          style={{ color: "var(--color-foreground)" }}
+                        >
                           {String(value)}
                         </span>
                       </div>
@@ -228,7 +332,10 @@ export function DataRow({
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm mb-3 text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <h4
+                    className="font-bold text-sm mb-3 flex items-center gap-2"
+                    style={{ color: "var(--color-foreground)" }}
+                  >
                     <svg
                       className="h-4 w-4"
                       fill="none"
@@ -284,7 +391,7 @@ export function DataGridTableBody({
 }) {
   if (loading) {
     return (
-      <tbody className="bg-white dark:bg-slate-800">
+      <tbody style={{ backgroundColor: "var(--color-card)" }}>
         <LoadingState />
       </tbody>
     );
@@ -292,14 +399,14 @@ export function DataGridTableBody({
 
   if (isEmpty) {
     return (
-      <tbody className="bg-white dark:bg-slate-800">
+      <tbody style={{ backgroundColor: "var(--color-card)" }}>
         <EmptyState />
       </tbody>
     );
   }
 
   return (
-    <tbody className="bg-white dark:bg-slate-800">
+    <tbody style={{ backgroundColor: "var(--color-card)" }}>
       <AnimatePresence mode="popLayout">
         {table.getRowModel().rows.map((row, idx) => (
           <DataRow

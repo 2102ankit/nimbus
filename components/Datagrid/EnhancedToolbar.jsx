@@ -82,7 +82,7 @@ export function EnhancedToolbar({
       .getVisibleLeafColumns()
       .filter(
         (col) =>
-          col.id !== "select" && col.id !== "actions" && col.id !== "expand",
+          col.id !== "select" && col.id !== "actions" && col.id !== "expand"
       )
       .map((col) => ({
         id: col.id,
@@ -93,24 +93,51 @@ export function EnhancedToolbar({
   };
 
   return (
-    <div className="border-b-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+    <div
+      className="border-b-2"
+      style={{
+        backgroundColor: "var(--color-muted)",
+        borderBottomColor: "var(--color-border)",
+      }}
+    >
       <div className="flex flex-col gap-3 p-4">
         {/* Top Row - Search and Actions */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Global Search */}
           <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400" />
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+              style={{ color: "var(--color-muted-foreground)" }}
+            />
             <Input
               placeholder="Search all columns..."
               defaultValue={globalFilter ?? ""}
               onChange={(e) => handleGlobalSearch(e.target.value)}
               className="pl-9"
+              style={{
+                backgroundColor: "var(--color-card)",
+                borderColor: "var(--color-border)",
+                color: "var(--color-foreground)",
+              }}
             />
           </div>
 
           {/* Refresh */}
           {onRefresh && (
-            <Button onClick={onRefresh} variant="outline" size="sm">
+            <Button
+              onClick={onRefresh}
+              variant="outline"
+              size="sm"
+              className="border-2 shadow-sm"
+              style={{ borderColor: "var(--color-border)" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor =
+                  "color-mix(in oklch, var(--color-muted), transparent 90%)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "transparent")
+              }
+            >
               <RotateCcw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -118,7 +145,27 @@ export function EnhancedToolbar({
 
           {/* Reset All */}
           {hasFilters && (
-            <Button onClick={clearAllFilters} variant="outline" size="sm">
+            <Button
+              onClick={clearAllFilters}
+              variant="outline"
+              size="sm"
+              className="border-2 shadow-sm"
+              style={{
+                backgroundColor:
+                  "color-mix(in oklch, var(--color-destructive), transparent 90%)",
+                color: "var(--color-destructive)",
+                borderColor:
+                  "color-mix(in oklch, var(--color-destructive), transparent 70%)",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor =
+                  "color-mix(in oklch, var(--color-destructive), transparent 80%)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor =
+                  "color-mix(in oklch, var(--color-destructive), transparent 90%)")
+              }
+            >
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset All
             </Button>
@@ -127,22 +174,52 @@ export function EnhancedToolbar({
           {/* Export Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-2 shadow-sm"
+                style={{ borderColor: "var(--color-border)" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => exportData("csv")}>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
+              <DropdownMenuItem
+                onClick={() => exportData("csv")}
+                className="cursor-pointer"
+              >
+                <FileSpreadsheet
+                  className="h-4 w-4 mr-2"
+                  style={{ color: "var(--color-chart-2)" }}
+                />
                 Export as CSV
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportData("excel")}>
-                <FileDown className="h-4 w-4 mr-2" />
+              <DropdownMenuItem
+                onClick={() => exportData("excel")}
+                className="cursor-pointer"
+              >
+                <FileDown
+                  className="h-4 w-4 mr-2"
+                  style={{ color: "var(--color-primary)" }}
+                />
                 Export as Excel
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportData("json")}>
-                <FileJson className="h-4 w-4 mr-2" />
+              <DropdownMenuItem
+                onClick={() => exportData("json")}
+                className="cursor-pointer"
+              >
+                <FileJson
+                  className="h-4 w-4 mr-2"
+                  style={{ color: "var(--color-chart-5)" }}
+                />
                 Export as JSON
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -151,23 +228,46 @@ export function EnhancedToolbar({
           {/* View Settings */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-2 shadow-sm"
+                style={{ borderColor: "var(--color-border)" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
                 <Settings className="h-4 w-4 mr-2" />
                 View
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>APPEARANCE</DropdownMenuLabel>
+              <DropdownMenuLabel style={{ color: "var(--color-foreground)" }}>
+                APPEARANCE
+              </DropdownMenuLabel>
 
-              <DropdownMenuItem onClick={toggleTheme}>
+              <DropdownMenuItem
+                onClick={toggleTheme}
+                className="cursor-pointer"
+              >
                 {theme === "dark" ? (
                   <>
-                    <Sun className="h-4 w-4 mr-2" />
+                    <Sun
+                      className="h-4 w-4 mr-2"
+                      style={{ color: "var(--color-chart-3)" }}
+                    />
                     Light Mode
                   </>
                 ) : (
                   <>
-                    <Moon className="h-4 w-4 mr-2" />
+                    <Moon
+                      className="h-4 w-4 mr-2"
+                      style={{ color: "var(--color-foreground)" }}
+                    />
                     Dark Mode
                   </>
                 )}
@@ -175,10 +275,21 @@ export function EnhancedToolbar({
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuLabel>DENSITY</DropdownMenuLabel>
+              <DropdownMenuLabel style={{ color: "var(--color-foreground)" }}>
+                DENSITY
+              </DropdownMenuLabel>
               {["compact", "normal", "comfortable"].map((d) => (
-                <DropdownMenuItem key={d} onClick={() => setDensity(d)}>
-                  {density === d && <Check className="h-4 w-4 mr-2" />}
+                <DropdownMenuItem
+                  key={d}
+                  onClick={() => setDensity(d)}
+                  className="cursor-pointer"
+                >
+                  {density === d && (
+                    <Check
+                      className="h-4 w-4 mr-2"
+                      style={{ color: "var(--color-primary)" }}
+                    />
+                  )}
                   <span className={density !== d ? "ml-6" : ""}>
                     {d.charAt(0).toUpperCase() + d.slice(1)}
                   </span>
@@ -187,7 +298,9 @@ export function EnhancedToolbar({
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuLabel>GRID LINES</DropdownMenuLabel>
+              <DropdownMenuLabel style={{ color: "var(--color-foreground)" }}>
+                GRID LINES
+              </DropdownMenuLabel>
               <DropdownMenuCheckboxItem
                 checked={showGridLines}
                 onCheckedChange={toggleGridLines}
@@ -215,13 +328,27 @@ export function EnhancedToolbar({
           {/* Column Visibility & Pinning */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-2 shadow-sm"
+                style={{ borderColor: "var(--color-border)" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
                 <Eye className="h-4 w-4 mr-2" />
                 Columns
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>COLUMN VISIBILITY & PINNING</DropdownMenuLabel>
+              <DropdownMenuLabel style={{ color: "var(--color-foreground)" }}>
+                COLUMN VISIBILITY & PINNING
+              </DropdownMenuLabel>
               <div className="max-h-96 overflow-auto">
                 {table
                   .getAllColumns()
@@ -231,16 +358,34 @@ export function EnhancedToolbar({
                     return (
                       <div
                         key={col.id}
-                        className="flex items-center justify-between px-2 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                        className="flex items-center justify-between px-2 py-2 rounded"
+                        style={{
+                          backgroundColor: "transparent",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "color-mix(in oklch, var(--color-muted), transparent 90%)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
                       >
                         <label className="flex items-center gap-2 cursor-pointer flex-1">
                           <input
                             type="checkbox"
                             checked={col.getIsVisible()}
                             onChange={() => col.toggleVisibility()}
-                            className="h-4 w-4 rounded border-2 border-slate-300 dark:border-slate-600"
+                            className="h-4 w-4 rounded border-2"
+                            style={{
+                              borderColor: "var(--color-border)",
+                              accentColor: "var(--color-primary)",
+                            }}
                           />
-                          <span className="text-sm capitalize text-slate-700 dark:text-slate-300">
+                          <span
+                            className="text-sm capitalize"
+                            style={{ color: "var(--color-foreground)" }}
+                          >
                             {col.id}
                           </span>
                         </label>
@@ -251,11 +396,27 @@ export function EnhancedToolbar({
                                 e.stopPropagation();
                                 col.pin(isPinned === "left" ? false : "left");
                               }}
-                              className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${
-                                isPinned === "left"
-                                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
-                                  : "text-slate-400 dark:text-slate-500"
-                              }`}
+                              className="p-1 rounded transition-colors"
+                              style={{
+                                backgroundColor:
+                                  isPinned === "left"
+                                    ? "color-mix(in oklch, var(--color-primary), transparent 90%)"
+                                    : "transparent",
+                                color:
+                                  isPinned === "left"
+                                    ? "var(--color-primary)"
+                                    : "var(--color-muted-foreground)",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "color-mix(in oklch, var(--color-muted), transparent 80%)")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  isPinned === "left"
+                                    ? "color-mix(in oklch, var(--color-primary), transparent 90%)"
+                                    : "transparent")
+                              }
                               title={
                                 isPinned === "left"
                                   ? "Unpin from left"
@@ -269,11 +430,27 @@ export function EnhancedToolbar({
                                 e.stopPropagation();
                                 col.pin(isPinned === "right" ? false : "right");
                               }}
-                              className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${
-                                isPinned === "right"
-                                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
-                                  : "text-slate-400 dark:text-slate-500"
-                              }`}
+                              className="p-1 rounded transition-colors"
+                              style={{
+                                backgroundColor:
+                                  isPinned === "right"
+                                    ? "color-mix(in oklch, var(--color-primary), transparent 90%)"
+                                    : "transparent",
+                                color:
+                                  isPinned === "right"
+                                    ? "var(--color-primary)"
+                                    : "var(--color-muted-foreground)",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "color-mix(in oklch, var(--color-muted), transparent 80%)")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  isPinned === "right"
+                                    ? "color-mix(in oklch, var(--color-primary), transparent 90%)"
+                                    : "transparent")
+                              }
                               title={
                                 isPinned === "right"
                                   ? "Unpin from right"
@@ -289,7 +466,11 @@ export function EnhancedToolbar({
                   })}
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onResetPreferences}>
+              <DropdownMenuItem
+                onClick={onResetPreferences}
+                className="cursor-pointer"
+                style={{ color: "var(--color-destructive)" }}
+              >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset All Preferences
               </DropdownMenuItem>
@@ -299,7 +480,34 @@ export function EnhancedToolbar({
           {/* Grouping */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-2 shadow-sm"
+                style={{
+                  backgroundColor:
+                    table.getState().grouping.length > 0
+                      ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
+                      : "transparent",
+                  color:
+                    table.getState().grouping.length > 0
+                      ? "var(--color-primary)"
+                      : "var(--color-foreground)",
+                  borderColor:
+                    table.getState().grouping.length > 0
+                      ? "color-mix(in oklch, var(--color-primary), transparent 70%)"
+                      : "var(--color-border)",
+                }}
+                onMouseEnter={(e) =>
+                  !table.getState().grouping.length &&
+                  (e.currentTarget.style.backgroundColor =
+                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
+                }
+                onMouseLeave={(e) =>
+                  !table.getState().grouping.length &&
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
                 <Layers className="h-4 w-4 mr-2" />
                 Group
                 {table.getState().grouping.length > 0 &&
@@ -307,7 +515,9 @@ export function EnhancedToolbar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>GROUP BY COLUMN</DropdownMenuLabel>
+              <DropdownMenuLabel style={{ color: "var(--color-foreground)" }}>
+                GROUP BY COLUMN
+              </DropdownMenuLabel>
               {table
                 .getAllColumns()
                 .filter((col) => col.getCanGroup && col.getCanGroup())
@@ -322,7 +532,7 @@ export function EnhancedToolbar({
                         table.setGrouping(
                           isGrouped
                             ? grouping.filter((g) => g !== col.id)
-                            : [...grouping, col.id],
+                            : [...grouping, col.id]
                         );
                       }}
                     >
@@ -335,7 +545,8 @@ export function EnhancedToolbar({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => table.setGrouping([])}
-                    className="text-red-600 dark:text-red-400"
+                    className="cursor-pointer"
+                    style={{ color: "var(--color-destructive)" }}
                   >
                     Clear All Grouping
                   </DropdownMenuItem>

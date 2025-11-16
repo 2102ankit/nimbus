@@ -1,35 +1,35 @@
-import React, { useState } from "react";
 import {
-  Search,
-  Download,
-  Settings,
-  Eye,
-  RotateCcw,
-  Sun,
-  Moon,
-  Grid3x3,
-  Rows,
-  Columns,
-  FileSpreadsheet,
-  FileJson,
-  FileDown,
-  Pin,
   Check,
+  Columns,
+  Download,
+  Eye,
+  FileDown,
+  FileJson,
+  FileSpreadsheet,
+  Grid3x3,
   Layers,
+  Moon,
+  Pin,
+  RotateCcw,
+  Rows,
+  Search,
+  Settings,
+  Sun,
 } from "lucide-react";
+import { useState } from "react";
+import { useTheme } from "../ThemeProvider";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuLabel,
-  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ActiveFilters } from "./AdvancedColumnFilter";
-import { useTheme } from "../ThemeProvider";
 
 export function DataGridToolbar({
   table,
@@ -82,7 +82,7 @@ export function DataGridToolbar({
       .getVisibleLeafColumns()
       .filter(
         (col) =>
-          col.id !== "select" && col.id !== "actions" && col.id !== "expand",
+          col.id !== "select" && col.id !== "actions" && col.id !== "expand"
       )
       .map((col) => ({
         id: col.id,
@@ -93,35 +93,61 @@ export function DataGridToolbar({
   };
 
   return (
-    <div className="border-b-2 border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+    <div
+      className="border-b-2"
+      style={{
+        background: `linear-gradient(to right, 
+          color-mix(in oklch, var(--color-muted), transparent 90%), 
+          color-mix(in oklch, var(--color-background), transparent 95%))`,
+        borderBottomColor: "var(--color-border)",
+      }}
+    >
       <div className="flex flex-col gap-4 p-5">
         {/* Top Row - Search and Actions */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* Global Search */}
           <div className="relative flex-1 min-w-[250px] max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+            <Search
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4"
+              style={{ color: "var(--color-muted-foreground)" }}
+            />
             <Input
               placeholder="Search all columns..."
               defaultValue={globalFilter ?? ""}
               onChange={(e) => handleGlobalSearch(e.target.value)}
-              className="pl-10 h-11 border-2 shadow-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              className="pl-10 h-11 border-2 shadow-sm focus:ring-2"
+              style={{
+                backgroundColor: "var(--color-card)",
+                borderColor: "var(--color-border)",
+                color: "var(--color-foreground)",
+                ringColor: "var(--color-ring)",
+              }}
             />
           </div>
 
-          {/* Theme Toggle - Direct Button */}
+          {/* Theme Toggle */}
           <Button
             onClick={toggleTheme}
             variant="outline"
             size="icon"
-            className="h-11 w-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+            className="h-11 w-11 border-2 shadow-sm transition-all bg-background"
+            style={{
+              borderColor: "var(--color-border)",
+            }}
             title={
               theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
             }
           >
             {theme === "dark" ? (
-              <Sun className="h-5 w-5 text-amber-500" />
+              <Sun
+                className="h-5 w-5"
+                style={{ color: "var(--color-chart-3)" }}
+              />
             ) : (
-              <Moon className="h-5 w-5 text-slate-700" />
+              <Moon
+                className="h-5 w-5"
+                style={{ color: "var(--color-foreground)" }}
+              />
             )}
           </Button>
 
@@ -131,7 +157,8 @@ export function DataGridToolbar({
               onClick={onRefresh}
               variant="outline"
               size="sm"
-              className="h-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="h-11 border-2 shadow-sm bg-background"
+              style={{ borderColor: "var(--color-border)" }}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Refresh
@@ -144,7 +171,7 @@ export function DataGridToolbar({
               onClick={clearAllFilters}
               variant="outline"
               size="sm"
-              className="h-11 border-2 shadow-sm bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+              className="h-11 border-2 shadow-sm bg-background"
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset All
@@ -157,7 +184,8 @@ export function DataGridToolbar({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="h-11 border-2 shadow-sm bg-background"
+                style={{ borderColor: "var(--color-border)" }}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export
@@ -168,21 +196,30 @@ export function DataGridToolbar({
                 onClick={() => exportData("csv")}
                 className="cursor-pointer"
               >
-                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
+                <FileSpreadsheet
+                  className="h-4 w-4 mr-2"
+                  style={{ color: "var(--color-chart-2)" }}
+                />
                 Export as CSV
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => exportData("excel")}
                 className="cursor-pointer"
               >
-                <FileDown className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                <FileDown
+                  className="h-4 w-4 mr-2"
+                  style={{ color: "var(--color-primary)" }}
+                />
                 Export as Excel
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => exportData("json")}
                 className="cursor-pointer"
               >
-                <FileJson className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
+                <FileJson
+                  className="h-4 w-4 mr-2"
+                  style={{ color: "var(--color-chart-5)" }}
+                />
                 Export as JSON
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -194,14 +231,18 @@ export function DataGridToolbar({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="h-11 border-2 shadow-sm bg-background"
+                style={{ borderColor: "var(--color-border)" }}
               >
                 <Settings className="h-4 w-4 mr-2" />
                 View
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 shadow-lg">
-              <DropdownMenuLabel className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              <DropdownMenuLabel
+                className="text-xs font-bold"
+                style={{ color: "var(--color-muted-foreground)" }}
+              >
                 DENSITY
               </DropdownMenuLabel>
               {["compact", "normal", "comfortable"].map((d) => (
@@ -211,7 +252,10 @@ export function DataGridToolbar({
                   className="cursor-pointer"
                 >
                   {density === d && (
-                    <Check className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                    <Check
+                      className="h-4 w-4 mr-2"
+                      style={{ color: "var(--color-primary)" }}
+                    />
                   )}
                   <span className={density !== d ? "ml-6" : ""}>
                     {d.charAt(0).toUpperCase() + d.slice(1)}
@@ -221,7 +265,10 @@ export function DataGridToolbar({
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuLabel className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              <DropdownMenuLabel
+                className="text-xs font-bold"
+                style={{ color: "var(--color-muted-foreground)" }}
+              >
                 GRID LINES
               </DropdownMenuLabel>
               <DropdownMenuCheckboxItem
@@ -254,14 +301,18 @@ export function DataGridToolbar({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="h-11 border-2 shadow-sm bg-background"
+                style={{ borderColor: "var(--color-border)" }}
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Columns
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72 shadow-lg">
-              <DropdownMenuLabel className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              <DropdownMenuLabel
+                className="text-xs font-bold"
+                style={{ color: "var(--color-muted-foreground)" }}
+              >
                 COLUMN VISIBILITY & PINNING
               </DropdownMenuLabel>
               <div className="max-h-96 overflow-auto">
@@ -273,16 +324,25 @@ export function DataGridToolbar({
                     return (
                       <div
                         key={col.id}
-                        className="flex items-center justify-between px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md mx-1 transition-colors"
+                        className="flex items-center justify-between px-3 py-2.5 rounded-md mx-1 transition-colors bg-background"
+                        style={{
+                          backgroundColor: "transparent",
+                        }}
                       >
                         <label className="flex items-center gap-2.5 cursor-pointer flex-1">
                           <input
                             type="checkbox"
                             checked={col.getIsVisible()}
                             onChange={() => col.toggleVisibility()}
-                            className="h-4 w-4 rounded border-2 border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                            className="h-4 w-4 rounded border-2 text-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-ring)]"
+                            style={{
+                              borderColor: "var(--color-border)",
+                            }}
                           />
-                          <span className="text-sm capitalize text-slate-700 dark:text-slate-300 font-medium">
+                          <span
+                            className="text-sm capitalize font-medium"
+                            style={{ color: "var(--color-foreground)" }}
+                          >
                             {col.id}
                           </span>
                         </label>
@@ -293,11 +353,7 @@ export function DataGridToolbar({
                                 e.stopPropagation();
                                 col.pin(isPinned === "left" ? false : "left");
                               }}
-                              className={`p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${
-                                isPinned === "left"
-                                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
-                                  : "text-slate-400 dark:text-slate-500"
-                              }`}
+                              className="p-1.5 rounded-md transition-colors bg-background"
                               title={
                                 isPinned === "left"
                                   ? "Unpin from left"
@@ -311,11 +367,7 @@ export function DataGridToolbar({
                                 e.stopPropagation();
                                 col.pin(isPinned === "right" ? false : "right");
                               }}
-                              className={`p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${
-                                isPinned === "right"
-                                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
-                                  : "text-slate-400 dark:text-slate-500"
-                              }`}
+                              className="p-1.5 rounded-md transition-colors bg-background"
                               title={
                                 isPinned === "right"
                                   ? "Unpin from right"
@@ -333,7 +385,8 @@ export function DataGridToolbar({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={onResetPreferences}
-                className="cursor-pointer text-red-600 dark:text-red-400 font-medium"
+                className="cursor-pointer font-medium"
+                style={{ color: "var(--color-destructive)" }}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset All Preferences
@@ -347,11 +400,7 @@ export function DataGridToolbar({
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-11 border-2 shadow-sm ${
-                  table.getState().grouping.length > 0
-                    ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400"
-                    : "hover:bg-slate-100 dark:hover:bg-slate-700"
-                }`}
+                className="h-11 border-2 shadow-sm bg-background"
               >
                 <Layers className="h-4 w-4 mr-2" />
                 Group
@@ -360,7 +409,10 @@ export function DataGridToolbar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 shadow-lg">
-              <DropdownMenuLabel className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              <DropdownMenuLabel
+                className="text-xs font-bold"
+                style={{ color: "var(--color-muted-foreground)" }}
+              >
                 GROUP BY COLUMN
               </DropdownMenuLabel>
               {table
@@ -377,7 +429,7 @@ export function DataGridToolbar({
                         table.setGrouping(
                           isGrouped
                             ? grouping.filter((g) => g !== col.id)
-                            : [...grouping, col.id],
+                            : [...grouping, col.id]
                         );
                       }}
                     >
@@ -390,7 +442,8 @@ export function DataGridToolbar({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => table.setGrouping([])}
-                    className="cursor-pointer text-red-600 dark:text-red-400 font-medium"
+                    className="cursor-pointer font-medium"
+                    style={{ color: "var(--color-destructive)" }}
                   >
                     Clear All Grouping
                   </DropdownMenuItem>

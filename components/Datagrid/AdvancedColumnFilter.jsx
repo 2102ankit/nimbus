@@ -190,7 +190,7 @@ export const filterFunctions = {
 
 export function AdvancedColumnFilter({ column, dataType = "text" }) {
   const [operator, setOperator] = useState(
-    dataType === "text" ? "contains" : "equals",
+    dataType === "text" ? "contains" : "equals"
   );
   const [value, setValue] = useState("");
   const [value2, setValue2] = useState("");
@@ -206,7 +206,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
     const currentFilter = column.getFilterValue();
     if (currentFilter) {
       setOperator(
-        currentFilter.operator || (dataType === "text" ? "contains" : "equals"),
+        currentFilter.operator || (dataType === "text" ? "contains" : "equals")
       );
       if (currentFilter.value !== undefined && currentFilter.value !== null) {
         if (typeof currentFilter.value === "object") {
@@ -268,13 +268,13 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
       <DropdownMenuContent align="start" className="w-72">
         <div className="p-3 space-y-3">
           <div>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 block">
+            <label className="text-xs font-semibold text-(--color-foreground) mb-1 block">
               Operator
             </label>
             <select
               value={operator}
               onChange={(e) => setOperator(e.target.value)}
-              className="mt-1 w-full h-9 rounded-md border-2 border-slate-300 bg-white px-3 py-1 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              className="mt-1 w-full h-9 rounded-md border-2 border-(--color-border) bg-(--color-card) px-3 py-1 text-sm text-(--color-foreground) focus:outline-none focus:ring-2 focus:ring-(--color-ring)"
             >
               {operators.map((op) => (
                 <option key={op.value} value={op.value}>
@@ -286,7 +286,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
 
           {!needsNoInput && (
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 block">
+              <label className="text-xs font-semibold text-(--color-foreground) mb-1 block">
                 {needsSecondInput
                   ? dataType === "date"
                     ? "From"
@@ -304,14 +304,18 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 placeholder={`Enter ${dataType}...`}
-                className="mt-1"
+                className="mt-1 border-(--color-border) focus:ring-(--color-ring)"
+                style={{
+                  backgroundColor: "var(--color-card)",
+                  color: "var(--color-foreground)",
+                }}
               />
             </div>
           )}
 
           {needsSecondInput && (
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 block">
+              <label className="text-xs font-semibold text-[var(--color-foreground)] mb-1 block">
                 {dataType === "date" ? "To" : "Max"}
               </label>
               <Input
@@ -319,7 +323,11 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
                 value={value2}
                 onChange={(e) => setValue2(e.target.value)}
                 placeholder={`Enter ${dataType}...`}
-                className="mt-1"
+                className="mt-1 border-[var(--color-border)] focus:ring-[var(--color-ring)]"
+                style={{
+                  backgroundColor: "var(--color-card)",
+                  color: "var(--color-foreground)",
+                }}
               />
             </div>
           )}
@@ -328,7 +336,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
             <Button
               onClick={applyFilter}
               size="sm"
-              className="flex-1"
+              className="flex-1 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:bg-[var(--color-primary)/0.9]"
               disabled={!needsNoInput && !value && operator !== "between"}
             >
               Apply Filter
@@ -337,7 +345,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
               onClick={clearFilter}
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="flex-1 border-[var(--color-border)] text-[var(--color-foreground)]"
             >
               Clear
             </Button>
@@ -356,7 +364,7 @@ export function ActiveFilters({ table, columns }) {
 
   return (
     <div className="flex flex-wrap gap-2 px-4 pb-3">
-      <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center">
+      <span className="text-xs font-semibold text-[var(--color-muted-foreground)] flex items-center">
         Active filters:
       </span>
       <AnimatePresence>
@@ -378,7 +386,7 @@ export function ActiveFilters({ table, columns }) {
           } else if (filterValue?.value) {
             const opLabel =
               TEXT_OPERATORS.concat(NUMBER_OPERATORS, DATE_OPERATORS).find(
-                (o) => o.value === filterValue.operator,
+                (o) => o.value === filterValue.operator
               )?.label || filterValue.operator;
             displayValue = `${opLabel}: ${filterValue.value}`;
           }
@@ -389,7 +397,14 @@ export function ActiveFilters({ table, columns }) {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="flex items-center gap-1.5 bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-2.5 py-1 rounded-full text-xs font-medium"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
+              style={{
+                backgroundColor:
+                  "color-mix(in oklch, var(--color-primary), transparent 90%)",
+                color: "var(--color-primary-foreground)",
+                borderColor: "var(--color-primary)",
+                opacity: 0.8,
+              }}
             >
               <span className="font-semibold">
                 {column?.header || filter.id}:
@@ -399,7 +414,8 @@ export function ActiveFilters({ table, columns }) {
                 onClick={() =>
                   table.getColumn(filter.id)?.setFilterValue(undefined)
                 }
-                className="ml-1 hover:text-blue-900 dark:hover:text-blue-100"
+                className="ml-1 hover:opacity-70"
+                style={{ color: "var(--color-primary-foreground)" }}
               >
                 <X className="h-3 w-3" />
               </button>

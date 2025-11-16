@@ -3,7 +3,7 @@ import { Info, Keyboard, Sparkles } from "lucide-react";
 
 export function DataGridInfoPanel() {
   return (
-    <div className="p-5 rounded-lg border-2 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 shadow-lg">
+    <div className="p-5 rounded-lg border-2 bg-background shadow-lg">
       <div className="flex items-center gap-2 mb-4">
         <Info className="h-5 w-5 text-primary" />
         <h3 className="font-bold text-lg text-foreground">
@@ -76,7 +76,7 @@ export function DataGridInfoPanel() {
           </div>
           <ul className="space-y-2 ml-6">
             <li className="flex items-start gap-2">
-              <kbd className="px-2 py-1 bg-white dark:bg-slate-800 border-2 border-blue-300 dark:border-blue-700 rounded text-xs font-mono shadow-sm">
+              <kbd className="px-2 py-1 bg-background rounded text-xs font-mono shadow-sm">
                 Shift+Click
               </kbd>
               <span>header for multi-sort</span>
