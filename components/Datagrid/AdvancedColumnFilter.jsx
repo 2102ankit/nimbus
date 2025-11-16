@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
 
@@ -43,53 +43,145 @@ const DATE_OPERATORS = [
   { value: "isNotEmpty", label: "Is not empty" },
 ];
 
-// Filter function implementations
+// Filter function implementations - FIXED
 export const filterFunctions = {
   text: {
-    contains: (value, filterValue) =>
-      String(value).toLowerCase().includes(String(filterValue).toLowerCase()),
-    notContains: (value, filterValue) =>
-      !String(value).toLowerCase().includes(String(filterValue).toLowerCase()),
-    equals: (value, filterValue) =>
-      String(value).toLowerCase() === String(filterValue).toLowerCase(),
-    notEquals: (value, filterValue) =>
-      String(value).toLowerCase() !== String(filterValue).toLowerCase(),
-    startsWith: (value, filterValue) =>
-      String(value).toLowerCase().startsWith(String(filterValue).toLowerCase()),
-    endsWith: (value, filterValue) =>
-      String(value).toLowerCase().endsWith(String(filterValue).toLowerCase()),
+    contains: (value, filterValue) => {
+      if (!filterValue) return true;
+      return String(value || "")
+        .toLowerCase()
+        .includes(String(filterValue).toLowerCase());
+    },
+    notContains: (value, filterValue) => {
+      if (!filterValue) return true;
+      return !String(value || "")
+        .toLowerCase()
+        .includes(String(filterValue).toLowerCase());
+    },
+    equals: (value, filterValue) => {
+      if (!filterValue) return true;
+      return (
+        String(value || "").toLowerCase() === String(filterValue).toLowerCase()
+      );
+    },
+    notEquals: (value, filterValue) => {
+      if (!filterValue) return true;
+      return (
+        String(value || "").toLowerCase() !== String(filterValue).toLowerCase()
+      );
+    },
+    startsWith: (value, filterValue) => {
+      if (!filterValue) return true;
+      return String(value || "")
+        .toLowerCase()
+        .startsWith(String(filterValue).toLowerCase());
+    },
+    endsWith: (value, filterValue) => {
+      if (!filterValue) return true;
+      return String(value || "")
+        .toLowerCase()
+        .endsWith(String(filterValue).toLowerCase());
+    },
     isEmpty: (value) => !value || String(value).trim() === "",
     isNotEmpty: (value) => value && String(value).trim() !== "",
   },
   number: {
-    equals: (value, filterValue) => Number(value) === Number(filterValue),
-    notEquals: (value, filterValue) => Number(value) !== Number(filterValue),
-    greaterThan: (value, filterValue) => Number(value) > Number(filterValue),
-    greaterThanOrEqual: (value, filterValue) =>
-      Number(value) >= Number(filterValue),
-    lessThan: (value, filterValue) => Number(value) < Number(filterValue),
-    lessThanOrEqual: (value, filterValue) =>
-      Number(value) <= Number(filterValue),
+    equals: (value, filterValue) => {
+      if (
+        filterValue === "" ||
+        filterValue === null ||
+        filterValue === undefined
+      )
+        return true;
+      return Number(value) === Number(filterValue);
+    },
+    notEquals: (value, filterValue) => {
+      if (
+        filterValue === "" ||
+        filterValue === null ||
+        filterValue === undefined
+      )
+        return true;
+      return Number(value) !== Number(filterValue);
+    },
+    greaterThan: (value, filterValue) => {
+      if (
+        filterValue === "" ||
+        filterValue === null ||
+        filterValue === undefined
+      )
+        return true;
+      return Number(value) > Number(filterValue);
+    },
+    greaterThanOrEqual: (value, filterValue) => {
+      if (
+        filterValue === "" ||
+        filterValue === null ||
+        filterValue === undefined
+      )
+        return true;
+      return Number(value) >= Number(filterValue);
+    },
+    lessThan: (value, filterValue) => {
+      if (
+        filterValue === "" ||
+        filterValue === null ||
+        filterValue === undefined
+      )
+        return true;
+      return Number(value) < Number(filterValue);
+    },
+    lessThanOrEqual: (value, filterValue) => {
+      if (
+        filterValue === "" ||
+        filterValue === null ||
+        filterValue === undefined
+      )
+        return true;
+      return Number(value) <= Number(filterValue);
+    },
     between: (value, filterValue) => {
+      if (!filterValue || (!filterValue.min && !filterValue.max)) return true;
       const num = Number(value);
-      return num >= Number(filterValue.min) && num <= Number(filterValue.max);
+      const min = filterValue.min ? Number(filterValue.min) : -Infinity;
+      const max = filterValue.max ? Number(filterValue.max) : Infinity;
+      return num >= min && num <= max;
     },
     isEmpty: (value) => value === null || value === undefined || value === "",
     isNotEmpty: (value) =>
       value !== null && value !== undefined && value !== "",
   },
   date: {
-    equals: (value, filterValue) =>
-      new Date(value).toDateString() === new Date(filterValue).toDateString(),
-    notEquals: (value, filterValue) =>
-      new Date(value).toDateString() !== new Date(filterValue).toDateString(),
-    before: (value, filterValue) => new Date(value) < new Date(filterValue),
-    after: (value, filterValue) => new Date(value) > new Date(filterValue),
-    between: (value, filterValue) => {
-      const date = new Date(value);
+    equals: (value, filterValue) => {
+      if (!filterValue) return true;
       return (
-        date >= new Date(filterValue.from) && date <= new Date(filterValue.to)
+        new Date(value).toDateString() === new Date(filterValue).toDateString()
       );
+    },
+    notEquals: (value, filterValue) => {
+      if (!filterValue) return true;
+      return (
+        new Date(value).toDateString() !== new Date(filterValue).toDateString()
+      );
+    },
+    before: (value, filterValue) => {
+      if (!filterValue) return true;
+      return new Date(value) < new Date(filterValue);
+    },
+    after: (value, filterValue) => {
+      if (!filterValue) return true;
+      return new Date(value) > new Date(filterValue);
+    },
+    between: (value, filterValue) => {
+      if (!filterValue || (!filterValue.from && !filterValue.to)) return true;
+      const date = new Date(value);
+      const from = filterValue.from
+        ? new Date(filterValue.from)
+        : new Date(-8640000000000000);
+      const to = filterValue.to
+        ? new Date(filterValue.to)
+        : new Date(8640000000000000);
+      return date >= from && date <= to;
     },
     isEmpty: (value) => !value,
     isNotEmpty: (value) => !!value,
@@ -97,10 +189,11 @@ export const filterFunctions = {
 };
 
 export function AdvancedColumnFilter({ column, dataType = "text" }) {
-  const [operator, setOperator] = useState("contains");
+  const [operator, setOperator] = useState(
+    dataType === "text" ? "contains" : "equals"
+  );
   const [value, setValue] = useState("");
-  const [value2, setValue2] = useState(""); // For "between" operator
-  const [isOpen, setIsOpen] = useState(false);
+  const [value2, setValue2] = useState("");
 
   const operators =
     dataType === "number"
@@ -112,8 +205,10 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
   useEffect(() => {
     const currentFilter = column.getFilterValue();
     if (currentFilter) {
-      setOperator(currentFilter.operator || "contains");
-      if (currentFilter.value !== undefined) {
+      setOperator(
+        currentFilter.operator || (dataType === "text" ? "contains" : "equals")
+      );
+      if (currentFilter.value !== undefined && currentFilter.value !== null) {
         if (typeof currentFilter.value === "object") {
           setValue(currentFilter.value.min || currentFilter.value.from || "");
           setValue2(currentFilter.value.max || currentFilter.value.to || "");
@@ -122,27 +217,28 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
         }
       }
     }
-  }, [column]);
+  }, [column, dataType]);
 
   const applyFilter = () => {
     if (operator === "isEmpty" || operator === "isNotEmpty") {
-      column.setFilterValue({ operator, value: null });
+      column.setFilterValue({ operator, value: null, dataType });
     } else if (operator === "between") {
       if (dataType === "number") {
         column.setFilterValue({
           operator,
           value: { min: value, max: value2 },
+          dataType,
         });
       } else if (dataType === "date") {
         column.setFilterValue({
           operator,
           value: { from: value, to: value2 },
+          dataType,
         });
       }
     } else {
-      column.setFilterValue({ operator, value });
+      column.setFilterValue({ operator, value, dataType });
     }
-    setIsOpen(false);
   };
 
   const clearFilter = () => {
@@ -150,7 +246,6 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
     setValue("");
     setValue2("");
     setOperator(dataType === "text" ? "contains" : "equals");
-    setIsOpen(false);
   };
 
   const hasFilter = column.getFilterValue() !== undefined;
@@ -162,8 +257,8 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
       <DropdownMenuTrigger asChild>
         <Button
           variant={hasFilter ? "default" : "ghost"}
-          size="sm"
-          className={`h-7 w-7 p-0 ${
+          size="icon"
+          className={`h-7 w-7 ${
             hasFilter ? "bg-blue-600 hover:bg-blue-700" : ""
           }`}
         >
@@ -171,15 +266,15 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
-        <div className="p-2 space-y-3">
+        <div className="p-3 space-y-3">
           <div>
-            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 block">
               Operator
             </label>
             <select
               value={operator}
               onChange={(e) => setOperator(e.target.value)}
-              className="mt-1 w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm dark:border-slate-700 dark:bg-slate-950"
+              className="mt-1 w-full h-9 rounded-md border-2 border-slate-300 bg-white px-3 py-1 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
             >
               {operators.map((op) => (
                 <option key={op.value} value={op.value}>
@@ -191,7 +286,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
 
           {!needsNoInput && (
             <div>
-              <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 block">
                 {needsSecondInput
                   ? dataType === "date"
                     ? "From"
@@ -208,13 +303,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
                 }
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                placeholder={`Enter ${
-                  dataType === "date"
-                    ? "date"
-                    : dataType === "number"
-                    ? "number"
-                    : "text"
-                }...`}
+                placeholder={`Enter ${dataType}...`}
                 className="mt-1"
               />
             </div>
@@ -222,29 +311,27 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
 
           {needsSecondInput && (
             <div>
-              <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 block">
                 {dataType === "date" ? "To" : "Max"}
               </label>
               <Input
                 type={dataType === "date" ? "date" : "number"}
                 value={value2}
                 onChange={(e) => setValue2(e.target.value)}
-                placeholder={`Enter ${
-                  dataType === "date" ? "date" : "number"
-                }...`}
+                placeholder={`Enter ${dataType}...`}
                 className="mt-1"
               />
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-2">
             <Button
               onClick={applyFilter}
               size="sm"
               className="flex-1"
-              disabled={!needsNoInput && !value}
+              disabled={!needsNoInput && !value && operator !== "between"}
             >
-              Apply
+              Apply Filter
             </Button>
             <Button
               onClick={clearFilter}
@@ -269,7 +356,7 @@ export function ActiveFilters({ table, columns }) {
 
   return (
     <div className="flex flex-wrap gap-2 px-4 pb-3">
-      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center">
+      <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center">
         Active filters:
       </span>
       <AnimatePresence>
@@ -278,20 +365,22 @@ export function ActiveFilters({ table, columns }) {
           const filterValue = filter.value;
 
           let displayValue = "";
-          if (
-            filterValue.operator === "isEmpty" ||
-            filterValue.operator === "isNotEmpty"
-          ) {
-            displayValue =
-              filterValue.operator === "isEmpty" ? "is empty" : "is not empty";
-          } else if (filterValue.operator === "between") {
+          if (filterValue?.operator === "isEmpty") {
+            displayValue = "is empty";
+          } else if (filterValue?.operator === "isNotEmpty") {
+            displayValue = "is not empty";
+          } else if (filterValue?.operator === "between") {
             if (filterValue.value?.min && filterValue.value?.max) {
               displayValue = `${filterValue.value.min} - ${filterValue.value.max}`;
             } else if (filterValue.value?.from && filterValue.value?.to) {
               displayValue = `${filterValue.value.from} - ${filterValue.value.to}`;
             }
-          } else {
-            displayValue = `${filterValue.operator}: ${filterValue.value}`;
+          } else if (filterValue?.value) {
+            const opLabel =
+              TEXT_OPERATORS.concat(NUMBER_OPERATORS, DATE_OPERATORS).find(
+                (o) => o.value === filterValue.operator
+              )?.label || filterValue.operator;
+            displayValue = `${opLabel}: ${filterValue.value}`;
           }
 
           return (
@@ -300,7 +389,7 @@ export function ActiveFilters({ table, columns }) {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="flex items-center gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium"
+              className="flex items-center gap-1.5 bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-2.5 py-1 rounded-full text-xs font-medium"
             >
               <span className="font-semibold">
                 {column?.header || filter.id}:

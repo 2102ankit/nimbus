@@ -1,24 +1,24 @@
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  EyeOff,
-  GripVertical,
-  Pin,
-  PinOff,
-} from "lucide-react";
 import React from "react";
 import {
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  EyeOff,
+  Pin,
+  PinOff,
+  GripVertical,
+} from "lucide-react";
+import {
   DropdownMenu,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-
-import { motion } from "motion/react";
-import { AdvancedColumnFilter } from "../Datagrid/AdvancedColumnFilter";
 import { Button } from "../ui/button";
+import { AdvancedColumnFilter } from "../Datagrid/AdvancedColumnFilter";
+import { motion } from "motion/react";
+
 export function ColumnHeader({
   header,
   column,
@@ -31,48 +31,14 @@ export function ColumnHeader({
   enableHide = true,
   enableResize = true,
   enableDrag = true,
-  onDragStart,
-  onDragEnd,
 }) {
   const [isDragging, setIsDragging] = React.useState(false);
-
-  const handleDragStart = (e) => {
-    setIsDragging(true);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", column.id);
-    onDragStart?.(column.id);
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    onDragEnd?.();
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const sourceId = e.dataTransfer.getData("text/plain");
-    if (sourceId !== column.id) {
-      const currentOrder = table.getState().columnOrder;
-      const sourceIndex = currentOrder.indexOf(sourceId);
-      const targetIndex = currentOrder.indexOf(column.id);
-
-      if (sourceIndex !== -1 && targetIndex !== -1) {
-        const newOrder = [...currentOrder];
-        newOrder.splice(sourceIndex, 1);
-        newOrder.splice(targetIndex, 0, sourceId);
-        table.setColumnOrder(newOrder);
-      }
-    }
-  };
+  const [isResizing, setIsResizing] = React.useState(false);
 
   const isSorted = column.getIsSorted();
   const isPinned = column.getIsPinned();
 
+  // FIXED: Show correct icon based on sort direction
   const SortIcon =
     isSorted === "asc"
       ? ArrowUp
@@ -86,6 +52,64 @@ export function ColumnHeader({
     .sorting.findIndex((s) => s.id === column.id);
   const showSortIndex = table.getState().sorting.length > 1 && sortIndex !== -1;
 
+  // Drag handlers
+  const handleDragStart = (e) => {
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("columnId", column.id);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData("columnId");
+
+    if (sourceId && sourceId !== column.id) {
+      const allColumns = table.getAllColumns().map((col) => col.id);
+      const sourceIndex = allColumns.indexOf(sourceId);
+      const targetIndex = allColumns.indexOf(column.id);
+
+      if (sourceIndex !== -1 && targetIndex !== -1) {
+        const newOrder = [...allColumns];
+        const [removed] = newOrder.splice(sourceIndex, 1);
+        newOrder.splice(targetIndex, 0, removed);
+        table.setColumnOrder(newOrder);
+      }
+    }
+  };
+
+  // Resize handlers
+  const handleResizeMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    header.getResizeHandler()(e);
+  };
+
+  React.useEffect(() => {
+    const handleMouseUp = () => {
+      if (isResizing) {
+        setIsResizing(false);
+      }
+    };
+
+    if (isResizing) {
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
   return (
     <div
       draggable={enableDrag}
@@ -93,13 +117,16 @@ export function ColumnHeader({
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
-      className="flex items-center justify-between w-full gap-1 group"
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        cursor: isDragging ? "grabbing" : "default",
+      }}
+      className="flex items-center justify-between w-full gap-1 group relative"
     >
       {/* Drag Handle */}
       {enableDrag && (
-        <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
-          <GripVertical className="h-4 w-4 text-slate-400" />
+        <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <GripVertical className="h-4 w-4 text-slate-400 dark:text-slate-500" />
         </div>
       )}
 
@@ -111,36 +138,33 @@ export function ColumnHeader({
               const isMulti = e.shiftKey;
               column.toggleSorting(undefined, isMulti);
             }}
-            className="flex items-center gap-2 min-w-0 flex-1 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+            className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+            title="Click to sort, Shift+Click for multi-sort"
           >
-            <span className="font-medium truncate">{title}</span>
-            <div className="flex items-center gap-1">
-              <motion.div
-                animate={{ rotate: isSorted === "desc" ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <SortIcon
-                  className={`h-4 w-4 ${
-                    isSorted
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-slate-400"
-                  }`}
-                />
-              </motion.div>
+            <span className="font-semibold truncate">{title}</span>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* FIXED: Icon shows correctly based on sort state */}
+              <SortIcon
+                className={`h-4 w-4 ${
+                  isSorted
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-slate-400 dark:text-slate-500"
+                }`}
+              />
               {showSortIndex && (
-                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 rounded-full w-4 h-4 flex items-center justify-center">
                   {sortIndex + 1}
                 </span>
               )}
             </div>
           </button>
         ) : (
-          <span className="font-medium truncate">{title}</span>
+          <span className="font-semibold truncate">{title}</span>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-shrink-0">
         {/* Filter */}
         {enableFilter && (
           <AdvancedColumnFilter column={column} dataType={dataType} />
@@ -151,8 +175,8 @@ export function ColumnHeader({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              size="icon"
+              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <span className="sr-only">Column menu</span>
               <svg
@@ -222,7 +246,7 @@ export function ColumnHeader({
                     </>
                   ) : (
                     <>
-                      <Pin className="mr-2 h-4 w-4" />
+                      <Pin className="mr-2 h-4 w-4 rotate-90" />
                       Pin to Right
                     </>
                   )}
@@ -241,15 +265,21 @@ export function ColumnHeader({
         </DropdownMenu>
       </div>
 
-      {/* Resize Handle */}
+      {/* Resize Handle - FIXED */}
       {enableResize && column.getCanResize() && (
         <div
-          onMouseDown={header.getResizeHandler()}
-          onTouchStart={header.getResizeHandler()}
-          className="absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none hover:bg-blue-500 dark:hover:bg-blue-400 transition-colors"
+          onMouseDown={handleResizeMouseDown}
+          onTouchStart={handleResizeMouseDown}
+          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none hover:bg-blue-500 dark:hover:bg-blue-400 transition-colors ${
+            isResizing ? "bg-blue-500 dark:bg-blue-400" : ""
+          }`}
           style={{ userSelect: "none" }}
         >
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-1 h-8 bg-slate-300 dark:bg-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div
+            className={`absolute right-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-1 h-12 bg-slate-400 dark:bg-slate-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${
+              isResizing ? "opacity-100 bg-blue-500 dark:bg-blue-400" : ""
+            }`}
+          />
         </div>
       )}
     </div>

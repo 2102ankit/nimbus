@@ -32,6 +32,27 @@ export function ThemeProvider({ children }) {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
+
+    // Set CSS custom properties for better color control
+    if (theme === "dark") {
+      root.style.setProperty("--bg-primary", "#1e293b");
+      root.style.setProperty("--bg-secondary", "#0f172a");
+      root.style.setProperty("--bg-tertiary", "#334155");
+      root.style.setProperty("--text-primary", "#f1f5f9");
+      root.style.setProperty("--text-secondary", "#cbd5e1");
+      root.style.setProperty("--text-muted", "#94a3b8");
+      root.style.setProperty("--border-color", "#334155");
+      root.style.setProperty("--hover-bg", "#334155");
+    } else {
+      root.style.setProperty("--bg-primary", "#ffffff");
+      root.style.setProperty("--bg-secondary", "#f8fafc");
+      root.style.setProperty("--bg-tertiary", "#f1f5f9");
+      root.style.setProperty("--text-primary", "#0f172a");
+      root.style.setProperty("--text-secondary", "#334155");
+      root.style.setProperty("--text-muted", "#64748b");
+      root.style.setProperty("--border-color", "#e2e8f0");
+      root.style.setProperty("--hover-bg", "#f8fafc");
+    }
   }, [theme]);
 
   const toggleTheme = () => {

@@ -1,35 +1,35 @@
+import React, { useState } from "react";
 import {
-  Check,
-  Columns,
-  Download,
-  Eye,
-  FileDown,
-  FileJson,
-  FileSpreadsheet,
-  Grid3x3,
-  Moon,
-  Pin,
-  RotateCcw,
-  Rows,
   Search,
+  Download,
   Settings,
+  Eye,
+  RotateCcw,
   Sun,
+  Moon,
+  Grid3x3,
+  Rows,
+  Columns,
+  FileSpreadsheet,
+  FileJson,
+  FileDown,
+  Pin,
+  Check,
+  Layers,
 } from "lucide-react";
-import { useState } from "react";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuCheckboxItem,
 } from "../ui/dropdown-menu";
-
-import { ActiveFilters } from "../Datagrid/AdvancedColumnFilter";
-import { useTheme } from "../ThemeProvider";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { ActiveFilters } from "../Datagrid/AdvancedColumnFilter";
+import { useTheme } from "../ThemeProvider";
 
 export function EnhancedToolbar({
   table,
@@ -66,12 +66,14 @@ export function EnhancedToolbar({
   const clearAllFilters = () => {
     table.resetColumnFilters();
     table.resetSorting();
+    table.setGrouping([]);
     onGlobalFilterChange("");
   };
 
   const hasFilters =
     table.getState().columnFilters.length > 0 ||
     table.getState().sorting.length > 0 ||
+    table.getState().grouping.length > 0 ||
     globalFilter;
 
   const exportData = (format) => {
@@ -82,19 +84,22 @@ export function EnhancedToolbar({
         (col) =>
           col.id !== "select" && col.id !== "actions" && col.id !== "expand"
       )
-      .map((col) => ({ id: col.id, header: col.columnDef.header }));
+      .map((col) => ({
+        id: col.id,
+        header: col.columnDef.meta?.headerText || col.id,
+      }));
 
     onExport(format, rows, visibleColumns);
   };
 
   return (
-    <div className="border-b border-slate-200 dark:border-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-900">
+    <div className="border-b-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
       <div className="flex flex-col gap-3 p-4">
         {/* Top Row - Search and Actions */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Global Search */}
           <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400" />
             <Input
               placeholder="Search all columns..."
               defaultValue={globalFilter ?? ""}
@@ -106,7 +111,8 @@ export function EnhancedToolbar({
           {/* Refresh */}
           {onRefresh && (
             <Button onClick={onRefresh} variant="outline" size="sm">
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Refresh
             </Button>
           )}
 
@@ -114,7 +120,7 @@ export function EnhancedToolbar({
           {hasFilters && (
             <Button onClick={clearAllFilters} variant="outline" size="sm">
               <RotateCcw className="h-4 w-4 mr-2" />
-              Reset Filters & Sort
+              Reset All
             </Button>
           )}
 
@@ -206,7 +212,7 @@ export function EnhancedToolbar({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Column Visibility */}
+          {/* Column Visibility & Pinning */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -225,16 +231,18 @@ export function EnhancedToolbar({
                     return (
                       <div
                         key={col.id}
-                        className="flex items-center justify-between px-2 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+                        className="flex items-center justify-between px-2 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
                       >
                         <label className="flex items-center gap-2 cursor-pointer flex-1">
                           <input
                             type="checkbox"
                             checked={col.getIsVisible()}
                             onChange={() => col.toggleVisibility()}
-                            className="h-4 w-4 rounded border-slate-300 dark:border-slate-700"
+                            className="h-4 w-4 rounded border-2 border-slate-300 dark:border-slate-600"
                           />
-                          <span className="text-sm capitalize">{col.id}</span>
+                          <span className="text-sm capitalize text-slate-700 dark:text-slate-300">
+                            {col.id}
+                          </span>
                         </label>
                         {col.getCanPin() && (
                           <div className="flex gap-1">
@@ -243,10 +251,10 @@ export function EnhancedToolbar({
                                 e.stopPropagation();
                                 col.pin(isPinned === "left" ? false : "left");
                               }}
-                              className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 ${
+                              className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${
                                 isPinned === "left"
-                                  ? "text-blue-600 dark:text-blue-400"
-                                  : "text-slate-400"
+                                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
+                                  : "text-slate-400 dark:text-slate-500"
                               }`}
                               title={
                                 isPinned === "left"
@@ -261,10 +269,10 @@ export function EnhancedToolbar({
                                 e.stopPropagation();
                                 col.pin(isPinned === "right" ? false : "right");
                               }}
-                              className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 ${
+                              className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${
                                 isPinned === "right"
-                                  ? "text-blue-600 dark:text-blue-400"
-                                  : "text-slate-400"
+                                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
+                                  : "text-slate-400 dark:text-slate-500"
                               }`}
                               title={
                                 isPinned === "right"
@@ -285,6 +293,54 @@ export function EnhancedToolbar({
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset All Preferences
               </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Grouping */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Layers className="h-4 w-4 mr-2" />
+                Group
+                {table.getState().grouping.length > 0 &&
+                  ` (${table.getState().grouping.length})`}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>GROUP BY COLUMN</DropdownMenuLabel>
+              {table
+                .getAllColumns()
+                .filter((col) => col.getCanGroup && col.getCanGroup())
+                .map((col) => {
+                  const isGrouped = table.getState().grouping.includes(col.id);
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={col.id}
+                      checked={isGrouped}
+                      onCheckedChange={() => {
+                        const grouping = table.getState().grouping;
+                        table.setGrouping(
+                          isGrouped
+                            ? grouping.filter((g) => g !== col.id)
+                            : [...grouping, col.id]
+                        );
+                      }}
+                    >
+                      <span className="capitalize">{col.id}</span>
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+              {table.getState().grouping.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => table.setGrouping([])}
+                    className="text-red-600 dark:text-red-400"
+                  >
+                    Clear All Grouping
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
