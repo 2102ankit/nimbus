@@ -22,18 +22,33 @@ export const useTheme = () => {
 };
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState("light");
-  const [density, setDensity] = useState("normal");
-  const [showGridLines, setShowGridLines] = useState(true);
-  const [showHeaderLines, setShowHeaderLines] = useState(true);
-  const [showRowLines, setShowRowLines] = useState(true);
+  const [theme, setTheme] = useState(() => {
+    const stored = localStorage.getItem("datagrid-theme");
+    return stored || "light";
+  });
+  const [density, setDensity] = useState(() => {
+    const stored = localStorage.getItem("datagrid-density");
+    return stored || "normal";
+  });
+  const [showGridLines, setShowGridLines] = useState(() => {
+    const stored = localStorage.getItem("datagrid-gridlines");
+    return stored !== "false";
+  });
+  const [showHeaderLines, setShowHeaderLines] = useState(() => {
+    const stored = localStorage.getItem("datagrid-headerlines");
+    return stored !== "false";
+  });
+  const [showRowLines, setShowRowLines] = useState(() => {
+    const stored = localStorage.getItem("datagrid-rowlines");
+    return stored !== "false";
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
+    localStorage.setItem("datagrid-theme", theme);
 
-    // Set CSS custom properties for better color control
     if (theme === "dark") {
       root.style.setProperty("--bg-primary", "#1e293b");
       root.style.setProperty("--bg-secondary", "#0f172a");
@@ -59,9 +74,31 @@ export function ThemeProvider({ children }) {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
-  const toggleGridLines = () => setShowGridLines((prev) => !prev);
-  const toggleHeaderLines = () => setShowHeaderLines((prev) => !prev);
-  const toggleRowLines = () => setShowRowLines((prev) => !prev);
+  const handleSetDensity = (d) => {
+    setDensity(d);
+    localStorage.setItem("datagrid-density", d);
+  };
+
+  const toggleGridLines = () => {
+    setShowGridLines((prev) => {
+      localStorage.setItem("datagrid-gridlines", String(!prev));
+      return !prev;
+    });
+  };
+
+  const toggleHeaderLines = () => {
+    setShowHeaderLines((prev) => {
+      localStorage.setItem("datagrid-headerlines", String(!prev));
+      return !prev;
+    });
+  };
+
+  const toggleRowLines = () => {
+    setShowRowLines((prev) => {
+      localStorage.setItem("datagrid-rowlines", String(!prev));
+      return !prev;
+    });
+  };
 
   return (
     <ThemeContext.Provider
@@ -69,7 +106,7 @@ export function ThemeProvider({ children }) {
         theme,
         toggleTheme,
         density,
-        setDensity,
+        setDensity: handleSetDensity,
         showGridLines,
         toggleGridLines,
         showHeaderLines,

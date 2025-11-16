@@ -190,7 +190,7 @@ export const filterFunctions = {
 
 export function AdvancedColumnFilter({ column, dataType = "text" }) {
   const [operator, setOperator] = useState(
-    dataType === "text" ? "contains" : "equals"
+    dataType === "text" ? "contains" : "equals",
   );
   const [value, setValue] = useState("");
   const [value2, setValue2] = useState("");
@@ -199,14 +199,14 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
     dataType === "number"
       ? NUMBER_OPERATORS
       : dataType === "date"
-      ? DATE_OPERATORS
-      : TEXT_OPERATORS;
+        ? DATE_OPERATORS
+        : TEXT_OPERATORS;
 
   useEffect(() => {
     const currentFilter = column.getFilterValue();
     if (currentFilter) {
       setOperator(
-        currentFilter.operator || (dataType === "text" ? "contains" : "equals")
+        currentFilter.operator || (dataType === "text" ? "contains" : "equals"),
       );
       if (currentFilter.value !== undefined && currentFilter.value !== null) {
         if (typeof currentFilter.value === "object") {
@@ -298,8 +298,8 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
                   dataType === "date"
                     ? "date"
                     : dataType === "number"
-                    ? "number"
-                    : "text"
+                      ? "number"
+                      : "text"
                 }
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
@@ -378,7 +378,7 @@ export function ActiveFilters({ table, columns }) {
           } else if (filterValue?.value) {
             const opLabel =
               TEXT_OPERATORS.concat(NUMBER_OPERATORS, DATE_OPERATORS).find(
-                (o) => o.value === filterValue.operator
+                (o) => o.value === filterValue.operator,
               )?.label || filterValue.operator;
             displayValue = `${opLabel}: ${filterValue.value}`;
           }

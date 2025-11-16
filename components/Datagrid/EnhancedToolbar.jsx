@@ -82,7 +82,7 @@ export function EnhancedToolbar({
       .getVisibleLeafColumns()
       .filter(
         (col) =>
-          col.id !== "select" && col.id !== "actions" && col.id !== "expand"
+          col.id !== "select" && col.id !== "actions" && col.id !== "expand",
       )
       .map((col) => ({
         id: col.id,
@@ -322,7 +322,7 @@ export function EnhancedToolbar({
                         table.setGrouping(
                           isGrouped
                             ? grouping.filter((g) => g !== col.id)
-                            : [...grouping, col.id]
+                            : [...grouping, col.id],
                         );
                       }}
                     >

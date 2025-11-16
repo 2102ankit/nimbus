@@ -1,0 +1,258 @@
+// ============ EXPORT FUNCTIONS ============
+export const exportToCSV = (data, columns) => {
+  const headers = columns
+    .map((c) => (typeof c.header === "string" ? c.header : c.id))
+    .join(",");
+  const rows = data
+    .map((row) =>
+      columns
+        .map((c) => `"${String(row[c.id] || "").replace(/"/g, '""')}"`)
+        .join(",")
+    )
+    .join("\n");
+
+  const csv = `${headers}\n${rows}`;
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `export-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+export const exportToJSON = (data, columns) => {
+  const exportData = data.map((row) => {
+    const obj = {};
+    columns.forEach((c) => {
+      obj[c.id] = row[c.id];
+    });
+    return obj;
+  });
+
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `export-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+export const exportToExcel = (data, columns) => {
+  let html = "<table><thead><tr>";
+  columns.forEach((c) => {
+    html += `<th>${typeof c.header === "string" ? c.header : c.id}</th>`;
+  });
+  html += "</tr></thead><tbody>";
+  data.forEach((row) => {
+    html += "<tr>";
+    columns.forEach((c) => {
+      html += `<td>${row[c.id] || ""}</td>`;
+    });
+    html += "</tr>";
+  });
+  html += "</tbody></table>";
+
+  const blob = new Blob([html], { type: "application/vnd.ms-excel" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `export-${Date.now()}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// ============ PREFERENCES MANAGEMENT ============
+export const loadPreferences = () => {
+  try {
+    const stored = localStorage.getItem("datagrid-prefs-v3");
+    return stored
+      ? JSON.parse(stored)
+      : {
+          columnVisibility: {},
+          columnOrder: [],
+          columnSizing: {},
+          columnPinning: { left: [], right: [] },
+          sorting: [],
+          pageSize: 20,
+        };
+  } catch {
+    return {
+      columnVisibility: {},
+      columnOrder: [],
+      columnSizing: {},
+      columnPinning: { left: [], right: [] },
+      sorting: [],
+      pageSize: 20,
+    };
+  }
+};
+
+export const savePreferences = (prefs) => {
+  try {
+    localStorage.setItem("datagrid-prefs-v3", JSON.stringify(prefs));
+  } catch (error) {
+    console.error("Failed to save preferences:", error);
+  }
+};
+
+export const resetPreferences = () => {
+  try {
+    localStorage.removeItem("datagrid-prefs-v3");
+  } catch (error) {
+    console.error("Failed to reset preferences:", error);
+  }
+};
+
+// ============ COLUMN POSITION CALCULATIONS ============
+export const getLeftPosition = (column, table) => {
+  const leftPinnedColumns = table.getState().columnPinning.left || [];
+  const index = leftPinnedColumns.indexOf(column.id);
+  if (index === -1) return 0;
+
+  let left = 0;
+  for (let i = 0; i < index; i++) {
+    const col = table
+      .getAllLeafColumns()
+      .find((c) => c.id === leftPinnedColumns[i]);
+    if (col) {
+      left += col.getSize();
+    }
+  }
+  return left;
+};
+
+export const getRightPosition = (column, table) => {
+  const rightPinnedColumns = table.getState().columnPinning.right || [];
+  const index = rightPinnedColumns.indexOf(column.id);
+  if (index === -1) return 0;
+
+  let right = 0;
+  for (let i = index + 1; i < rightPinnedColumns.length; i++) {
+    const col = table
+      .getAllLeafColumns()
+      .find((c) => c.id === rightPinnedColumns[i]);
+    if (col) {
+      right += col.getSize();
+    }
+  }
+  return right;
+};
+
+// ============ CUSTOM FILTER FUNCTION ============
+export const advancedFilterFn = (row, columnId, filterValue) => {
+  if (!filterValue || !filterValue.operator || !filterValue.dataType)
+    return true;
+
+  const cellValue = row.getValue(columnId);
+  const { operator, value, dataType } = filterValue;
+
+  // Import filter functions from AdvancedColumnFilter
+  const filterFunctions = {
+    text: {
+      contains: (v, fv) => {
+        if (!fv) return true;
+        return String(v || "")
+          .toLowerCase()
+          .includes(String(fv).toLowerCase());
+      },
+      notContains: (v, fv) => {
+        if (!fv) return true;
+        return !String(v || "")
+          .toLowerCase()
+          .includes(String(fv).toLowerCase());
+      },
+      equals: (v, fv) => {
+        if (!fv) return true;
+        return String(v || "").toLowerCase() === String(fv).toLowerCase();
+      },
+      notEquals: (v, fv) => {
+        if (!fv) return true;
+        return String(v || "").toLowerCase() !== String(fv).toLowerCase();
+      },
+      startsWith: (v, fv) => {
+        if (!fv) return true;
+        return String(v || "")
+          .toLowerCase()
+          .startsWith(String(fv).toLowerCase());
+      },
+      endsWith: (v, fv) => {
+        if (!fv) return true;
+        return String(v || "")
+          .toLowerCase()
+          .endsWith(String(fv).toLowerCase());
+      },
+      isEmpty: (v) => !v || String(v).trim() === "",
+      isNotEmpty: (v) => v && String(v).trim() !== "",
+    },
+    number: {
+      equals: (v, fv) => {
+        if (fv === "" || fv === null || fv === undefined) return true;
+        return Number(v) === Number(fv);
+      },
+      notEquals: (v, fv) => {
+        if (fv === "" || fv === null || fv === undefined) return true;
+        return Number(v) !== Number(fv);
+      },
+      greaterThan: (v, fv) => {
+        if (fv === "" || fv === null || fv === undefined) return true;
+        return Number(v) > Number(fv);
+      },
+      greaterThanOrEqual: (v, fv) => {
+        if (fv === "" || fv === null || fv === undefined) return true;
+        return Number(v) >= Number(fv);
+      },
+      lessThan: (v, fv) => {
+        if (fv === "" || fv === null || fv === undefined) return true;
+        return Number(v) < Number(fv);
+      },
+      lessThanOrEqual: (v, fv) => {
+        if (fv === "" || fv === null || fv === undefined) return true;
+        return Number(v) <= Number(fv);
+      },
+      between: (v, fv) => {
+        if (!fv || (!fv.min && !fv.max)) return true;
+        const num = Number(v);
+        const min = fv.min ? Number(fv.min) : -Infinity;
+        const max = fv.max ? Number(fv.max) : Infinity;
+        return num >= min && num <= max;
+      },
+      isEmpty: (v) => v === null || v === undefined || v === "",
+      isNotEmpty: (v) => v !== null && v !== undefined && v !== "",
+    },
+    date: {
+      equals: (v, fv) => {
+        if (!fv) return true;
+        return new Date(v).toDateString() === new Date(fv).toDateString();
+      },
+      notEquals: (v, fv) => {
+        if (!fv) return true;
+        return new Date(v).toDateString() !== new Date(fv).toDateString();
+      },
+      before: (v, fv) => {
+        if (!fv) return true;
+        return new Date(v) < new Date(fv);
+      },
+      after: (v, fv) => {
+        if (!fv) return true;
+        return new Date(v) > new Date(fv);
+      },
+      between: (v, fv) => {
+        if (!fv || (!fv.from && !fv.to)) return true;
+        const date = new Date(v);
+        const from = fv.from ? new Date(fv.from) : new Date(-8640000000000000);
+        const to = fv.to ? new Date(fv.to) : new Date(8640000000000000);
+        return date >= from && date <= to;
+      },
+      isEmpty: (v) => !v,
+      isNotEmpty: (v) => !!v,
+    },
+  };
+
+  const filterFn = filterFunctions[dataType]?.[operator];
+  if (!filterFn) return true;
+
+  return filterFn(cellValue, value);
+};

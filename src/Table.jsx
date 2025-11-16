@@ -50,7 +50,7 @@ const exportToCSV = (data, columns) => {
     .map((row) =>
       columns
         .map((c) => `"${String(row[c.id] || "").replace(/"/g, '""')}"`)
-        .join(",")
+        .join(","),
     )
     .join("\n");
 
@@ -150,7 +150,7 @@ const generateData = (count = 100) => {
     joinDate: new Date(
       2020 + Math.floor(Math.random() * 5),
       Math.floor(Math.random() * 12),
-      Math.floor(Math.random() * 28)
+      Math.floor(Math.random() * 28),
     )
       .toISOString()
       .split("T")[0],
@@ -199,12 +199,12 @@ const AdvancedDataGrid = () => {
   const [sorting, setSorting] = useState(prefs.sorting || []);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState(
-    prefs.columnVisibility || {}
+    prefs.columnVisibility || {},
   );
   const [columnOrder, setColumnOrder] = useState(prefs.columnOrder || []);
   const [columnSizing, setColumnSizing] = useState(prefs.columnSizing || {});
   const [columnPinning, setColumnPinning] = useState(
-    prefs.columnPinning || { left: [], right: [] }
+    prefs.columnPinning || { left: [], right: [] },
   );
 
   // Save preferences
@@ -214,7 +214,7 @@ const AdvancedDataGrid = () => {
       localStorage.setItem("datagrid-prefs-v3", JSON.stringify(merged));
       setPrefs(merged);
     },
-    [prefs]
+    [prefs],
   );
 
   // Auto-save on changes
@@ -428,7 +428,7 @@ const AdvancedDataGrid = () => {
         enableColumnFilter: true,
       },
     ],
-    []
+    [],
   );
 
   // Add headers to columns
@@ -704,7 +704,7 @@ const AdvancedDataGrid = () => {
                               ? null
                               : flexRender(
                                   header.column.columnDef.header,
-                                  header.getContext()
+                                  header.getContext(),
                                 )}
                           </th>
                         );
@@ -822,7 +822,7 @@ const AdvancedDataGrid = () => {
                                       )}
                                       {flexRender(
                                         cell.column.columnDef.cell,
-                                        cell.getContext()
+                                        cell.getContext(),
                                       )}{" "}
                                       ({row.subRows.length})
                                     </button>
@@ -830,12 +830,12 @@ const AdvancedDataGrid = () => {
                                     flexRender(
                                       cell.column.columnDef.aggregatedCell ??
                                         cell.column.columnDef.cell,
-                                      cell.getContext()
+                                      cell.getContext(),
                                     )
                                   ) : cell.getIsPlaceholder() ? null : (
                                     flexRender(
                                       cell.column.columnDef.cell,
-                                      cell.getContext()
+                                      cell.getContext(),
                                     )
                                   )}
                                 </td>
@@ -870,7 +870,7 @@ const AdvancedDataGrid = () => {
                                                 {String(value)}
                                               </span>
                                             </div>
-                                          )
+                                          ),
                                         )}
                                       </div>
                                     </div>

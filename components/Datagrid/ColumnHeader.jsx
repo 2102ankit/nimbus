@@ -1,23 +1,22 @@
-import React from "react";
 import {
-  ArrowUp,
   ArrowDown,
+  ArrowUp,
   ArrowUpDown,
   EyeOff,
+  GripVertical,
   Pin,
   PinOff,
-  GripVertical,
 } from "lucide-react";
+import React from "react";
+import { AdvancedColumnFilter } from "../Datagrid/AdvancedColumnFilter";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Button } from "../ui/button";
-import { AdvancedColumnFilter } from "../Datagrid/AdvancedColumnFilter";
-import { motion } from "motion/react";
 
 export function ColumnHeader({
   header,
@@ -38,15 +37,13 @@ export function ColumnHeader({
   const isSorted = column.getIsSorted();
   const isPinned = column.getIsPinned();
 
-  // FIXED: Show correct icon based on sort direction
   const SortIcon =
     isSorted === "asc"
       ? ArrowUp
       : isSorted === "desc"
-      ? ArrowDown
-      : ArrowUpDown;
+        ? ArrowDown
+        : ArrowUpDown;
 
-  // Multi-sort indicator
   const sortIndex = table
     .getState()
     .sorting.findIndex((s) => s.id === column.id);
@@ -126,7 +123,7 @@ export function ColumnHeader({
       {/* Drag Handle */}
       {enableDrag && (
         <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          <GripVertical className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
       )}
 
@@ -138,21 +135,18 @@ export function ColumnHeader({
               const isMulti = e.shiftKey;
               column.toggleSorting(undefined, isMulti);
             }}
-            className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+            className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-foreground transition-colors"
             title="Click to sort, Shift+Click for multi-sort"
           >
             <span className="font-semibold truncate">{title}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
-              {/* FIXED: Icon shows correctly based on sort state */}
               <SortIcon
                 className={`h-4 w-4 ${
-                  isSorted
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-slate-400 dark:text-slate-500"
+                  isSorted ? "text-primary" : "text-muted-foreground"
                 }`}
               />
               {showSortIndex && (
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-4 h-4 flex items-center justify-center">
                   {sortIndex + 1}
                 </span>
               )}
@@ -265,22 +259,16 @@ export function ColumnHeader({
         </DropdownMenu>
       </div>
 
-      {/* Resize Handle - FIXED */}
+      {/* Resize Handle - FIXED: Single handle only */}
       {enableResize && column.getCanResize() && (
         <div
           onMouseDown={handleResizeMouseDown}
           onTouchStart={handleResizeMouseDown}
-          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none hover:bg-blue-500 dark:hover:bg-blue-400 transition-colors ${
-            isResizing ? "bg-blue-500 dark:bg-blue-400" : ""
-          }`}
+          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none ${
+            isResizing ? "bg-primary" : "hover:bg-primary/50"
+          } transition-colors`}
           style={{ userSelect: "none" }}
-        >
-          <div
-            className={`absolute right-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-1 h-12 bg-slate-400 dark:bg-slate-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${
-              isResizing ? "opacity-100 bg-blue-500 dark:bg-blue-400" : ""
-            }`}
-          />
-        </div>
+        />
       )}
     </div>
   );

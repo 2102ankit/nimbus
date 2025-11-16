@@ -1,8 +1,7 @@
 import ThemeProvider from "../components/ThemeProvider";
-import AdvancedDataGrid from "./Table";
+import AdvancedDataGrid from "../components/Datagrid/AdvancedDataGrid";
 
 const App = () => {
-  // return <DataGridDemo />;
   return (
     <ThemeProvider>
       <AdvancedDataGrid />

@@ -1,243 +1,408 @@
-import * as React from "react";
-import { X, ChevronDown } from "lucide-react";
+import React, { useState } from "react";
+import {
+  Search,
+  Download,
+  Settings,
+  Eye,
+  RotateCcw,
+  Sun,
+  Moon,
+  Grid3x3,
+  Rows,
+  Columns,
+  FileSpreadsheet,
+  FileJson,
+  FileDown,
+  Pin,
+  Check,
+  Layers,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+  DropdownMenuCheckboxItem,
+} from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { ActiveFilters } from "./AdvancedColumnFilter";
+import { useTheme } from "../ThemeProvider";
 
-// Minimal inline components
-const Button = ({
-  children,
-  variant = "default",
-  size = "default",
-  className = "",
-  ...props
-}) => {
-  const variants = {
-    default: "bg-slate-900 text-slate-50 hover:bg-slate-900/90",
-    outline: "border border-slate-200 bg-white hover:bg-slate-100",
-    ghost: "hover:bg-slate-100",
-  };
-  const sizes = {
-    default: "h-10 px-4 py-2",
-    sm: "h-8 px-3 text-xs",
-  };
-  return (
-    <button
-      className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-};
+export function DataGridToolbar({
+  table,
+  columns,
+  onExport,
+  onResetPreferences,
+  onRefresh,
+  globalFilter,
+  onGlobalFilterChange,
+}) {
+  const {
+    theme,
+    toggleTheme,
+    density,
+    setDensity,
+    showGridLines,
+    toggleGridLines,
+    showHeaderLines,
+    toggleHeaderLines,
+    showRowLines,
+    toggleRowLines,
+  } = useTheme();
 
-const Input = React.forwardRef(({ className = "", ...props }, ref) => (
-  <input
-    ref={ref}
-    className={`flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 ${className}`}
-    {...props}
-  />
-));
+  const [searchDebounce, setSearchDebounce] = useState(null);
 
-const Select = ({ value, onValueChange, children }) => {
-  const [open, setOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState(value);
-  const SelectContext = React.createContext();
-
-  return (
-    <SelectContext.Provider
-      value={{ open, setOpen, selected, setSelected, onValueChange }}
-    >
-      <div className="relative">{children}</div>
-    </SelectContext.Provider>
-  );
-};
-
-const DropdownMenu = ({ children }) => {
-  const [open, setOpen] = React.useState(false);
-  const DropdownContext = React.createContext();
-
-  return (
-    <DropdownContext.Provider value={{ open, setOpen }}>
-      <div className="relative">{children}</div>
-    </DropdownContext.Provider>
-  );
-};
-
-export function DataGridToolbar({ table, columns }) {
-  const [filterColumn, setFilterColumn] = React.useState("");
-  const [filterValue, setFilterValue] = React.useState("");
-  const [columnVisibility, setColumnVisibility] = React.useState({});
-
-  const filterableColumns = columns.filter(
-    (col) => col.enableColumnFilter !== false
-  );
-  const hasActiveFilters = table.getState().columnFilters.length > 0;
-
-  React.useEffect(() => {
-    setColumnVisibility(table.getState().columnVisibility);
-  }, [table.getState().columnVisibility]);
-
-  const handleGlobalFilter = (e) => {
-    table.setGlobalFilter(e.target.value);
-  };
-
-  const handleColumnFilter = (value) => {
-    if (filterColumn && value) {
-      table.getColumn(filterColumn)?.setFilterValue(value);
-    }
+  const handleGlobalSearch = (value) => {
+    if (searchDebounce) clearTimeout(searchDebounce);
+    const timeout = setTimeout(() => {
+      onGlobalFilterChange(value);
+    }, 300);
+    setSearchDebounce(timeout);
   };
 
   const clearAllFilters = () => {
     table.resetColumnFilters();
-    table.setGlobalFilter("");
-    setFilterValue("");
+    table.resetSorting();
+    table.setGrouping([]);
+    onGlobalFilterChange("");
   };
 
-  const toggleColumnVisibility = (columnId) => {
-    table.getColumn(columnId)?.toggleVisibility();
+  const hasFilters =
+    table.getState().columnFilters.length > 0 ||
+    table.getState().sorting.length > 0 ||
+    table.getState().grouping.length > 0 ||
+    globalFilter;
+
+  const exportData = (format) => {
+    const rows = table.getFilteredRowModel().rows.map((row) => row.original);
+    const visibleColumns = table
+      .getVisibleLeafColumns()
+      .filter(
+        (col) =>
+          col.id !== "select" && col.id !== "actions" && col.id !== "expand",
+      )
+      .map((col) => ({
+        id: col.id,
+        header: col.columnDef.meta?.headerText || col.id,
+      }));
+
+    onExport(format, rows, visibleColumns);
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 border-b">
-      {/* Global Search */}
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Search all columns..."
-          value={table.getState().globalFilter ?? ""}
-          onChange={handleGlobalFilter}
-          className="max-w-sm"
-        />
-
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearAllFilters}
-            className="h-10 px-3"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Clear Filters
-          </Button>
-        )}
-      </div>
-
-      {/* Column Filter & Visibility */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {/* Column Filter */}
-        <div className="flex items-center gap-2">
-          <select
-            value={filterColumn}
-            onChange={(e) => {
-              setFilterColumn(e.target.value);
-              setFilterValue("");
-            }}
-            className="h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
-          >
-            <option value="">Select column to filter...</option>
-            {filterableColumns.map((col) => (
-              <option key={col.id} value={col.id}>
-                {col.header}
-              </option>
-            ))}
-          </select>
-
-          {filterColumn && (
-            <>
-              {filterableColumns.find((c) => c.id === filterColumn)
-                ?.filterVariant === "select" ? (
-                <select
-                  value={filterValue}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFilterValue(val);
-                    handleColumnFilter(val);
-                  }}
-                  className="h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
-                >
-                  <option value="">All</option>
-                  {filterableColumns
-                    .find((c) => c.id === filterColumn)
-                    ?.filterOptions?.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                </select>
-              ) : (
-                <Input
-                  placeholder={`Filter ${filterColumn}...`}
-                  value={filterValue}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFilterValue(val);
-                    handleColumnFilter(val);
-                  }}
-                  className="max-w-xs"
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Column Visibility Toggle */}
-        <div className="relative ml-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              const dropdown = e.currentTarget.nextElementSibling;
-              dropdown.style.display =
-                dropdown.style.display === "none" ? "block" : "none";
-            }}
-          >
-            Columns <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
-
-          <div
-            style={{ display: "none" }}
-            className="absolute right-0 z-50 mt-2 w-48 rounded-md border border-slate-200 bg-white p-2 shadow-md"
-          >
-            {table
-              .getAllColumns()
-              .filter((col) => col.getCanHide())
-              .map((col) => (
-                <label
-                  key={col.id}
-                  className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-slate-100 rounded cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={col.getIsVisible()}
-                    onChange={() => toggleColumnVisibility(col.id)}
-                    className="h-4 w-4"
-                  />
-                  <span className="capitalize">{col.id}</span>
-                </label>
-              ))}
+    <div className="border-b-2 border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+      <div className="flex flex-col gap-4 p-5">
+        {/* Top Row - Search and Actions */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Global Search */}
+          <div className="relative flex-1 min-w-[250px] max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+            <Input
+              placeholder="Search all columns..."
+              defaultValue={globalFilter ?? ""}
+              onChange={(e) => handleGlobalSearch(e.target.value)}
+              className="pl-10 h-11 border-2 shadow-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            />
           </div>
-        </div>
-      </div>
 
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2">
-          {table.getState().columnFilters.map((filter) => (
-            <div
-              key={filter.id}
-              className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm"
+          {/* Theme Toggle - Direct Button */}
+          <Button
+            onClick={toggleTheme}
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+            title={
+              theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
+            }
+          >
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5 text-amber-500" />
+            ) : (
+              <Moon className="h-5 w-5 text-slate-700" />
+            )}
+          </Button>
+
+          {/* Refresh */}
+          {onRefresh && (
+            <Button
+              onClick={onRefresh}
+              variant="outline"
+              size="sm"
+              className="h-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
             >
-              <span className="font-medium">{filter.id}:</span>
-              <span>{filter.value}</span>
-              <button
-                onClick={() =>
-                  table.getColumn(filter.id)?.setFilterValue(undefined)
-                }
-                className="ml-1 hover:text-slate-900"
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          )}
+
+          {/* Reset All */}
+          {hasFilters && (
+            <Button
+              onClick={clearAllFilters}
+              variant="outline"
+              size="sm"
+              className="h-11 border-2 shadow-sm bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset All
+            </Button>
+          )}
+
+          {/* Export Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
               >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 shadow-lg">
+              <DropdownMenuItem
+                onClick={() => exportData("csv")}
+                className="cursor-pointer"
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => exportData("excel")}
+                className="cursor-pointer"
+              >
+                <FileDown className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                Export as Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => exportData("json")}
+                className="cursor-pointer"
+              >
+                <FileJson className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
+                Export as JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* View Settings */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                View
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 shadow-lg">
+              <DropdownMenuLabel className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                DENSITY
+              </DropdownMenuLabel>
+              {["compact", "normal", "comfortable"].map((d) => (
+                <DropdownMenuItem
+                  key={d}
+                  onClick={() => setDensity(d)}
+                  className="cursor-pointer"
+                >
+                  {density === d && (
+                    <Check className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                  )}
+                  <span className={density !== d ? "ml-6" : ""}>
+                    {d.charAt(0).toUpperCase() + d.slice(1)}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuLabel className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                GRID LINES
+              </DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={showGridLines}
+                onCheckedChange={toggleGridLines}
+              >
+                <Grid3x3 className="h-4 w-4 mr-2" />
+                All Grid Lines
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={showHeaderLines}
+                onCheckedChange={toggleHeaderLines}
+              >
+                <Columns className="h-4 w-4 mr-2" />
+                Header Lines
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={showRowLines}
+                onCheckedChange={toggleRowLines}
+              >
+                <Rows className="h-4 w-4 mr-2" />
+                Row Lines
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Column Visibility & Pinning */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-11 border-2 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 shadow-lg">
+              <DropdownMenuLabel className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                COLUMN VISIBILITY & PINNING
+              </DropdownMenuLabel>
+              <div className="max-h-96 overflow-auto">
+                {table
+                  .getAllColumns()
+                  .filter((col) => col.getCanHide())
+                  .map((col) => {
+                    const isPinned = col.getIsPinned();
+                    return (
+                      <div
+                        key={col.id}
+                        className="flex items-center justify-between px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md mx-1 transition-colors"
+                      >
+                        <label className="flex items-center gap-2.5 cursor-pointer flex-1">
+                          <input
+                            type="checkbox"
+                            checked={col.getIsVisible()}
+                            onChange={() => col.toggleVisibility()}
+                            className="h-4 w-4 rounded border-2 border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm capitalize text-slate-700 dark:text-slate-300 font-medium">
+                            {col.id}
+                          </span>
+                        </label>
+                        {col.getCanPin() && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                col.pin(isPinned === "left" ? false : "left");
+                              }}
+                              className={`p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${
+                                isPinned === "left"
+                                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
+                                  : "text-slate-400 dark:text-slate-500"
+                              }`}
+                              title={
+                                isPinned === "left"
+                                  ? "Unpin from left"
+                                  : "Pin to left"
+                              }
+                            >
+                              <Pin className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                col.pin(isPinned === "right" ? false : "right");
+                              }}
+                              className={`p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${
+                                isPinned === "right"
+                                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
+                                  : "text-slate-400 dark:text-slate-500"
+                              }`}
+                              title={
+                                isPinned === "right"
+                                  ? "Unpin from right"
+                                  : "Pin to right"
+                              }
+                            >
+                              <Pin className="h-3.5 w-3.5 rotate-90" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onResetPreferences}
+                className="cursor-pointer text-red-600 dark:text-red-400 font-medium"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset All Preferences
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Grouping */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={`h-11 border-2 shadow-sm ${
+                  table.getState().grouping.length > 0
+                    ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400"
+                    : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+              >
+                <Layers className="h-4 w-4 mr-2" />
+                Group
+                {table.getState().grouping.length > 0 &&
+                  ` (${table.getState().grouping.length})`}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 shadow-lg">
+              <DropdownMenuLabel className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                GROUP BY COLUMN
+              </DropdownMenuLabel>
+              {table
+                .getAllColumns()
+                .filter((col) => col.getCanGroup && col.getCanGroup())
+                .map((col) => {
+                  const isGrouped = table.getState().grouping.includes(col.id);
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={col.id}
+                      checked={isGrouped}
+                      onCheckedChange={() => {
+                        const grouping = table.getState().grouping;
+                        table.setGrouping(
+                          isGrouped
+                            ? grouping.filter((g) => g !== col.id)
+                            : [...grouping, col.id],
+                        );
+                      }}
+                    >
+                      <span className="capitalize">{col.id}</span>
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+              {table.getState().grouping.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => table.setGrouping([])}
+                    className="cursor-pointer text-red-600 dark:text-red-400 font-medium"
+                  >
+                    Clear All Grouping
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      )}
+
+        {/* Active Filters */}
+        <ActiveFilters table={table} columns={columns} />
+      </div>
     </div>
   );
 }
