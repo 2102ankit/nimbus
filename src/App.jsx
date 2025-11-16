@@ -1,5 +1,5 @@
-import ThemeProvider from "../components/ThemeProvider";
-import AdvancedDataGrid from "../components/Datagrid/AdvancedDataGrid";
+import ThemeProvider from "@/components/ThemeProvider";
+import AdvancedDataGrid from "@/components/Datagrid/AdvancedDataGrid";
 
 const App = () => {
   return (

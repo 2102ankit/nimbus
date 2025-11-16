@@ -5,7 +5,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 
 export function DataGridPagination({ table }) {
   const pageSize = table.getState().pagination.pageSize;

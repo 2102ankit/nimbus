@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { ColumnHeader } from "../Datagrid/ColumnHeader";
-import { Badge } from "../ui/badge";
-import { Checkbox } from "../ui/checkbox";
+import { ColumnHeader } from "@/components/Datagrid/ColumnHeader";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const createColumns = () => [
   {

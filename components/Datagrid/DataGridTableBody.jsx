@@ -2,7 +2,7 @@ import React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { flexRender } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, Layers, Loader2 } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 
 // Loading State Component
 export function LoadingState() {

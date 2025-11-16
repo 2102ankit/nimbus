@@ -8,16 +8,16 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DataGridInfoPanel } from "../Datagrid/DataGridInfoPanel";
-import { DataGridPagination } from "../Datagrid/DataGridPagination";
-import { DataGridStatusBar } from "../Datagrid/DataGridStatusBar";
-import { DataGridTableBody } from "../Datagrid/DataGridTableBody";
-import { DataGridTableHeader } from "../Datagrid/DataGridTableHeader";
-import { DataGridToolbar } from "../Datagrid/DataGridToolbar";
+import { DataGridInfoPanel } from "@/components/Datagrid/DataGridInfoPanel";
+import { DataGridPagination } from "@/components/Datagrid/DataGridPagination";
+import { DataGridStatusBar } from "@/components/Datagrid/DataGridStatusBar";
+import { DataGridTableBody } from "@/components/Datagrid/DataGridTableBody";
+import { DataGridTableHeader } from "@/components/Datagrid/DataGridTableHeader";
+import { DataGridToolbar } from "@/components/Datagrid/DataGridToolbar";
 import {
   addHeadersToColumns,
   createColumns,
-} from "../Datagrid/columnDefinitions";
+} from "@/components/Datagrid/columnDefinitions";
 import {
   advancedFilterFn,
   exportToCSV,
@@ -28,9 +28,9 @@ import {
   loadPreferences,
   resetPreferences,
   savePreferences,
-} from "../Datagrid/dataGridUtils";
-import { generateSampleData } from "../Datagrid/sampleDataGenerator";
-import { useTheme } from "../ThemeProvider";
+} from "@/components/Datagrid/dataGridUtils";
+import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
+import { useTheme } from "@/components/ThemeProvider";
 
 const AdvancedDataGrid = () => {
   const { density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -232,14 +232,15 @@ const AdvancedDataGrid = () => {
         {/* Header */}
         <div className="mb-6 w-full text-center">
           <h1 className="text-4xl font-black mb-2 bg-clip-text text-primary">
-            Advanced Enterprise DataGrid
+            Nimbus - Advanced Enterprise DataGrid
           </h1>
           <p
             className="text-md max-w-2xl mx-auto tracking-tighter leading-tight"
             style={{ color: "var(--color-muted-foreground)" }}
           >
             Complete table with Advanced Filters, Multi-Column Sort, Column
-            Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
+            Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation &
+            More
           </p>
         </div>
 
@@ -294,6 +295,8 @@ const AdvancedDataGrid = () => {
         <div className="mt-6">
           <DataGridInfoPanel />
         </div>
+
+        <div className="text-center mt-2">Built with 💌 by Ankit Mishra</div>
       </div>
     </div>
   );

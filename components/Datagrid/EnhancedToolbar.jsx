@@ -25,11 +25,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
   DropdownMenuCheckboxItem,
-} from "../ui/dropdown-menu";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { ActiveFilters } from "../Datagrid/AdvancedColumnFilter";
-import { useTheme } from "../ThemeProvider";
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ActiveFilters } from "@/components/Datagrid/AdvancedColumnFilter";
+import { useTheme } from "@/components/ThemeProvider";
 
 export function EnhancedToolbar({
   table,

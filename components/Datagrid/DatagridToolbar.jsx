@@ -17,8 +17,8 @@ import {
   Sun,
 } from "lucide-react";
 import { useState } from "react";
-import { useTheme } from "../ThemeProvider";
-import { Button } from "../ui/button";
+import { useTheme } from "@/components/ThemeProvider";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -27,8 +27,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Input } from "../ui/input";
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { ActiveFilters } from "./AdvancedColumnFilter";
 
 export function DataGridToolbar({
