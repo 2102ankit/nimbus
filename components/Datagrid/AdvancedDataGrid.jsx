@@ -192,11 +192,11 @@ const AdvancedDataGrid = () => {
   const getDensityPadding = () => {
     switch (density) {
       case "compact":
-        return "p-2";
+        return "py-1 px-2";
       case "comfortable":
-        return "p-6";
-      default:
         return "p-4";
+      default:
+        return "py-2 px-4";
     }
   };
 
@@ -225,7 +225,7 @@ const AdvancedDataGrid = () => {
 
   return (
     <div
-      className="w-full min-h-screen transition-colors p-8"
+      className="w-full min-h-screen transition-colors p-8 pt-4"
       style={{ backgroundColor: "var(--color-background)" }}
     >
       <div className="max-w-[1600px] mx-auto">
@@ -235,11 +235,11 @@ const AdvancedDataGrid = () => {
             Advanced Enterprise DataGrid
           </h1>
           <p
-            className="text-lg max-w-2xl mx-auto tracking-tighter leading-tight"
+            className="text-md max-w-2xl mx-auto tracking-tighter leading-tight"
             style={{ color: "var(--color-muted-foreground)" }}
           >
             Complete table with Advanced Filters, Multi-Column Sort, Column
-            Reordering, Pinning, Resizing, Row Expansion, Grouping & More
+            Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
           </p>
         </div>
 
@@ -261,10 +261,7 @@ const AdvancedDataGrid = () => {
             onGlobalFilterChange={setGlobalFilter}
           />
 
-          <div
-            className="relative overflow-auto"
-            style={{ maxHeight: "600px" }}
-          >
+          <div className="relative overflow-auto" style={{ maxHeight: "60vh" }}>
             <table className="w-full text-sm border-collapse">
               <DataGridTableHeader
                 table={table}

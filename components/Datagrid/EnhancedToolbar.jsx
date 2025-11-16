@@ -128,15 +128,8 @@ export function EnhancedToolbar({
               onClick={onRefresh}
               variant="outline"
               size="sm"
-              className="border-2 shadow-sm"
+              className="border-2 shadow-sm bg-background"
               style={{ borderColor: "var(--color-border)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor =
-                  "color-mix(in oklch, var(--color-muted), transparent 90%)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Refresh
@@ -149,22 +142,7 @@ export function EnhancedToolbar({
               onClick={clearAllFilters}
               variant="outline"
               size="sm"
-              className="border-2 shadow-sm"
-              style={{
-                backgroundColor:
-                  "color-mix(in oklch, var(--color-destructive), transparent 90%)",
-                color: "var(--color-destructive)",
-                borderColor:
-                  "color-mix(in oklch, var(--color-destructive), transparent 70%)",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor =
-                  "color-mix(in oklch, var(--color-destructive), transparent 80%)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor =
-                  "color-mix(in oklch, var(--color-destructive), transparent 90%)")
-              }
+              className="border-2 shadow-sm bg-background"
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset All
@@ -177,15 +155,8 @@ export function EnhancedToolbar({
               <Button
                 variant="outline"
                 size="sm"
-                className="border-2 shadow-sm"
+                className="border-2 shadow-sm bg-background"
                 style={{ borderColor: "var(--color-border)" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export
@@ -231,15 +202,7 @@ export function EnhancedToolbar({
               <Button
                 variant="outline"
                 size="sm"
-                className="border-2 shadow-sm"
-                style={{ borderColor: "var(--color-border)" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
+                className="border-2 shadow-sm bg-background"
               >
                 <Settings className="h-4 w-4 mr-2" />
                 View
@@ -331,15 +294,7 @@ export function EnhancedToolbar({
               <Button
                 variant="outline"
                 size="sm"
-                className="border-2 shadow-sm"
-                style={{ borderColor: "var(--color-border)" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
+                className="border-2 shadow-sm bg-background"
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Columns
@@ -358,18 +313,10 @@ export function EnhancedToolbar({
                     return (
                       <div
                         key={col.id}
-                        className="flex items-center justify-between px-2 py-2 rounded"
+                        className="flex items-center justify-between px-2 py-2 rounded bg-background"
                         style={{
                           backgroundColor: "transparent",
                         }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.backgroundColor =
-                            "color-mix(in oklch, var(--color-muted), transparent 90%)")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.backgroundColor =
-                            "transparent")
-                        }
                       >
                         <label className="flex items-center gap-2 cursor-pointer flex-1">
                           <input
@@ -396,27 +343,7 @@ export function EnhancedToolbar({
                                 e.stopPropagation();
                                 col.pin(isPinned === "left" ? false : "left");
                               }}
-                              className="p-1 rounded transition-colors"
-                              style={{
-                                backgroundColor:
-                                  isPinned === "left"
-                                    ? "color-mix(in oklch, var(--color-primary), transparent 90%)"
-                                    : "transparent",
-                                color:
-                                  isPinned === "left"
-                                    ? "var(--color-primary)"
-                                    : "var(--color-muted-foreground)",
-                              }}
-                              onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  "color-mix(in oklch, var(--color-muted), transparent 80%)")
-                              }
-                              onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  isPinned === "left"
-                                    ? "color-mix(in oklch, var(--color-primary), transparent 90%)"
-                                    : "transparent")
-                              }
+                              className="p-1 rounded transition-colors bg-background"
                               title={
                                 isPinned === "left"
                                   ? "Unpin from left"
@@ -430,27 +357,7 @@ export function EnhancedToolbar({
                                 e.stopPropagation();
                                 col.pin(isPinned === "right" ? false : "right");
                               }}
-                              className="p-1 rounded transition-colors"
-                              style={{
-                                backgroundColor:
-                                  isPinned === "right"
-                                    ? "color-mix(in oklch, var(--color-primary), transparent 90%)"
-                                    : "transparent",
-                                color:
-                                  isPinned === "right"
-                                    ? "var(--color-primary)"
-                                    : "var(--color-muted-foreground)",
-                              }}
-                              onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  "color-mix(in oklch, var(--color-muted), transparent 80%)")
-                              }
-                              onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  isPinned === "right"
-                                    ? "color-mix(in oklch, var(--color-primary), transparent 90%)"
-                                    : "transparent")
-                              }
+                              className="p-1 rounded transition-colors bg-background"
                               title={
                                 isPinned === "right"
                                   ? "Unpin from right"
@@ -483,30 +390,7 @@ export function EnhancedToolbar({
               <Button
                 variant="outline"
                 size="sm"
-                className="border-2 shadow-sm"
-                style={{
-                  backgroundColor:
-                    table.getState().grouping.length > 0
-                      ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
-                      : "transparent",
-                  color:
-                    table.getState().grouping.length > 0
-                      ? "var(--color-primary)"
-                      : "var(--color-foreground)",
-                  borderColor:
-                    table.getState().grouping.length > 0
-                      ? "color-mix(in oklch, var(--color-primary), transparent 70%)"
-                      : "var(--color-border)",
-                }}
-                onMouseEnter={(e) =>
-                  !table.getState().grouping.length &&
-                  (e.currentTarget.style.backgroundColor =
-                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
-                }
-                onMouseLeave={(e) =>
-                  !table.getState().grouping.length &&
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
+                className="border-2 shadow-sm bg-background"
               >
                 <Layers className="h-4 w-4 mr-2" />
                 Group

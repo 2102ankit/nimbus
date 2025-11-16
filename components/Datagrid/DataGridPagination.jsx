@@ -22,7 +22,7 @@ export function DataGridPagination({ table }) {
 
   return (
     <div
-      className="flex items-center justify-between px-5 py-4 border-t-2"
+      className="flex items-center justify-between px-5 py-1 border-t-2"
       style={{
         background: `var(--color-muted)`,
         borderTopColor: "var(--color-border)",
