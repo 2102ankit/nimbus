@@ -139,7 +139,7 @@ export function ColumnHeader({
             title="Click to sort, Shift+Click for multi-sort"
           >
             <span className="font-semibold truncate">{title}</span>
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               <SortIcon
                 className={`h-4 w-4 ${
                   isSorted ? "text-primary" : "text-muted-foreground"
@@ -158,7 +158,7 @@ export function ColumnHeader({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
         {/* Filter */}
         {enableFilter && (
           <AdvancedColumnFilter column={column} dataType={dataType} />

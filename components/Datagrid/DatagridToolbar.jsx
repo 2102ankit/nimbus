@@ -309,7 +309,7 @@ export function DataGridToolbar({
                               type="checkbox"
                               checked={col.getIsVisible()}
                               onChange={() => col.toggleVisibility()}
-                              className="h-4 w-4 rounded border-2 text-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-ring)]"
+                              className="h-4 w-4 rounded border-2 text-(--color-primary) focus:ring-2 focus:ring-(--color-ring)"
                               style={{
                                 borderColor: "var(--color-border)",
                               }}

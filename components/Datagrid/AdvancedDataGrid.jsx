@@ -207,7 +207,7 @@ const AdvancedDataGrid = () => {
     const borders = [];
     if (showRowLines) borders.push("border-b");
     if (showGridLines) borders.push("border-r");
-    return borders.join(" ") + " border-[var(--color-border)]";
+    return borders.join(" ") + " border-(--color-border)";
   };
 
   const getHeaderBorderClasses = () => {

@@ -315,7 +315,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
 
           {needsSecondInput && (
             <div>
-              <label className="text-xs font-semibold text-[var(--color-foreground)] mb-1 block">
+              <label className="text-xs font-semibold text-(--color-foreground) mb-1 block">
                 {dataType === "date" ? "To" : "Max"}
               </label>
               <Input
@@ -323,7 +323,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
                 value={value2}
                 onChange={(e) => setValue2(e.target.value)}
                 placeholder={`Enter ${dataType}...`}
-                className="mt-1 border-[var(--color-border)] focus:ring-[var(--color-ring)]"
+                className="mt-1 border focus:ring-(--color-ring)"
                 style={{
                   backgroundColor: "var(--color-card)",
                   color: "var(--color-foreground)",
@@ -336,7 +336,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
             <Button
               onClick={applyFilter}
               size="sm"
-              className="flex-1 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:bg-[var(--color-primary)/0.9]"
+              className="flex-1 bg-(--color-primary) text-(--color-primary-foreground) hover:bg-[var(--color-primary)/0.9]"
               disabled={!needsNoInput && !value && operator !== "between"}
             >
               Apply Filter
@@ -345,7 +345,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
               onClick={clearFilter}
               variant="outline"
               size="sm"
-              className="flex-1 border-[var(--color-border)] text-[var(--color-foreground)]"
+              className="flex-1 border-(--color-border) text-(--color-foreground)"
             >
               Clear
             </Button>
@@ -364,7 +364,7 @@ export function ActiveFilters({ table, columns }) {
 
   return (
     <div className="flex flex-wrap gap-2 px-4 pb-3">
-      <span className="text-xs font-semibold text-[var(--color-muted-foreground)] flex items-center">
+      <span className="text-xs font-semibold text-(--color-muted-foreground) flex items-center">
         Active filters:
       </span>
       <AnimatePresence>
