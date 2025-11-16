@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -7,8 +6,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { motion, AnimatePresence } from "motion/react";
 import { Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import * as React from "react";
 
 // Minimal Table Components
 const Table = ({ children, className = "" }) => (
@@ -24,7 +24,9 @@ const TableHeader = ({ children, className = "" }) => (
 );
 
 const TableBody = ({ children, className = "" }) => (
-  <tbody className={`[&_tr:last-child]:border-0 ${className}`}>{children}</tbody>
+  <tbody className={`[&_tr:last-child]:border-0 ${className}`}>
+    {children}
+  </tbody>
 );
 
 const TableRow = ({ children, className = "", ...props }) => (
@@ -58,7 +60,7 @@ const Checkbox = ({ checked, onCheckedChange, ...props }) => {
   const handleChange = (e) => {
     onCheckedChange?.(e.target.checked);
   };
-  
+
   return (
     <div className="flex items-center">
       <input
@@ -94,7 +96,9 @@ const EmptyState = () => (
         />
       </svg>
     </div>
-    <h3 className="text-lg font-semibold text-slate-900 mb-1">No results found</h3>
+    <h3 className="text-lg font-semibold text-slate-900 mb-1">
+      No results found
+    </h3>
     <p className="text-sm text-slate-500">
       Try adjusting your search or filter to find what you're looking for.
     </p>
@@ -131,18 +135,20 @@ export function DataGrid({
   const [columnVisibility, setColumnVisibility] = React.useState({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [globalFilter, setGlobalFilter] = React.useState("");
-  
+
   // Build columns with selection if enabled
   const tableColumns = React.useMemo(() => {
     const cols = [...columns];
-    
+
     if (enableRowSelection) {
       cols.unshift({
         id: "select",
         header: ({ table }) => (
           <Checkbox
             checked={table.getIsAllPageRowsSelected()}
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
             aria-label="Select all"
           />
         ),
@@ -157,10 +163,10 @@ export function DataGrid({
         enableHiding: false,
       });
     }
-    
+
     return cols;
   }, [columns, enableRowSelection]);
-  
+
   const table = useReactTable({
     data,
     columns: tableColumns,
@@ -175,7 +181,8 @@ export function DataGrid({
     onRowSelectionChange: (updater) => {
       setRowSelection(updater);
       if (onRowSelectionChange) {
-        const newSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
+        const newSelection =
+          typeof updater === "function" ? updater(rowSelection) : updater;
         onRowSelectionChange(newSelection);
       }
     },
@@ -193,14 +200,14 @@ export function DataGrid({
       },
     },
   });
-  
+
   const isEmpty = table.getFilteredRowModel().rows.length === 0;
-  
+
   return (
     <div className="w-full border rounded-lg bg-white shadow-sm">
       {/* Toolbar */}
       {renderToolbar && renderToolbar(table, columns)}
-      
+
       {/* Table */}
       <div className="relative">
         <Table>
@@ -260,9 +267,13 @@ export function DataGrid({
           </TableBody>
         </Table>
       </div>
-      
+
       {/* Pagination */}
-      {enablePagination && !loading && !isEmpty && renderPagination && renderPagination(table)}
+      {enablePagination &&
+        !loading &&
+        !isEmpty &&
+        renderPagination &&
+        renderPagination(table)}
     </div>
   );
 }
