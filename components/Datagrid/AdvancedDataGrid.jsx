@@ -182,10 +182,10 @@ const AdvancedDataGrid = () => {
   });
 
   // Keyboard shortcuts using react-hotkeys-hook (after table initialization)
-  useHotkeys('/', (e) => {
+  useHotkeys('slash', (e) => {
     e.preventDefault();
     searchInputRef.current?.focus();
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: true });
 
   useHotkeys('shift+r, R', (e) => {
     e.preventDefault();
@@ -259,17 +259,22 @@ const AdvancedDataGrid = () => {
     }
   }, { enableOnFormTags: false });
 
+  useHotkeys('d', () => toggleTheme(), { enableOnFormTags: false });
+
   useHotkeys('i', () => setShowShortcutsModal((v) => !v), { enableOnFormTags: false });
 
   useHotkeys('f', () => setIsFullscreen((v) => !v), { enableOnFormTags: false });
 
   useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
-  useHotkeys('esc', () => {
-    if (isFullscreen) {
-      setIsFullscreen(false);
-    }
-  }, { enableOnFormTags: false });
+useHotkeys('esc', (e) => {
+  // e.preventDefault();
+  if (document.activeElement === searchInputRef.current) {
+    searchInputRef.current?.blur();
+  } else if (isFullscreen) {
+    setIsFullscreen(false);
+  }
+}, { enableOnFormTags: true });
 
   useHotkeys('pageup', (e) => {
     e.preventDefault();
@@ -490,7 +495,9 @@ const AdvancedDataGrid = () => {
           {/* Footer Credit */}
           {!isFullscreen && (
             <div className="text-center mt-6 text-sm text-muted-foreground">
-              Built with love by Ankit Mishra • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
+              Built with ❤️ by {" "}
+              <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
+              • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
             </div>
           )}
         </div>
