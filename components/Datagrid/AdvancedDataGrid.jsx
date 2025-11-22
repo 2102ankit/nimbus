@@ -73,6 +73,11 @@ const AdvancedDataGrid = () => {
   const rowsButtonRef = useRef(null);
   const exportButtonRef = useRef(null);
 
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+  const [groupMenuOpen, setGroupMenuOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
   // Save preferences automatically
   const handleSavePrefs = useCallback(
     (newPrefs) => {
@@ -194,30 +199,21 @@ const AdvancedDataGrid = () => {
 
   useHotkeys('v', (e) => {
     e.preventDefault();
-    viewButtonRef.current?.click();
-  }, { enableOnFormTags: false });
-
-  useHotkeys('c', (e) => {
-    e.preventDefault();
-    if (exportMode === 'export') {
-      const rows = table.getFilteredRowModel().rows.map(r => r.original);
-      const cols = table.getVisibleLeafColumns()
-        .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
-        .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
-      exportToCSV(rows, cols);
-      setExportMode(null);
-    } else {
-      columnsButtonRef.current?.click();
-    }
+    setViewMenuOpen((v) => !v);
   }, { enableOnFormTags: false });
 
   useHotkeys('g', (e) => {
     e.preventDefault();
-    groupButtonRef.current?.click();
+    setGroupMenuOpen((v) => !v);
   }, { enableOnFormTags: false });
 
   useHotkeys('e', () => {
-    if (exportMode === 'export') {
+    if (exportMenuOpen) {
+      // Menu is open, close it without exporting
+      setExportMenuOpen(false);
+      setExportMode(null);
+    } else if (exportMode === 'export') {
+      // Menu was just closed, now export
       const rows = table.getFilteredRowModel().rows.map(r => r.original);
       const cols = table.getVisibleLeafColumns()
         .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
@@ -225,14 +221,35 @@ const AdvancedDataGrid = () => {
       exportToExcel(rows, cols);
       setExportMode(null);
     } else {
-      exportButtonRef.current?.click();
+      // Open menu and set export mode
+      setExportMenuOpen(true);
       setExportMode('export');
-      setTimeout(() => setExportMode(null), 3000);
+      setTimeout(() => {
+        if (!exportMenuOpen) {
+          setExportMode(null);
+        }
+      }, 3000);
+    }
+  }, { enableOnFormTags: false });
+
+  useHotkeys('c', (e) => {
+    e.preventDefault();
+    if (!exportMenuOpen) {
+      if (exportMode === 'export') {
+        const rows = table.getFilteredRowModel().rows.map(r => r.original);
+        const cols = table.getVisibleLeafColumns()
+          .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
+          .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
+        exportToCSV(rows, cols);
+        setExportMode(null);
+      } else {
+        setColumnsMenuOpen((v) => !v);
+      }
     }
   }, { enableOnFormTags: false });
 
   useHotkeys('j', () => {
-    if (exportMode === 'export') {
+    if (exportMode === 'export' && !exportMenuOpen) {
       const rows = table.getFilteredRowModel().rows.map(r => r.original);
       const cols = table.getVisibleLeafColumns()
         .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
@@ -411,6 +428,14 @@ const AdvancedDataGrid = () => {
               columnsButtonRef={columnsButtonRef}
               groupButtonRef={groupButtonRef}
               exportButtonRef={exportButtonRef}
+              viewMenuOpen={viewMenuOpen}
+              setViewMenuOpen={setViewMenuOpen}
+              columnsMenuOpen={columnsMenuOpen}
+              setColumnsMenuOpen={setColumnsMenuOpen}
+              groupMenuOpen={groupMenuOpen}
+              setGroupMenuOpen={setGroupMenuOpen}
+              exportMenuOpen={exportMenuOpen}
+              setExportMenuOpen={setExportMenuOpen}
               extraButtons={
                 <Button
                   variant="ghost"

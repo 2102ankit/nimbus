@@ -44,6 +44,14 @@ export function DataGridToolbar({
   onRefresh,
   globalFilter,
   onGlobalFilterChange,
+  viewMenuOpen,
+  setViewMenuOpen,
+  columnsMenuOpen,
+  setColumnsMenuOpen,
+  groupMenuOpen,
+  setGroupMenuOpen,
+  exportMenuOpen,
+  setExportMenuOpen,
   extraButtons
 }) {
   const {
@@ -159,7 +167,7 @@ export function DataGridToolbar({
             )}
 
             {/* Export Menu */}
-            <DropdownMenu>
+            <DropdownMenu open={exportMenuOpen} onOpenChange={setExportMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
@@ -206,7 +214,7 @@ export function DataGridToolbar({
             </DropdownMenu>
 
             {/* View Settings */}
-            <DropdownMenu>
+            <DropdownMenu open={viewMenuOpen} onOpenChange={setViewMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
@@ -269,7 +277,7 @@ export function DataGridToolbar({
             </DropdownMenu>
 
             {/* Column Visibility & Pinning */}
-            <DropdownMenu>
+            <DropdownMenu open={columnsMenuOpen} onOpenChange={setColumnsMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
@@ -355,7 +363,7 @@ export function DataGridToolbar({
             </DropdownMenu>
 
             {/* Grouping */}
-            <DropdownMenu>
+            <DropdownMenu open={groupMenuOpen} onOpenChange={setGroupMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
