@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
+import { HotkeyLabel } from "./HotkeyLabel";
 
 export function DataGridToolbar({
   table,
@@ -44,6 +45,7 @@ export function DataGridToolbar({
   onRefresh,
   globalFilter,
   onGlobalFilterChange,
+  searchInputRef,
   viewMenuOpen,
   setViewMenuOpen,
   columnsMenuOpen,
@@ -124,8 +126,9 @@ export function DataGridToolbar({
               style={{ color: "var(--color-muted-foreground)" }}
             />
             <Input
-              placeholder="Search all columns..."
-              defaultValue={globalFilter ?? ""}
+              ref={searchInputRef}
+              placeholder="(/) Search all columns..."
+              value={globalFilter ?? ""}
               onChange={(e) => handleGlobalSearch(e.target.value)}
               className="pl-10 h-11 border-2 shadow-sm focus:ring-2"
               style={{
@@ -148,7 +151,7 @@ export function DataGridToolbar({
                 style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Refresh
+                <HotkeyLabel hotkey={"R"}>Refresh</HotkeyLabel>
               </Button>
             )}
 
@@ -176,7 +179,7 @@ export function DataGridToolbar({
                   style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Export
+                  <HotkeyLabel hotkey={"E"}>Export</HotkeyLabel>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 shadow-lg">
@@ -223,7 +226,7 @@ export function DataGridToolbar({
                   style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Settings className="h-4 w-4 mr-2" />
-                  View
+                  <HotkeyLabel hotkey={"V"}>View</HotkeyLabel>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 shadow-lg">
@@ -286,7 +289,7 @@ export function DataGridToolbar({
                   style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Eye className="h-4 w-4 mr-2" />
-                  Columns
+                  <HotkeyLabel hotkey={"C"}>Columns</HotkeyLabel>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-72 shadow-lg overflow-hidden">
@@ -372,7 +375,7 @@ export function DataGridToolbar({
                   style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Layers className="h-4 w-4 mr-2" />
-                  Group
+                  <HotkeyLabel hotkey={"G"}>Group</HotkeyLabel>
                   {table.getState().grouping.length > 0 &&
                     ` (${table.getState().grouping.length})`}
                 </Button>
