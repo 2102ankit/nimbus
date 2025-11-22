@@ -170,4 +170,23 @@
 
 body {
   letter-spacing: var(--tracking-normal);
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* better on mobile */
+  overflow: visible !important;
+}
+
+html {
+  height: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }

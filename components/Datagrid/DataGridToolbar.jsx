@@ -40,6 +40,7 @@ export function DataGridToolbar({
   onRefresh,
   globalFilter,
   onGlobalFilterChange,
+  extraButtons
 }) {
   const {
     density,
@@ -452,6 +453,7 @@ export function DataGridToolbar({
                 />
               )}
             </Button> */}
+            {extraButtons}
           </div>
         </div>
 

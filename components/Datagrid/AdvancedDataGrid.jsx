@@ -1,13 +1,11 @@
-import { DataGridPagination } from "@/components/Datagrid/DataGridPagination";
-import { DataGridStatusBar } from "@/components/Datagrid/DataGridStatusBar";
-import { DataGridTableBody } from "@/components/Datagrid/DataGridTableBody";
-import { DataGridTableHeader } from "@/components/Datagrid/DataGridTableHeader";
-import { DataGridToolbar } from "@/components/Datagrid/DataGridToolbar";
-import { KeyboardShortcutsModal } from "@/components/Datagrid/KeyboardShortcutsModal";
 import {
   addHeadersToColumns,
   createColumns,
 } from "@/components/Datagrid/columnDefinitions";
+import { DataGridPagination } from "@/components/Datagrid/DataGridPagination";
+import { DataGridTableBody } from "@/components/Datagrid/DataGridTableBody";
+import { DataGridTableHeader } from "@/components/Datagrid/DataGridTableHeader";
+import { DataGridToolbar } from "@/components/Datagrid/DataGridToolbar";
 import {
   advancedFilterFn,
   exportToCSV,
@@ -19,6 +17,7 @@ import {
   resetPreferences,
   savePreferences,
 } from "@/components/Datagrid/dataGridUtils";
+import { KeyboardShortcutsModal } from "@/components/Datagrid/KeyboardShortcutsModal";
 import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -31,10 +30,11 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Moon, Sun } from "lucide-react";
-import { AnimatePresence } from "motion/react";
+import { Maximize2, Minimize2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import StatusBarModal from "./StatusBarModal";
 
 const AdvancedDataGrid = () => {
   const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -61,6 +61,9 @@ const AdvancedDataGrid = () => {
   );
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [exportMode, setExportMode] = useState(null);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
 
   // Refs for keyboard shortcuts
   const searchInputRef = useRef(null);
@@ -239,7 +242,11 @@ const AdvancedDataGrid = () => {
     }
   }, { enableOnFormTags: false });
 
-  useHotkeys('i', () => setShowShortcutsModal(true), { enableOnFormTags: false });
+  useHotkeys('i', () => setShowShortcutsModal((v) => !v), { enableOnFormTags: false });
+
+  useHotkeys('f', () => setIsFullscreen((v) => !v), { enableOnFormTags: false });
+
+  useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
   useHotkeys('pageup', (e) => {
     e.preventDefault();
@@ -321,81 +328,102 @@ const AdvancedDataGrid = () => {
 
   return (
     <div
-      className="w-full min-h-screen transition-colors p-8 pt-4 relative"
+      className="w-full min-h-screen transition-colors relative scrollbar-hide"
       style={{ backgroundColor: "var(--color-background)" }}
     >
-      {/* Dark Mode Toggle - Top Right */}
-      <div className="fixed top-6 right-6 z-50">
-        <Button
-          onClick={toggleTheme}
-          variant="outline"
-          size="icon"
-          className="h-11 w-11 border-2 shadow-lg transition-all bg-card"
-          style={{
-            borderColor: "var(--color-border)",
-          }}
-          title={
-            theme === "dark"
-              ? "Switch to Light Mode"
-              : "Switch to Dark Mode"
-          }
-        >
-          {theme === "dark" ? (
-            <Sun
-              className="h-5 w-5"
-              style={{ color: "var(--color-chart-3)" }}
-            />
-          ) : (
-            <Moon
-              className="h-5 w-5"
-              style={{ color: "var(--color-foreground)" }}
-            />
-          )}
-        </Button>
-      </div>
+      {/* Main Content */}
+      <motion.div
+        layout
+        className="w-full relative z-10"
+        animate={{
+          padding: isFullscreen ? "0" : "0.5rem 2rem",
+          marginTop: isFullscreen ? "0" : "0",
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <div className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}>
+          {/* Header - Hidden in fullscreen */}
+          <AnimatePresence>
+            {!isFullscreen && (
+              <motion.div
+                initial={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                transition={{ duration: 0.3 }}
+                className="mb-4 w-full text-center"
+              >
+                <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
+                  Nimbus - Advanced Enterprise DataGrid
+                </h1>
+                <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
+                  Complete table with Advanced Filters, Multi-Column Sort, Column Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      <div className="max-w-[1600px] mx-auto">
-        {/* Header */}
-        <div className="mb-6 w-full text-center">
-          <h1 className="text-4xl font-black mb-2 bg-clip-text text-primary">
-            Nimbus - Advanced Enterprise DataGrid
-          </h1>
-          <p
-            className="text-md max-w-2xl mx-auto tracking-tighter leading-tight"
-            style={{ color: "var(--color-muted-foreground)" }}
+          {/* Table Card */}
+          <motion.div
+            layout="position"
+            className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            style={{
+              backgroundColor: "var(--color-card)",
+              borderColor: "var(--color-border)",
+              height: isFullscreen ? "100dvh" : "auto",
+              maxHeight: isFullscreen ? "none" : "80vh",
+            }}
+            animate={{
+              borderRadius: isFullscreen ? "0" : "12px",
+              // boxShadow: isFullscreen
+              //   ? "0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)"
+              //   : "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            }}
+            // transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            transition={{
+              layout: { duration: 0, stiffness: 0 }, // disable layout animation
+              borderRadius: {
+                type: "spring",
+                stiffness: 300,
+                damping: 30
+              },
+            }}
           >
-            Complete table with Advanced Filters, Multi-Column Sort, Column
-            Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation &
-            More
-          </p>
-        </div>
+            {/* Toolbar with Fullscreen Toggle */}
+            <DataGridToolbar
+              table={table}
+              columns={columns}
+              onExport={handleExport}
+              onResetPreferences={handleResetPreferences}
+              onRefresh={loadData}
+              globalFilter={globalFilter}
+              onGlobalFilterChange={setGlobalFilter}
+              searchInputRef={searchInputRef}
+              viewButtonRef={viewButtonRef}
+              columnsButtonRef={columnsButtonRef}
+              groupButtonRef={groupButtonRef}
+              exportButtonRef={exportButtonRef}
+              extraButtons={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                  className="h-11 border-2 shadow-sm bg-background color-foreground border-border"
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="h-4 w-4" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4" />
+                  )}
+                </Button>
 
-        {/* Main Table Container */}
-        <div
-          className="border-2 rounded-xl shadow-2xl overflow-hidden"
-          style={{
-            backgroundColor: "var(--color-card)",
-            borderColor: "var(--color-border)",
-          }}
-        >
-          <DataGridToolbar
-            table={table}
-            columns={columns}
-            onExport={handleExport}
-            onResetPreferences={handleResetPreferences}
-            onRefresh={loadData}
-            globalFilter={globalFilter}
-            onGlobalFilterChange={setGlobalFilter}
-            searchInputRef={searchInputRef}
-            viewButtonRef={viewButtonRef}
-            columnsButtonRef={columnsButtonRef}
-            groupButtonRef={groupButtonRef}
-            exportButtonRef={exportButtonRef}
-          />
+              }
+            />
 
-          <div className="relative overflow-auto" style={{ maxHeight: "60vh" }}>
-            <table className="w-full text-sm border-collapse">
-              <AnimatePresence mode="wait">
+            {/* Scrollable Table */}
+            <div
+              className="flex-1 overflow-auto min-h-0"
+            >
+              <table className="w-full text-sm border-collapse">
                 <DataGridTableHeader
                   table={table}
                   getDensityPadding={getDensityPadding}
@@ -412,28 +440,28 @@ const AdvancedDataGrid = () => {
                   getLeftPosition={getLeftPos}
                   getRightPosition={getRightPos}
                 />
-              </AnimatePresence>
-            </table>
-          </div>
+              </table>
+            </div>
+            <motion.div
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <DataGridPagination table={table} />
+            </motion.div>
+          </motion.div>
 
-          {!loading && !isEmpty && <DataGridPagination table={table} />}
+          {/* Footer Credit */}
+          {!isFullscreen && (
+            <div className="text-center mt-6 text-sm text-muted-foreground">
+              Built with love by Ankit Mishra • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
+            </div>
+          )}
         </div>
+      </motion.div>
 
-        {/* Status Bar */}
-        <div className="mt-6">
-          <DataGridStatusBar table={table} />
-        </div>
-
-        <div className="text-center mt-6 text-sm" style={{ color: "var(--color-muted-foreground)" }}>
-          Built with 💌 by Ankit Mishra • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for keyboard shortcuts
-        </div>
-      </div>
-
-      {/* Keyboard Shortcuts Modal */}
-      <KeyboardShortcutsModal
-        open={showShortcutsModal}
-        onOpenChange={setShowShortcutsModal}
-      />
+      <StatusBarModal open={showStatusModal} onOpenChange={setShowStatusModal} table={table} rowSelection={rowSelection} />
+      <KeyboardShortcutsModal open={showShortcutsModal} onOpenChange={setShowShortcutsModal} />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-import React from "react";
 import { BarChart3, CheckSquare, Filter, Layers, SortAsc } from "lucide-react";
 
 export function DataGridStatusBar({ table }) {

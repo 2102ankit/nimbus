@@ -1,4 +1,3 @@
-import React from "react";
 import { Info, Keyboard, Sparkles } from "lucide-react";
 
 export function DataGridInfoPanel() {

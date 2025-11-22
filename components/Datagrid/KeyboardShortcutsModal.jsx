@@ -1,12 +1,11 @@
-import React from "react";
-import { Keyboard, Sparkles, Info } from "lucide-react";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
 } from "@/components/ui/dialog";
+import { Keyboard, Sparkles } from "lucide-react";
 
 export function KeyboardShortcutsModal({ open, onOpenChange }) {
     return (
