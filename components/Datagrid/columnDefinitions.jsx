@@ -9,7 +9,7 @@ export const createColumns = () => [
     header: ({ table }) => (
       <Checkbox
         checked={table.getIsAllPageRowsSelected()}
-        indeterminate={table.getIsSomePageRowsSelected()}
+        indeterminate={String(table.getIsSomePageRowsSelected())}
         onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
       />
     ),

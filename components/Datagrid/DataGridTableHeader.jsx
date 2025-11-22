@@ -5,6 +5,52 @@ import { CSS } from "@dnd-kit/utilities";
 import { flexRender } from "@tanstack/react-table";
 import { motion } from "framer-motion";
 
+function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPadding, getHeaderBorderClasses }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useSortable({
+    id: header.column.id,
+  });
+
+  return (
+    <motion.th
+      ref={setNodeRef}
+      layout="position"
+      layoutRoot // Critical: makes this the animation root
+      transition={{
+        type: "spring",
+        stiffness: 500,
+        damping: 40,
+        mass: 0.8,
+      }}
+      {...attributes}
+      {...listeners}
+      style={{
+        opacity: isDragging ? 0.7 : 1,
+        transform: isDragging ? CSS.Transform.toString({ x: 0, y: 0, scale: 1.02 }) : undefined,
+        zIndex: isDragging ? 50 : isPinned ? 30 : 1,
+        position: "relative",
+        background: isDragging ? "var(--color-primary)/0.1" : "inherit",
+        color: "var(--color-foreground)",
+        width: header.getSize(),
+        minWidth: header.getSize(),
+        maxWidth: header.getSize(),
+        left: leftPos ? `${leftPos}px` : undefined,
+        right: rightPos ? `${rightPos}px` : undefined,
+        boxShadow: isPinned
+          ? isPinned === "left"
+            ? "2px 0 8px rgba(0,0,0,0.1)"
+            : "-2px 0 8px rgba(0,0,0,0.1)"
+          : "none",
+      }}
+      className={`text-left align-middle font-bold ${getDensityPadding()} ${getHeaderBorderClasses()} ${isPinned ? "sticky z-30" : ""} bg-card`}
+    >
+      {header.isPlaceholder
+        ? null
+        : flexRender(header.column.columnDef.header, header.getContext())}
+    </motion.th>
+  );
+}
+
+
 export function DataGridTableHeader({
   table,
   getDensityPadding,
@@ -13,7 +59,7 @@ export function DataGridTableHeader({
   getRightPosition,
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 2 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -57,52 +103,10 @@ export function DataGridTableHeader({
               strategy={horizontalListSortingStrategy}
             >
               {headerGroup.headers.map((header) => {
-                const { attributes, listeners, setNodeRef, isDragging } = useSortable({
-                  id: header.column.id,
-                });
-
                 const isPinned = header.column.getIsPinned();
                 const leftPos = isPinned === "left" ? getLeftPosition(header.column) : undefined;
                 const rightPos = isPinned === "right" ? getRightPosition(header.column) : undefined;
-
-                return (
-                  <motion.th
-                    ref={setNodeRef}
-                    layout="position"
-                    layoutRoot // Critical: makes this the animation root
-                    transition={{
-                      type: "spring",
-                      stiffness: 500,
-                      damping: 40,
-                      mass: 0.8,
-                    }}
-                    {...attributes}
-                    {...listeners}
-                    style={{
-                      opacity: isDragging ? 0.7 : 1,
-                      transform: isDragging ? CSS.Transform.toString({ x: 0, y: 0, scale: 1.02 }) : undefined,
-                      zIndex: isDragging ? 50 : isPinned ? 30 : 1,
-                      position: "relative",
-                      background: isDragging ? "var(--color-primary)/0.1" : "inherit",
-                      color: "var(--color-foreground)",
-                      width: header.getSize(),
-                      minWidth: header.getSize(),
-                      maxWidth: header.getSize(),
-                      left: leftPos ? `${leftPos}px` : undefined,
-                      right: rightPos ? `${rightPos}px` : undefined,
-                      boxShadow: isPinned
-                        ? isPinned === "left"
-                          ? "2px 0 8px rgba(0,0,0,0.1)"
-                          : "-2px 0 8px rgba(0,0,0,0.1)"
-                        : "none",
-                    }}
-                    className={`text-left align-middle font-bold ${getDensityPadding()} ${getHeaderBorderClasses()} ${isPinned ? "sticky z-30" : ""} bg-card`}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </motion.th>
-                );
+                return <SortableHeaderCell header={header} isPinned={isPinned} leftPos={leftPos} rightPos={rightPos} getDensityPadding={getDensityPadding} getHeaderBorderClasses={getHeaderBorderClasses} />
               })}
             </SortableContext>
           </DndContext>

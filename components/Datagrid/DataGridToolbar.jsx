@@ -1,3 +1,5 @@
+import { Checkbox } from "@/components/ui/checkbox";
+
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,11 +25,13 @@ import {
   Layers,
   Maximize,
   Minimize,
+  Moon,
   Pin,
   RotateCcw,
   Rows,
   Search,
-  Settings
+  Settings,
+  Sun
 } from "lucide-react";
 import { useState } from "react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
@@ -44,6 +48,7 @@ export function DataGridToolbar({
 }) {
   const {
     density,
+    theme, toggleTheme,
     setDensity,
     showGridLines,
     toggleGridLines,
@@ -52,7 +57,6 @@ export function DataGridToolbar({
     showRowLines,
     toggleRowLines,
   } = useTheme();
-
   const [searchDebounce, setSearchDebounce] = useState(null);
 
   const handleGlobalSearch = (value) => {
@@ -284,6 +288,7 @@ export function DataGridToolbar({
                 >
                   COLUMN VISIBILITY & PINNING
                 </DropdownMenuLabel>
+
                 <div className="max-h-72 overflow-auto">
                   {table
                     .getAllColumns()
@@ -293,60 +298,44 @@ export function DataGridToolbar({
                       return (
                         <div
                           key={col.id}
-                          className="flex items-center justify-between px-3 py-2.5 rounded-md mx-1 transition-colors bg-background"
-                          style={{
-                            backgroundColor: "transparent",
-                          }}
+                          className="flex items-center justify-between px-3 py-2.5 rounded-md mx-1 transition-colors hover:bg-muted/50"
                         >
                           <label className="flex items-center gap-2.5 cursor-pointer flex-1">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={col.getIsVisible()}
-                              onChange={() => col.toggleVisibility()}
-                              className="h-4 w-4 rounded border-2 text-(--color-primary) focus:ring-2 focus:ring-(--color-ring)"
-                              style={{
-                                borderColor: "var(--color-border)",
-                              }}
+                              onCheckedChange={() => col.toggleVisibility()}
+                              className="h-4 w-4"
                             />
-                            <span
-                              className="text-sm capitalize font-medium"
-                              style={{ color: "var(--color-foreground)" }}
-                            >
+                            <span className="text-sm capitalize font-medium text-foreground">
                               {col.id}
                             </span>
                           </label>
                           {col.getCanPin() && (
                             <div className="flex gap-1">
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   col.pin(isPinned === "left" ? false : "left");
                                 }}
-                                className="p-1.5 rounded-md transition-colors bg-background"
-                                title={
-                                  isPinned === "left"
-                                    ? "Unpin from left"
-                                    : "Pin to left"
-                                }
+                                title={isPinned === "left" ? "Unpin from left" : "Pin to left"}
                               >
-                                <Pin className="h-3.5 w-3.5" />
-                              </button>
-                              <button
+                                <Pin className={`h-3.5 w-3.5 ${isPinned === "left" ? "text-primary" : ""}`} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  col.pin(
-                                    isPinned === "right" ? false : "right"
-                                  );
+                                  col.pin(isPinned === "right" ? false : "right");
                                 }}
-                                className="p-1.5 rounded-md transition-colors bg-background"
-                                title={
-                                  isPinned === "right"
-                                    ? "Unpin from right"
-                                    : "Pin to right"
-                                }
+                                title={isPinned === "right" ? "Unpin from right" : "Pin to right"}
                               >
-                                <Pin className="h-3.5 w-3.5 rotate-270" />
-                              </button>
+                                <Pin className={`h-3.5 w-3.5 rotate-90 ${isPinned === "right" ? "text-primary" : ""}`} />
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -427,7 +416,7 @@ export function DataGridToolbar({
             </DropdownMenu>
 
             {/* Theme Toggle */}
-            {/* <Button
+            <Button
               onClick={toggleTheme}
               variant="outline"
               size="icon"
@@ -452,7 +441,7 @@ export function DataGridToolbar({
                   style={{ color: "var(--color-foreground)" }}
                 />
               )}
-            </Button> */}
+            </Button>
             {extraButtons}
           </div>
         </div>

@@ -30,7 +30,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Info, Maximize2, Minimize2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -248,6 +248,12 @@ const AdvancedDataGrid = () => {
 
   useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
+  useHotkeys('esc', () => {
+    if (isFullscreen) {
+      setIsFullscreen(false);
+    }
+  }, { enableOnFormTags: false });
+
   useHotkeys('pageup', (e) => {
     e.preventDefault();
     if (table.getCanPreviousPage()) table.previousPage();
@@ -360,7 +366,11 @@ const AdvancedDataGrid = () => {
               </motion.div>
             )}
           </AnimatePresence>
+          {!isFullscreen && (
 
+            <Info className="absolute top-0 right-0 text-primary m-4" onClick={() => (setShowShortcutsModal((v) => !v))} />
+
+          )}
           {/* Table Card */}
           <motion.div
             layout="position"
@@ -408,6 +418,7 @@ const AdvancedDataGrid = () => {
                   onClick={() => setIsFullscreen(!isFullscreen)}
                   title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                   className="h-11 border-2 shadow-sm bg-background color-foreground border-border"
+                  style={{ color: "var(--color-muted-foreground)" }}
                 >
                   {isFullscreen ? (
                     <Minimize2 className="h-4 w-4" />

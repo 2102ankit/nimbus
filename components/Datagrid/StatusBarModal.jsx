@@ -9,7 +9,10 @@ import { Info } from "lucide-react";
 export function StatusBarModal({ table, rowSelection, open, onOpenChange }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto"
+                style={{ color: "var(--color-muted-foreground)" }}
+
+            >
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-2xl">
                         <Info className="h-5 w-5 text-primary" />

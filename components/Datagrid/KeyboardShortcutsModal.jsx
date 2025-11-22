@@ -10,7 +10,9 @@ import { Keyboard, Sparkles } from "lucide-react";
 export function KeyboardShortcutsModal({ open, onOpenChange }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto"
+                style={{ color: "var(--color-muted-foreground)" }}
+            >
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-2xl">
                         <Keyboard className="h-6 w-6 text-primary" />
@@ -119,8 +121,8 @@ export function KeyboardShortcutsModal({ open, onOpenChange }) {
                                 </kbd>
                                 <span>Export menu</span>
                             </div>
-                            <div className="flex items-center gap-3 ml-4">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[60px] text-center">
+                            <div className="flex items-center gap-3">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
                                     c/e/j
                                 </kbd>
                                 <span className="text-xs text-muted-foreground">Then CSV/Excel/JSON</span>
