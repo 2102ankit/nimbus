@@ -350,7 +350,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
             <Button
               onClick={applyFilter}
               size="sm"
-              className="flex-1 bg-(--color-primary) text-(--color-primary-foreground) "
+              className="flex-1"
               disabled={!needsNoInput && !value && operator !== "between"}
             >
               Apply Filter

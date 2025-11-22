@@ -74,6 +74,7 @@ export const createColumns = () => [
   },
   {
     accessorKey: "id",
+    filterFn: "advanced",
     header: "ID",
     size: 200,
     meta: { dataType: "text", headerText: "ID" },
@@ -82,6 +83,7 @@ export const createColumns = () => [
   },
   {
     accessorKey: "name",
+    filterFn: "advanced",
     header: "Name",
     size: 200,
     meta: { dataType: "text", headerText: "Name" },
@@ -90,6 +92,7 @@ export const createColumns = () => [
   },
   {
     accessorKey: "email",
+    filterFn: "advanced",
     header: "Email",
     size: 250,
     meta: { dataType: "text", headerText: "Email" },
@@ -98,6 +101,7 @@ export const createColumns = () => [
   },
   {
     accessorKey: "status",
+    filterFn: "advanced",
     header: "Status",
     cell: ({ getValue }) => {
       const status = getValue();
@@ -153,6 +157,7 @@ export const createColumns = () => [
   },
   {
     accessorKey: "role",
+    filterFn: "advanced",
     header: "Role",
     size: 200,
     meta: { dataType: "text", headerText: "Role" },
@@ -161,6 +166,7 @@ export const createColumns = () => [
   },
   {
     accessorKey: "department",
+    filterFn: "advanced",
     header: "Department",
     size: 250,
     meta: { dataType: "text", headerText: "Department" },
@@ -169,6 +175,7 @@ export const createColumns = () => [
   },
   {
     accessorKey: "salary",
+    filterFn: "advanced",
     header: "Salary",
     cell: ({ getValue }) =>
       new Intl.NumberFormat("en-US", {
@@ -191,6 +198,7 @@ export const createColumns = () => [
   },
   {
     accessorKey: "performance",
+    filterFn: "advanced",
     header: "Performance",
     cell: ({ getValue }) => {
       const value = getValue();
@@ -236,6 +244,7 @@ export const createColumns = () => [
   },
   {
     accessorKey: "joinDate",
+    filterFn: "advanced",
     header: "Join Date",
     size: 250,
     meta: { dataType: "date", headerText: "Join Date" },
