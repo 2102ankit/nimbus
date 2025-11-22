@@ -1,19 +1,9 @@
-import {
-  getCoreRowModel,
-  getExpandedRowModel,
-  getFilteredRowModel,
-  getGroupedRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { DataGridInfoPanel } from "@/components/Datagrid/DataGridInfoPanel";
 import { DataGridPagination } from "@/components/Datagrid/DataGridPagination";
 import { DataGridStatusBar } from "@/components/Datagrid/DataGridStatusBar";
 import { DataGridTableBody } from "@/components/Datagrid/DataGridTableBody";
 import { DataGridTableHeader } from "@/components/Datagrid/DataGridTableHeader";
 import { DataGridToolbar } from "@/components/Datagrid/DataGridToolbar";
+import { KeyboardShortcutsModal } from "@/components/Datagrid/KeyboardShortcutsModal";
 import {
   addHeadersToColumns,
   createColumns,
@@ -31,9 +21,23 @@ import {
 } from "@/components/Datagrid/dataGridUtils";
 import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
 import { useTheme } from "@/components/ThemeProvider";
+import { Button } from "@/components/ui/button";
+import {
+  getCoreRowModel,
+  getExpandedRowModel,
+  getFilteredRowModel,
+  getGroupedRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { Moon, Sun } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 
 const AdvancedDataGrid = () => {
-  const { density, showGridLines, showHeaderLines, showRowLines } = useTheme();
+  const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
 
   // State management
   const [data, setData] = useState([]);
@@ -55,6 +59,16 @@ const AdvancedDataGrid = () => {
   const [columnPinning, setColumnPinning] = useState(
     prefs.columnPinning || { left: [], right: [] }
   );
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [exportMode, setExportMode] = useState(null);
+
+  // Refs for keyboard shortcuts
+  const searchInputRef = useRef(null);
+  const viewButtonRef = useRef(null);
+  const columnsButtonRef = useRef(null);
+  const groupButtonRef = useRef(null);
+  const rowsButtonRef = useRef(null);
+  const exportButtonRef = useRef(null);
 
   // Save preferences automatically
   const handleSavePrefs = useCallback(
@@ -148,12 +162,94 @@ const AdvancedDataGrid = () => {
       advanced: advancedFilterFn,
     },
     globalFilterFn: "includesString",
+    defaultColumn: {
+      minSize: 50, // Minimum width to prevent overflow of 3-dot menu and resizer
+      maxSize: 600, // Maximum width for columns
+    },
     initialState: {
       pagination: {
         pageSize: prefs.pageSize || 20,
       },
     },
   });
+
+  // Keyboard shortcuts using react-hotkeys-hook (after table initialization)
+  useHotkeys('/', (e) => {
+    e.preventDefault();
+    searchInputRef.current?.focus();
+  }, { enableOnFormTags: false });
+
+  useHotkeys('shift+r, R', (e) => {
+    e.preventDefault();
+    loadData();
+  }, { enableOnFormTags: false });
+
+  useHotkeys('r', (e) => {
+    e.preventDefault();
+    rowsButtonRef.current?.click();
+  }, { enableOnFormTags: false });
+
+  useHotkeys('v', (e) => {
+    e.preventDefault();
+    viewButtonRef.current?.click();
+  }, { enableOnFormTags: false });
+
+  useHotkeys('c', (e) => {
+    e.preventDefault();
+    if (exportMode === 'export') {
+      const rows = table.getFilteredRowModel().rows.map(r => r.original);
+      const cols = table.getVisibleLeafColumns()
+        .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
+        .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
+      exportToCSV(rows, cols);
+      setExportMode(null);
+    } else {
+      columnsButtonRef.current?.click();
+    }
+  }, { enableOnFormTags: false });
+
+  useHotkeys('g', (e) => {
+    e.preventDefault();
+    groupButtonRef.current?.click();
+  }, { enableOnFormTags: false });
+
+  useHotkeys('e', () => {
+    if (exportMode === 'export') {
+      const rows = table.getFilteredRowModel().rows.map(r => r.original);
+      const cols = table.getVisibleLeafColumns()
+        .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
+        .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
+      exportToExcel(rows, cols);
+      setExportMode(null);
+    } else {
+      exportButtonRef.current?.click();
+      setExportMode('export');
+      setTimeout(() => setExportMode(null), 3000);
+    }
+  }, { enableOnFormTags: false });
+
+  useHotkeys('j', () => {
+    if (exportMode === 'export') {
+      const rows = table.getFilteredRowModel().rows.map(r => r.original);
+      const cols = table.getVisibleLeafColumns()
+        .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
+        .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
+      exportToJSON(rows, cols);
+      setExportMode(null);
+    }
+  }, { enableOnFormTags: false });
+
+  useHotkeys('i', () => setShowShortcutsModal(true), { enableOnFormTags: false });
+
+  useHotkeys('pageup', (e) => {
+    e.preventDefault();
+    if (table.getCanPreviousPage()) table.previousPage();
+  }, { enableOnFormTags: false });
+
+  useHotkeys('pagedown', (e) => {
+    e.preventDefault();
+    if (table.getCanNextPage()) table.nextPage();
+  }, { enableOnFormTags: false });
 
   // Handle export
   const handleExport = (format, rows, cols) => {
@@ -188,15 +284,15 @@ const AdvancedDataGrid = () => {
     table.setPageSize(20);
   };
 
-  // Density classes
+  // Density classes - removed right padding
   const getDensityPadding = () => {
     switch (density) {
       case "compact":
-        return "py-1 px-2";
+        return "py-1 pl-2";
       case "comfortable":
-        return "p-4";
+        return "py-4 pl-4";
       default:
-        return "py-2 px-4";
+        return "py-2 pl-4";
     }
   };
 
@@ -225,9 +321,39 @@ const AdvancedDataGrid = () => {
 
   return (
     <div
-      className="w-full min-h-screen transition-colors p-8 pt-4"
+      className="w-full min-h-screen transition-colors p-8 pt-4 relative"
       style={{ backgroundColor: "var(--color-background)" }}
     >
+      {/* Dark Mode Toggle - Top Right */}
+      <div className="fixed top-6 right-6 z-50">
+        <Button
+          onClick={toggleTheme}
+          variant="outline"
+          size="icon"
+          className="h-11 w-11 border-2 shadow-lg transition-all bg-card"
+          style={{
+            borderColor: "var(--color-border)",
+          }}
+          title={
+            theme === "dark"
+              ? "Switch to Light Mode"
+              : "Switch to Dark Mode"
+          }
+        >
+          {theme === "dark" ? (
+            <Sun
+              className="h-5 w-5"
+              style={{ color: "var(--color-chart-3)" }}
+            />
+          ) : (
+            <Moon
+              className="h-5 w-5"
+              style={{ color: "var(--color-foreground)" }}
+            />
+          )}
+        </Button>
+      </div>
+
       <div className="max-w-[1600px] mx-auto">
         {/* Header */}
         <div className="mb-6 w-full text-center">
@@ -260,26 +386,33 @@ const AdvancedDataGrid = () => {
             onRefresh={loadData}
             globalFilter={globalFilter}
             onGlobalFilterChange={setGlobalFilter}
+            searchInputRef={searchInputRef}
+            viewButtonRef={viewButtonRef}
+            columnsButtonRef={columnsButtonRef}
+            groupButtonRef={groupButtonRef}
+            exportButtonRef={exportButtonRef}
           />
 
           <div className="relative overflow-auto" style={{ maxHeight: "60vh" }}>
             <table className="w-full text-sm border-collapse">
-              <DataGridTableHeader
-                table={table}
-                getDensityPadding={getDensityPadding}
-                getHeaderBorderClasses={getHeaderBorderClasses}
-                getLeftPosition={getLeftPos}
-                getRightPosition={getRightPos}
-              />
-              <DataGridTableBody
-                table={table}
-                loading={loading}
-                isEmpty={isEmpty}
-                getDensityPadding={getDensityPadding}
-                getCellBorderClasses={getCellBorderClasses}
-                getLeftPosition={getLeftPos}
-                getRightPosition={getRightPos}
-              />
+              <AnimatePresence mode="wait">
+                <DataGridTableHeader
+                  table={table}
+                  getDensityPadding={getDensityPadding}
+                  getHeaderBorderClasses={getHeaderBorderClasses}
+                  getLeftPosition={getLeftPos}
+                  getRightPosition={getRightPos}
+                />
+                <DataGridTableBody
+                  table={table}
+                  loading={loading}
+                  isEmpty={isEmpty}
+                  getDensityPadding={getDensityPadding}
+                  getCellBorderClasses={getCellBorderClasses}
+                  getLeftPosition={getLeftPos}
+                  getRightPosition={getRightPos}
+                />
+              </AnimatePresence>
             </table>
           </div>
 
@@ -291,13 +424,16 @@ const AdvancedDataGrid = () => {
           <DataGridStatusBar table={table} />
         </div>
 
-        {/* Info Panel */}
-        <div className="mt-6">
-          <DataGridInfoPanel />
+        <div className="text-center mt-6 text-sm" style={{ color: "var(--color-muted-foreground)" }}>
+          Built with 💌 by Ankit Mishra • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for keyboard shortcuts
         </div>
-
-        <div className="text-center mt-2">Built with 💌 by Ankit Mishra</div>
       </div>
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        open={showShortcutsModal}
+        onOpenChange={setShowShortcutsModal}
+      />
     </div>
   );
 };

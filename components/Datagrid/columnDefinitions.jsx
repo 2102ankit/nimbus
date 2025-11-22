@@ -17,13 +17,17 @@ export const createColumns = () => [
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(v) => row.toggleSelected(!!v)}
+        className="mx-auto"
       />
     ),
     size: 50,
     enableSorting: false,
     enableHiding: false,
     enableResizing: false,
+    enablePinning: false,
+    enableReordering: false,
     enableColumnFilter: false,
+    enableDrag: false,
   },
   {
     id: "expand",
@@ -38,12 +42,12 @@ export const createColumns = () => [
           color: "var(--color-foreground)",
         }}
         onMouseEnter={(e) =>
-          (e.currentTarget.style.backgroundColor =
-            "color-mix(in oklch, var(--color-muted), transparent 70%)")
+        (e.currentTarget.style.backgroundColor =
+          "color-mix(in oklch, var(--color-muted), transparent 70%)")
         }
         onMouseLeave={(e) =>
-          (e.currentTarget.style.backgroundColor =
-            "color-mix(in oklch, var(--color-muted), transparent 90%)")
+        (e.currentTarget.style.backgroundColor =
+          "color-mix(in oklch, var(--color-muted), transparent 90%)")
         }
       >
         {row.getIsExpanded() ? (
@@ -59,16 +63,19 @@ export const createColumns = () => [
         )}
       </button>
     ),
-    size: 100,
+    size: 50,
     enableSorting: false,
     enableHiding: false,
     enableResizing: false,
+    enablePinning: false,
+    enableReordering: false,
     enableColumnFilter: false,
+    enableDrag: false,
   },
   {
     accessorKey: "id",
     header: "ID",
-    size: 150,
+    size: 200,
     meta: { dataType: "text", headerText: "ID" },
     enableColumnFilter: true,
     enableGrouping: false,
@@ -133,7 +140,7 @@ export const createColumns = () => [
         </Badge>
       );
     },
-    size: 130,
+    size: 200,
     meta: { dataType: "text", headerText: "Status" },
     enableColumnFilter: true,
     enableGrouping: true,
@@ -147,7 +154,7 @@ export const createColumns = () => [
   {
     accessorKey: "role",
     header: "Role",
-    size: 130,
+    size: 200,
     meta: { dataType: "text", headerText: "Role" },
     enableColumnFilter: true,
     enableGrouping: true,
@@ -155,7 +162,7 @@ export const createColumns = () => [
   {
     accessorKey: "department",
     header: "Department",
-    size: 150,
+    size: 250,
     meta: { dataType: "text", headerText: "Department" },
     enableColumnFilter: true,
     enableGrouping: true,
@@ -168,7 +175,7 @@ export const createColumns = () => [
         style: "currency",
         currency: "USD",
       }).format(getValue()),
-    size: 150,
+    size: 200,
     meta: { dataType: "number", headerText: "Salary" },
     enableColumnFilter: true,
     aggregationFn: "sum",
@@ -217,7 +224,7 @@ export const createColumns = () => [
         </div>
       );
     },
-    size: 180,
+    size: 250,
     meta: { dataType: "number", headerText: "Performance" },
     enableColumnFilter: true,
     aggregationFn: "mean",
@@ -230,7 +237,7 @@ export const createColumns = () => [
   {
     accessorKey: "joinDate",
     header: "Join Date",
-    size: 150,
+    size: 250,
     meta: { dataType: "date", headerText: "Join Date" },
     enableColumnFilter: true,
   },
@@ -242,17 +249,18 @@ export const addHeadersToColumns = (columns) => {
     header:
       typeof col.header === "string"
         ? ({ column, table, header }) => (
-            <ColumnHeader
-              header={header}
-              column={column}
-              title={col.header}
-              table={table}
-              dataType={col.meta?.dataType}
-              enableSort={col.enableSorting}
-              enableFilter={col.enableColumnFilter}
-              enableResize={col.enableResizing}
-            />
-          )
+          <ColumnHeader
+            header={header}
+            column={column}
+            title={col.header}
+            table={table}
+            dataType={col.meta?.dataType}
+            enableSort={col.enableSorting}
+            enableFilter={col.enableColumnFilter}
+            enableResize={col.enableResizing}
+            enableDrag={col.enableDrag}
+          />
+        )
         : col.header,
   }));
 };

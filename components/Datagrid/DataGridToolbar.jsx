@@ -1,22 +1,3 @@
-import {
-  Check,
-  Columns,
-  Download,
-  Eye,
-  FileDown,
-  FileJson,
-  FileSpreadsheet,
-  Grid3x3,
-  Layers,
-  Moon,
-  Pin,
-  RotateCcw,
-  Rows,
-  Search,
-  Settings,
-  Sun,
-} from "lucide-react";
-import { useState } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,12 +6,32 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Columns,
+  Download,
+  Eye,
+  FileDown,
+  FileJson,
+  FileSpreadsheet,
+  Grid3x3,
+  Layers,
+  Maximize,
+  Minimize,
+  Pin,
+  RotateCcw,
+  Rows,
+  Search,
+  Settings
+} from "lucide-react";
+import { useState } from "react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
- 
+
 export function DataGridToolbar({
   table,
   columns,
@@ -41,8 +42,6 @@ export function DataGridToolbar({
   onGlobalFilterChange,
 }) {
   const {
-    theme,
-    toggleTheme,
     density,
     setDensity,
     showGridLines,
@@ -133,7 +132,7 @@ export function DataGridToolbar({
                 variant="outline"
                 size="sm"
                 className="h-11 border-2 shadow-sm bg-background"
-                style={{ borderColor: "var(--color-border)" }}
+                style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Refresh
@@ -147,6 +146,7 @@ export function DataGridToolbar({
                 variant="outline"
                 size="sm"
                 className="h-11 border-2 shadow-sm bg-background"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }} F
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset All
@@ -160,7 +160,7 @@ export function DataGridToolbar({
                   variant="outline"
                   size="sm"
                   className="h-11 border-2 shadow-sm bg-background"
-                  style={{ borderColor: "var(--color-border)" }}
+                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Export
@@ -207,7 +207,7 @@ export function DataGridToolbar({
                   variant="outline"
                   size="sm"
                   className="h-11 border-2 shadow-sm bg-background"
-                  style={{ borderColor: "var(--color-border)" }}
+                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   View
@@ -220,24 +220,17 @@ export function DataGridToolbar({
                 >
                   DENSITY
                 </DropdownMenuLabel>
-                {["compact", "normal", "comfortable"].map((d) => (
-                  <DropdownMenuItem
-                    key={d}
-                    onClick={() => setDensity(d)}
-                    className="cursor-pointer"
-                  >
-                    {density === d && (
-                      <Check
-                        className="h-4 w-4 mr-2"
-                        style={{ color: "var(--color-primary)" }}
-                      />
-                    )}
-                    <span className={density !== d ? "ml-6" : ""}>
-                      {d.charAt(0).toUpperCase() + d.slice(1)}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-
+                <DropdownMenuRadioGroup value={density} onValueChange={setDensity}>
+                  <DropdownMenuRadioItem value="compact">
+                    <Minimize className="h-4 w-4 mr-2" />
+                    Compact</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="normal">
+                    <Rows className="h-4 w-4 mr-2" />
+                    Normal</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="comfortable">
+                    <Maximize className="h-4 w-4 mr-2" />
+                    Comfortable</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
                 <DropdownMenuSeparator />
 
                 <DropdownMenuLabel
@@ -277,20 +270,20 @@ export function DataGridToolbar({
                   variant="outline"
                   size="sm"
                   className="h-11 border-2 shadow-sm bg-background"
-                  style={{ borderColor: "var(--color-border)" }}
+                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Columns
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72 shadow-lg">
+              <DropdownMenuContent align="end" className="w-72 shadow-lg overflow-hidden">
                 <DropdownMenuLabel
                   className="text-xs font-bold"
                   style={{ color: "var(--color-muted-foreground)" }}
                 >
                   COLUMN VISIBILITY & PINNING
                 </DropdownMenuLabel>
-                <div className="max-h-96 overflow-auto">
+                <div className="max-h-72 overflow-auto">
                   {table
                     .getAllColumns()
                     .filter((col) => col.getCanHide())
@@ -351,7 +344,7 @@ export function DataGridToolbar({
                                     : "Pin to right"
                                 }
                               >
-                                <Pin className="h-3.5 w-3.5 rotate-90" />
+                                <Pin className="h-3.5 w-3.5 rotate-270" />
                               </button>
                             </div>
                           )}
@@ -378,6 +371,7 @@ export function DataGridToolbar({
                   variant="outline"
                   size="sm"
                   className="h-11 border-2 shadow-sm bg-background"
+                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Layers className="h-4 w-4 mr-2" />
                   Group
@@ -432,7 +426,7 @@ export function DataGridToolbar({
             </DropdownMenu>
 
             {/* Theme Toggle */}
-            <Button
+            {/* <Button
               onClick={toggleTheme}
               variant="outline"
               size="icon"
@@ -457,7 +451,7 @@ export function DataGridToolbar({
                   style={{ color: "var(--color-foreground)" }}
                 />
               )}
-            </Button>
+            </Button> */}
           </div>
         </div>
 

@@ -84,6 +84,10 @@ export function EmptyState() {
 
 // Group Row Component
 export function GroupRow({ row, getDensityPadding }) {
+  // Calculate indentation based on grouping depth
+  const depth = row.depth || 0;
+  const indentPx = depth * 32; // 32px per level
+
   return (
     <motion.tr
       key={row.id}
@@ -98,12 +102,12 @@ export function GroupRow({ row, getDensityPadding }) {
         borderBottomColor: "var(--color-border)",
       }}
       onMouseEnter={(e) =>
-        (e.currentTarget.style.background = `linear-gradient(to right, 
+      (e.currentTarget.style.background = `linear-gradient(to right, 
           color-mix(in oklch, var(--color-muted), transparent 80%), 
           color-mix(in oklch, var(--color-muted), transparent 85%))`)
       }
       onMouseLeave={(e) =>
-        (e.currentTarget.style.background = `linear-gradient(to right, 
+      (e.currentTarget.style.background = `linear-gradient(to right, 
           color-mix(in oklch, var(--color-muted), transparent 90%), 
           color-mix(in oklch, var(--color-muted), transparent 95%))`)
       }
@@ -112,7 +116,7 @@ export function GroupRow({ row, getDensityPadding }) {
         colSpan={row.getVisibleCells().length}
         className={getDensityPadding()}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" style={{ paddingLeft: `${indentPx}px` }}>
           <button
             onClick={() => row.toggleExpanded()}
             className="p-1.5 rounded-md transition-colors"
@@ -120,8 +124,8 @@ export function GroupRow({ row, getDensityPadding }) {
               backgroundColor: "transparent",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor =
-                "color-mix(in oklch, var(--color-muted), transparent 70%)")
+            (e.currentTarget.style.backgroundColor =
+              "color-mix(in oklch, var(--color-muted), transparent 70%)")
             }
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "transparent")
@@ -213,11 +217,17 @@ export function DataRow({
             isPinned === "right" ? getRightPosition(cell.column) : undefined;
 
           return (
-            <td
+            <motion.td
+              layout="position"
+              transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 40,
+                mass: 0.8,
+              }}
               key={cell.id}
-              className={`align-middle ${getDensityPadding()} ${getCellBorderClasses()} ${
-                isPinned ? "sticky z-10" : ""
-              }`}
+              className={`align-middle ${getDensityPadding()} ${getCellBorderClasses()} ${isPinned ? "sticky z-10" : ""
+                }`}
               style={{
                 color: "var(--color-foreground)",
                 width: cell.column.getSize(),
@@ -262,13 +272,13 @@ export function DataRow({
               ) : cell.getIsAggregated() ? (
                 flexRender(
                   cell.column.columnDef.aggregatedCell ??
-                    cell.column.columnDef.cell,
+                  cell.column.columnDef.cell,
                   cell.getContext()
                 )
               ) : cell.getIsPlaceholder() ? null : (
                 flexRender(cell.column.columnDef.cell, cell.getContext())
               )}
-            </td>
+            </motion.td>
           );
         })}
       </motion.tr>
@@ -279,6 +289,7 @@ export function DataRow({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         >
           <td colSpan={row.getVisibleCells().length} className="p-0">
             <div

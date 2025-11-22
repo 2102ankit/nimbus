@@ -6,6 +6,13 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function DataGridPagination({ table }) {
   const pageSize = table.getState().pagination.pageSize;
@@ -55,29 +62,35 @@ export function DataGridPagination({ table }) {
           >
             Rows per page:
           </span>
-          <select
-            value={pageSize}
-            onChange={handlePageSizeChange}
-            className="h-9 rounded-md border-2 px-3 py-1 text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2"
-            style={{
-              backgroundColor: "var(--color-card)",
-              borderColor: "var(--color-border)",
-              color: "var(--color-foreground)",
-              ringColor: "var(--color-ring)",
-              accentColor: "var(--color-primary)",
-            }}
+          <Select
+            value={String(pageSize)}
+            onValueChange={(value) => table.setPageSize(Number(value))}
           >
-            {[10, 20, 30, 50, 100].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              className="h-9 w-[70px] border-2 shadow-sm"
+              style={{
+                backgroundColor: "var(--color-card)",
+                borderColor: "var(--color-border)",
+                color: "var(--color-foreground)",
+              }}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 30, 50, 100].map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Pagination Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3"
+        style={{ color: "var(--color-muted-foreground)" }}
+      >
         {/* Page Info */}
         <div
           className="text-sm font-medium mr-2"

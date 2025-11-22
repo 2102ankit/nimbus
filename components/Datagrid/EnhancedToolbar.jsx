@@ -129,7 +129,7 @@ export function EnhancedToolbar({
               variant="outline"
               size="sm"
               className="border-2 shadow-sm bg-background"
-              style={{ borderColor: "var(--color-border)" }}
+              style={{ color: "var(--color-foreground)" }}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Refresh

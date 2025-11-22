@@ -1,6 +1,3 @@
-import { Filter, X } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,6 +5,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Filter, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 
 // Filter operators by data type
 const TEXT_OPERATORS = [
@@ -258,9 +265,8 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
         <Button
           variant={hasFilter ? "default" : "ghost"}
           size="icon"
-          className={`h-7 w-7 ${
-            hasFilter ? "bg-blue-600 hover:bg-blue-700" : ""
-          }`}
+          className={`h-7 w-7 ${hasFilter ? "bg-blue-600 hover:bg-blue-700" : ""
+            }`}
         >
           <Filter className="h-3.5 w-3.5" />
         </Button>
@@ -268,20 +274,28 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
       <DropdownMenuContent align="start" className="w-72">
         <div className="p-3 space-y-3">
           <div>
-            <label className="text-xs font-semibold text-(--color-foreground) mb-1 block">
+            <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--color-foreground)" }}>
               Operator
             </label>
-            <select
-              value={operator}
-              onChange={(e) => setOperator(e.target.value)}
-              className="mt-1 w-full h-9 rounded-md border-2 border-(--color-border) bg-(--color-card) px-3 py-1 text-sm text-(--color-foreground) focus:outline-none focus:ring-2 focus:ring-(--color-ring)"
-            >
-              {operators.map((op) => (
-                <option key={op.value} value={op.value}>
-                  {op.label}
-                </option>
-              ))}
-            </select>
+            <Select value={operator} onValueChange={setOperator}>
+              <SelectTrigger
+                className="mt-1 w-full h-9 border-2 shadow-sm"
+                style={{
+                  backgroundColor: "var(--color-card)",
+                  borderColor: "var(--color-border)",
+                  color: "var(--color-foreground)",
+                }}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {operators.map((op) => (
+                  <SelectItem key={op.value} value={op.value}>
+                    {op.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {!needsNoInput && (
@@ -336,7 +350,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
             <Button
               onClick={applyFilter}
               size="sm"
-              className="flex-1 bg-(--color-primary) text-(--color-primary-foreground) hover:bg-[var(--color-primary)/0.9]"
+              className="flex-1 bg-(--color-primary) text-(--color-primary-foreground) "
               disabled={!needsNoInput && !value && operator !== "between"}
             >
               Apply Filter
@@ -400,7 +414,7 @@ export function ActiveFilters({ table, columns }) {
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
               style={{
                 backgroundColor:
-                  "color-mix(in oklch, var(--color-primary), transparent 90%)",
+                  "color-mix(in oklch, var(--color-primary), transparent 50%)",
                 color: "var(--color-primary-foreground)",
                 borderColor: "var(--color-primary)",
                 opacity: 0.8,
