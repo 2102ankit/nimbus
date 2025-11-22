@@ -159,7 +159,7 @@ export function DataGridToolbar({
                 variant="outline"
                 size="sm"
                 className="h-11 border-2 shadow-sm bg-background"
-                style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }} F
+                style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset All
