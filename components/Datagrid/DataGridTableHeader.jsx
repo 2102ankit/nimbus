@@ -1,14 +1,19 @@
 // DataGridTableHeader.jsx
 import { closestCenter, DndContext, KeyboardSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { flexRender } from "@tanstack/react-table";
-import { motion } from "motion/react";
 import { NoDragOnResizerSensor } from "./NoDragOnResizerSensor";
+import { useState } from "react";
 
-function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPadding, getHeaderBorderClasses, focusedColumnIndex }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useSortable({
+function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPadding, getHeaderBorderClasses, focusedColumnIndex, isDraggingAny }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: header.column.id,
-    disabled: !header.column.columnDef.ena || header.column.columnDef.enableReordering === false,
+    disabled: isPinned || header.column.id === 'select' || header.column.id === 'expand',
+    transition: {
+      duration: 200,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    },
   });
 
   const isFocused = !isPinned && focusedColumnIndex !== null && (() => {
@@ -26,35 +31,44 @@ function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPad
   const nextColumn = allColumns[currentIndex + 1];
   const isBeforeRightPinned = nextColumn && nextColumn.getIsPinned() === 'right';
 
+  // Smooth transform with CSS
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)',
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 100 : isPinned ? 30 : 20,
+    position: "sticky",
+    top: 0,
+    backgroundColor: "var(--color-card)",
+    color: "var(--color-foreground)",
+    width: header.getSize(),
+    minWidth: header.getSize(),
+    maxWidth: header.getSize(),
+    left: leftPos !== undefined ? `${leftPos}px` : undefined,
+    right: rightPos !== undefined ? `${rightPos}px` : undefined,
+    borderBottom: "2px solid var(--color-border)",
+    borderRight: isBeforeRightPinned ? 'none' : undefined,
+    boxShadow: isPinned
+      ? isPinned === "left"
+        ? "2px 0 8px rgba(0,0,0,0.1)"
+        : "-2px 0 8px rgba(0,0,0,0.1)"
+      : isFocused
+        ? "inset 0 0 0 2px var(--color-primary)"
+        : isDragging
+          ? "0 10px 30px rgba(0, 0, 0, 0.2)"
+          : "none",
+    cursor: isDragging ? 'grabbing' : isPinned ? 'default' : 'grab',
+    userSelect: 'none',
+    willChange: isDraggingAny ? 'transform' : 'auto',
+  };
+
   return (
-    <motion.th
+    <th
       ref={setNodeRef}
       data-column-id={header.column.id}
       {...attributes}
       {...listeners}
-      style={{
-        opacity: isDragging ? 0.9 : 1,
-        cursor: isDragging ? 'grabbing' : 'grab',
-        zIndex: isDragging ? 50 : isPinned ? 30 : 20,
-        position: "sticky",
-        top: 0,
-        backgroundColor: "var(--color-card)",
-        color: "var(--color-foreground)",
-        width: header.getSize(),
-        minWidth: header.getSize(),
-        maxWidth: header.getSize(),
-        left: leftPos !== undefined ? `${leftPos}px` : undefined,
-        right: rightPos !== undefined ? `${rightPos}px` : undefined,
-        borderBottom: "2px solid var(--color-border)",
-        borderRight: isBeforeRightPinned ? 'none' : undefined, // Remove border if before right-pinned
-        boxShadow: isPinned
-          ? isPinned === "left"
-            ? "2px 0 8px rgba(0,0,0,0.1)"
-            : "-2px 0 8px rgba(0,0,0,0.1)"
-          : isFocused
-            ? "inset 0 0 0 2px var(--color-primary)"
-            : "none",
-      }}
+      style={style}
       className={`text-left align-middle font-bold relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getHeaderBorderClasses() : ''
         } ${isPinned === "left" ? "pinned-left-border" : isPinned === "right" ? "pinned-right-border" : ""
         } ${isBeforeRightPinned ? 'before-right-pinned' : ''}`}
@@ -64,7 +78,7 @@ function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPad
           ? null
           : flexRender(header.column.columnDef.header, header.getContext())
       }
-    </motion.th >
+    </th>
   );
 }
 
@@ -76,6 +90,8 @@ export function DataGridTableHeader({
   getRightPosition,
   focusedColumnIndex,
 }) {
+  const [activeId, setActiveId] = useState(null);
+
   const sensors = useSensors(
     useSensor(NoDragOnResizerSensor, {
       activationConstraint: {
@@ -90,6 +106,10 @@ export function DataGridTableHeader({
     .getCenterLeafColumns()
     .filter((c) => c.id !== "select" && c.id !== "expand")
     .map((c) => c.id);
+
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id);
+  };
 
   const handleDragOver = (event) => {
     const { active, over } = event;
@@ -126,6 +146,14 @@ export function DataGridTableHeader({
     });
   };
 
+  const handleDragEnd = () => {
+    setActiveId(null);
+  };
+
+  const handleDragCancel = () => {
+    setActiveId(null);
+  };
+
   return (
     <thead className="sticky top-0 z-20 border-b-2 border-border" style={{ background: "var(--color-background)" }}>
       {table.getHeaderGroups().map((headerGroup) => (
@@ -133,7 +161,10 @@ export function DataGridTableHeader({
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
             onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
           >
             <SortableContext
               items={reorderableIds}
@@ -152,6 +183,7 @@ export function DataGridTableHeader({
                   getDensityPadding={getDensityPadding}
                   getHeaderBorderClasses={getHeaderBorderClasses}
                   focusedColumnIndex={focusedColumnIndex}
+                  isDraggingAny={activeId !== null}
                 />
               })}
             </SortableContext>
@@ -161,3 +193,5 @@ export function DataGridTableHeader({
     </thead>
   );
 }
+
+export default DataGridTableHeader;

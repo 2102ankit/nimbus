@@ -1,3 +1,4 @@
+import "./datagrid-animations.css"
 import {
   addHeadersToColumns,
   createColumns,
@@ -31,11 +32,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Info, Maximize2, Minimize2 } from "lucide-react";
+import { animate } from "motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "./StatusBarModal";
-import { animate } from "motion";
 
 const AdvancedDataGrid = () => {
   const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -79,7 +80,7 @@ const AdvancedDataGrid = () => {
   const [groupMenuOpen, setGroupMenuOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
-  // Save preferences automatically
+  // Save preferences automatically - OPTIMIZED with debouncing
   const handleSavePrefs = useCallback(
     (newPrefs) => {
       const merged = { ...prefs, ...newPrefs };
@@ -89,43 +90,56 @@ const AdvancedDataGrid = () => {
     [prefs]
   );
 
+  // Debounced preference saves
   useEffect(() => {
-    handleSavePrefs({ sorting });
+    const timer = setTimeout(() => handleSavePrefs({ sorting }), 300);
+    return () => clearTimeout(timer);
   }, [sorting]);
+
   useEffect(() => {
-    handleSavePrefs({ columnVisibility });
+    const timer = setTimeout(() => handleSavePrefs({ columnVisibility }), 300);
+    return () => clearTimeout(timer);
   }, [columnVisibility]);
+
   useEffect(() => {
-    handleSavePrefs({ columnOrder });
+    const timer = setTimeout(() => handleSavePrefs({ columnOrder }), 300);
+    return () => clearTimeout(timer);
   }, [columnOrder]);
+
   useEffect(() => {
-    handleSavePrefs({ columnSizing });
+    const timer = setTimeout(() => handleSavePrefs({ columnSizing }), 300);
+    return () => clearTimeout(timer);
   }, [columnSizing]);
+
   useEffect(() => {
-    handleSavePrefs({ columnPinning });
+    const timer = setTimeout(() => handleSavePrefs({ columnPinning }), 300);
+    return () => clearTimeout(timer);
   }, [columnPinning]);
 
   // Load data
-  const loadData = () => {
+  const loadData = useCallback(() => {
     setLoading(true);
-    setTimeout(() => {
-      setData(generateSampleData(250));
-      setLoading(false);
-    }, 500);
-  };
+    // Use requestAnimationFrame for smoother transitions
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setData(generateSampleData(250));
+        setLoading(false);
+      }, 300);
+    });
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
-  // Define columns
+  // Define columns - memoized for performance
   const columns = useMemo(() => createColumns(), []);
   const columnsWithHeaders = useMemo(
     () => addHeadersToColumns(columns),
     [columns]
   );
 
-  // Initialize table
+  // Initialize table with optimizations
   const table = useReactTable({
     data,
     columns: columnsWithHeaders,
@@ -145,6 +159,7 @@ const AdvancedDataGrid = () => {
     enableMultiRowSelection: true,
     enableColumnResizing: true,
     columnResizeMode: "onChange",
+    columnResizeDirection: "ltr",
     enableSorting: true,
     enableMultiSort: true,
     enableFilters: true,
@@ -172,8 +187,8 @@ const AdvancedDataGrid = () => {
     },
     globalFilterFn: "includesString",
     defaultColumn: {
-      minSize: 50, // Minimum width to prevent overflow of 3-dot menu and resizer
-      maxSize: 600, // Maximum width for columns
+      minSize: 50,
+      maxSize: 600,
     },
     initialState: {
       pagination: {
@@ -182,10 +197,12 @@ const AdvancedDataGrid = () => {
     },
   });
 
-  const scrollColumnIntoView = (column, direction, isWrapping = false) => {
+  // Smooth scroll with animation
+  const scrollColumnIntoView = useCallback((column, direction, isWrapping = false) => {
     if (!column) return;
 
-    setTimeout(() => {
+    // Use requestAnimationFrame for smoother scrolling
+    requestAnimationFrame(() => {
       const tableContainer = document.querySelector('.overflow-auto');
       if (!tableContainer) return;
 
@@ -235,17 +252,17 @@ const AdvancedDataGrid = () => {
       } else {
         // Animate the scroll with framer motion
         animate(currentScroll, targetScrollLeft, {
-          duration: 0.3,
-          ease: [0.4, 0.0, 0.2, 1],
+          duration: 0.25,
+          ease: [0.25, 1, 0.5, 1],
           onUpdate: (latest) => {
             tableContainer.scrollLeft = latest;
           }
         });
       }
-    }, 0);
-  };
+    });
+  }, [table]);
 
-  // Keyboard shortcuts using react-hotkeys-hook (after table initialization)
+  // Keyboard shortcuts using react-hotkeys-hook
   useHotkeys('slash', (e) => {
     e.preventDefault();
     searchInputRef.current?.focus();
@@ -273,11 +290,9 @@ const AdvancedDataGrid = () => {
 
   useHotkeys('e', () => {
     if (exportMenuOpen) {
-      // Menu is open, close it without exporting
       setExportMenuOpen(false);
       setExportMode(null);
     } else if (exportMode === 'export') {
-      // Menu was just closed, now export
       const rows = table.getFilteredRowModel().rows.map(r => r.original);
       const cols = table.getVisibleLeafColumns()
         .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
@@ -285,7 +300,6 @@ const AdvancedDataGrid = () => {
       exportToExcel(rows, cols);
       setExportMode(null);
     } else {
-      // Open menu and set export mode
       setExportMenuOpen(true);
       setExportMode('export');
       setTimeout(() => {
@@ -332,7 +346,6 @@ const AdvancedDataGrid = () => {
   useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
   useHotkeys('esc', (e) => {
-    // e.preventDefault();
     if (document.activeElement === searchInputRef.current) {
       searchInputRef.current?.blur();
     } else if (isFullscreen) {
@@ -364,7 +377,7 @@ const AdvancedDataGrid = () => {
 
       if (isWrapping) {
         const newIndex = visibleColumns.length - 1;
-        scrollColumnIntoView(visibleColumns[newIndex], 'left', true); // Pass true for wrapping
+        scrollColumnIntoView(visibleColumns[newIndex], 'left', true);
         return newIndex;
       }
 
@@ -383,12 +396,11 @@ const AdvancedDataGrid = () => {
 
     if (visibleColumns.length === 0) return;
 
-
     setFocusedColumnIndex(prev => {
       const isWrapping = prev === null || prev >= visibleColumns.length - 1;
 
       if (isWrapping) {
-        scrollColumnIntoView(visibleColumns[0], 'right', true); // Pass true for wrapping
+        scrollColumnIntoView(visibleColumns[0], 'right', true);
         return 0;
       }
 
@@ -398,9 +410,8 @@ const AdvancedDataGrid = () => {
     });
   }, { enableOnFormTags: false });
 
-
   // Handle export
-  const handleExport = (format, rows, cols) => {
+  const handleExport = useCallback((format, rows, cols) => {
     switch (format) {
       case "csv":
         exportToCSV(rows, cols);
@@ -412,10 +423,10 @@ const AdvancedDataGrid = () => {
         exportToJSON(rows, cols);
         break;
     }
-  };
+  }, []);
 
   // Reset preferences
-  const handleResetPreferences = () => {
+  const handleResetPreferences = useCallback(() => {
     resetPreferences();
     setSorting([]);
     setColumnVisibility({});
@@ -430,10 +441,10 @@ const AdvancedDataGrid = () => {
     table.resetColumnSizing();
     table.resetSorting();
     table.setPageSize(20);
-  };
+  }, [table]);
 
-  // Density classes - removed right padding
-  const getDensityPadding = () => {
+  // Density classes
+  const getDensityPadding = useCallback(() => {
     switch (density) {
       case "compact":
         return "py-1 pl-2";
@@ -442,35 +453,38 @@ const AdvancedDataGrid = () => {
       default:
         return "py-2 pl-4";
     }
-  };
+  }, [density]);
 
   const isEmpty = table.getFilteredRowModel().rows.length === 0;
 
   // Border classes based on settings
-  const getCellBorderClasses = () => {
+  const getCellBorderClasses = useCallback(() => {
     const borders = [];
     if (showRowLines) borders.push("border-b");
     if (showGridLines) borders.push("border-r");
     return borders.join(" ") + " border-(--color-border)";
-  };
+  }, [showRowLines, showGridLines]);
 
-  const getHeaderBorderClasses = () => {
+  const getHeaderBorderClasses = useCallback(() => {
     const borders = ["border-b-2"];
     if (showHeaderLines || showGridLines) borders.push("border-r-2");
     return (
       borders.join(" ") +
       " border-[color-mix(in_oklch,var(--color-border),transparent_50%)]"
     );
-  };
+  }, [showHeaderLines, showGridLines]);
 
-  // Position helpers
-  const getLeftPos = (column) => getLeftPosition(column, table);
-  const getRightPos = (column) => getRightPosition(column, table);
+  // Position helpers - memoized
+  const getLeftPos = useCallback((column) => getLeftPosition(column, table), [table]);
+  const getRightPos = useCallback((column) => getRightPosition(column, table), [table]);
 
   return (
     <div
       className="w-full min-h-screen transition-colors relative scrollbar-hide"
-      style={{ backgroundColor: "var(--color-background)" }}
+      style={{
+        backgroundColor: "var(--color-background)",
+        willChange: isFullscreen ? 'padding, margin' : 'auto'
+      }}
     >
       {/* Main Content */}
       <motion.div
@@ -480,16 +494,20 @@ const AdvancedDataGrid = () => {
           padding: isFullscreen ? "0" : "0.5rem 2rem",
           marginTop: isFullscreen ? "0" : "0",
         }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        transition={{
+          type: "tween",
+          duration: 0.3,
+          ease: [0.25, 1, 0.5, 1]
+        }}
       >
         <div className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}>
           {/* Header - Hidden in fullscreen */}
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {!isFullscreen && (
               <motion.div
                 initial={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -50 }}
-                transition={{ duration: 0.3 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                 className="mb-4 w-full text-center"
               >
                 <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
@@ -501,11 +519,14 @@ const AdvancedDataGrid = () => {
               </motion.div>
             )}
           </AnimatePresence>
+
           {!isFullscreen && (
-
-            <Info className="absolute top-0 right-0 text-primary m-4" onClick={() => (setShowShortcutsModal((v) => !v))} />
-
+            <Info
+              className="absolute top-0 right-0 text-primary m-4 cursor-pointer transition-transform hover:scale-110 duration-200"
+              onClick={() => setShowShortcutsModal((v) => !v)}
+            />
           )}
+
           {/* Table Card */}
           <motion.div
             layout="position"
@@ -520,11 +541,11 @@ const AdvancedDataGrid = () => {
               borderRadius: isFullscreen ? "0" : "12px"
             }}
             transition={{
-              layout: { duration: 0, stiffness: 0 }, // disable layout animation
+              layout: { duration: 0 },
               borderRadius: {
-                type: "spring",
-                stiffness: 300,
-                damping: 30
+                type: "tween",
+                duration: 0.3,
+                ease: [0.25, 1, 0.5, 1]
               },
             }}
           >
@@ -556,7 +577,7 @@ const AdvancedDataGrid = () => {
                   size="icon"
                   onClick={() => setIsFullscreen(!isFullscreen)}
                   title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                  className="h-11 border-2 shadow-sm bg-background color-foreground border-border"
+                  className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
                   style={{ color: "var(--color-muted-foreground)" }}
                 >
                   {isFullscreen ? (
@@ -565,7 +586,6 @@ const AdvancedDataGrid = () => {
                     <Maximize2 className="h-4 w-4" />
                   )}
                 </Button>
-
               }
             />
 
@@ -574,12 +594,15 @@ const AdvancedDataGrid = () => {
               className="flex-1 overflow-auto min-h-0"
               style={{
                 overscrollBehavior: 'none',
+                scrollBehavior: 'smooth',
               }}
             >
-              <table className="w-full text-sm border-collapse"
+              <table
+                className="w-full text-sm border-collapse"
                 style={{
                   width: 'max-content',
-                  minWidth: '100%'
+                  minWidth: '100%',
+                  contain: 'layout style paint',
                 }}
               >
                 <DataGridTableHeader
@@ -601,6 +624,7 @@ const AdvancedDataGrid = () => {
                 />
               </table>
             </div>
+
             <motion.div
               initial={{ opacity: 1 }}
               exit={{ opacity: 0, height: 0 }}
@@ -612,11 +636,16 @@ const AdvancedDataGrid = () => {
 
           {/* Footer Credit */}
           {!isFullscreen && (
-            <div className="text-center mt-6 text-sm text-muted-foreground">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-center mt-6 text-sm text-muted-foreground"
+            >
               Built with ❤️ by {" "}
-              <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
+              <a href="https://x.com/2102ankit" target="_blank" className="underline px-0 hover:text-primary transition-colors"> Ankit Mishra</a> {" "}
               • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
-            </div>
+            </motion.div>
           )}
         </div>
       </motion.div>

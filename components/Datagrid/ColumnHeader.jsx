@@ -7,8 +7,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import {
   ArrowDown,
   ArrowUp,
@@ -46,57 +44,29 @@ export function ColumnHeader({
     .getState()
     .sorting.findIndex((s) => s.id === column.id);
   const showSortIndex = table.getState().sorting.length > 1 && sortIndex !== -1;
-  // Determine if any menu options should be shown for this column
+
   const hasMenuOptions = enableSort || (enablePin && column.columnDef.enablePinning !== false) || (enableHide && column.columnDef.enableHiding !== false);
 
-  // Drag handling using @dnd-kit
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging: isDnDDragging,
-  } = useSortable({
-    id: column.id,
-    disabled: !enableDrag || column.columnDef.enableReordering === false,
-  });
-
-  // Merge dragging state with local state for opacity handling
-  const isDragging = isDnDDragging;
-
-  // Apply transform style
-  const dndStyle = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  // Resize handlers
+  // Resize handlers with smooth animation
   const handleResizeMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
     header.getResizeHandler()(e);
   };
 
-
   return (
     <div
       className="flex items-center justify-between w-full gap-1 group relative"
+      style={{ touchAction: 'none' }}
     >
       {/* Column Title & Sort */}
-      <div className="flex items-center flex-1 min-w-0"
-        ref={setNodeRef}
-        {...attributes}
-        {...listeners}
-        style={{
-          opacity: isDragging ? 0.5 : 1,
-          cursor: isDragging ? "grabbing" : "default",
-          ...dndStyle,
-        }}
-      >
+      <div className="flex items-center flex-1 min-w-0">
         {/* Drag Handle */}
-        {enableDrag && (
-          <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity shrink-0 px-2 py-1 rounded">
+        {enableDrag && !isPinned && column.id !== 'select' && column.id !== 'expand' && (
+          <div
+            className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity duration-150 shrink-0 px-2 py-1 rounded"
+            style={{ touchAction: 'none' }}
+          >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
         )}
@@ -107,13 +77,13 @@ export function ColumnHeader({
               const isMulti = e.shiftKey;
               column.toggleSorting(undefined, isMulti);
             }}
-            className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-foreground transition-colors"
+            className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-foreground transition-colors duration-150"
             title="Click to sort, Shift+Click for multi-sort"
           >
             <span className="font-semibold truncate">{title}</span>
             <div className="flex items-center gap-1 shrink-0">
               <SortIcon
-                className={`h-4 w-4 ${isSorted ? "text-primary" : "text-muted-foreground"
+                className={`h-4 w-4 transition-colors duration-150 ${isSorted ? "text-primary" : "text-muted-foreground"
                   }`}
               />
               {showSortIndex && (
@@ -142,7 +112,7 @@ export function ColumnHeader({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity  mr-2"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-150 mr-2"
               >
                 <span className="sr-only">Column menu</span>
                 <svg
@@ -222,25 +192,26 @@ export function ColumnHeader({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </div >
+      </div>
 
-      {
-        enableResize && column.getCanResize() && (
-          <div
-            onMouseDown={handleResizeMouseDown}
-            onTouchStart={handleResizeMouseDown}
-            onDoubleClick={() => column.resetSize()}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-            }}
-            data-dnd-kit-disabled="true"
-            className={`absolute -right-1 -top-2 h-10 w-2 cursor-col-resize touch-none 
-            select-none transition-colors ${column.getIsResizing() ? "bg-primary" : "hover:bg-primary/50"}`}
-            style={{ userSelect: "none" }}
-          />
-        )
-      }
-    </div >
+      {enableResize && column.getCanResize() && (
+        <div
+          onMouseDown={handleResizeMouseDown}
+          onTouchStart={handleResizeMouseDown}
+          onDoubleClick={() => column.resetSize()}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          data-dnd-kit-disabled="true"
+          className={`absolute -right-1 -top-2 h-10 w-2 cursor-col-resize touch-none 
+          select-none transition-all duration-150 ${column.getIsResizing() ? "bg-primary w-1" : "hover:bg-primary/50"}`}
+          style={{
+            userSelect: "none",
+            touchAction: 'none',
+          }}
+        />
+      )}
+    </div>
   );
 }
 

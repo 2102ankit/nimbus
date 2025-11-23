@@ -1,0 +1,136 @@
+/* Premium DataGrid Animations - GPU Accelerated */
+
+/* Smooth column reordering */
+table th {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Smooth cell transitions during column reorder */
+table td {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+/* Premium resize animation */
+table th:has(.cursor-col-resize:hover),
+table th:has(.cursor-col-resize:active) {
+    will-change: width, min-width, max-width;
+}
+
+/* Smooth hover effects */
+table tbody tr {
+    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Drag shadow effect */
+table th[style*="opacity: 0.5"] {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transform: scale(1.02) translateZ(0);
+    transition: box-shadow 200ms cubic-bezier(0.25, 1, 0.5, 1),
+        transform 200ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Pinned column smooth shadow */
+.pinned-left-border,
+.pinned-right-border {
+    transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Remove jank from framer-motion layout animations */
+[data-framer-appear-id] {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+/* Smooth scrolling */
+.overflow-auto {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Optimize for 60fps animations */
+@media (prefers-reduced-motion: no-preference) {
+    * {
+        scroll-behavior: smooth;
+    }
+
+    table {
+        contain: layout style paint;
+    }
+}
+
+/* Hardware acceleration for drag operations */
+[style*="grabbing"] {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Smooth column width changes */
+table th,
+table td {
+    transition: width 150ms cubic-bezier(0.4, 0, 0.2, 1),
+        min-width 150ms cubic-bezier(0.4, 0, 0.2, 1),
+        max-width 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent layout shift during drag */
+table thead tr {
+    position: relative;
+    isolation: isolate;
+}
+
+/* Smooth border transitions */
+table th,
+table td {
+    transition-property: border-color, background-color, box-shadow, width, min-width, max-width;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* Focus ring smooth animation */
+table th:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+    transition: outline 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Subtle scale on drag for premium feel */
+@keyframes dragScale {
+    0% {
+        transform: scale(1) translateZ(0);
+    }
+
+    50% {
+        transform: scale(1.02) translateZ(0);
+    }
+
+    100% {
+        transform: scale(1) translateZ(0);
+    }
+}
+
+/* Anti-aliasing for smoother text during animations */
+table th,
+table td {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Optimize repaints */
+table {
+    will-change: scroll-position;
+    contain-intrinsic-size: auto 500px;
+}
+
+/* Smooth expansion animations */
+table tbody tr[style*="height"] {
+    transition: height 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}

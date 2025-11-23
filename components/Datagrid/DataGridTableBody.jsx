@@ -168,7 +168,7 @@ export function GroupRow({ row, getDensityPadding }) {
   );
 }
 
-// Data Row Component
+// Data Row Component - OPTIMIZED
 export function DataRow({
   row,
   idx,
@@ -186,12 +186,8 @@ export function DataRow({
 
   return (
     <React.Fragment key={row.id}>
-      <motion.tr
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.15, delay: idx * 0.01 }}
-        className="transition-all"
+      <tr
+        className="transition-colors duration-150"
         style={{
           backgroundColor: row.getIsSelected()
             ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
@@ -223,16 +219,8 @@ export function DataRow({
           const nextColumn = allColumns[currentIndex + 1];
           const isBeforeRightPinned = nextColumn && nextColumn.getIsPinned() === 'right';
 
-
           return (
-            <motion.td
-              layout="position"
-              transition={{
-                type: "spring",
-                stiffness: 500,
-                damping: 40,
-                mass: 0.8,
-              }}
+            <td
               key={cell.id}
               className={`align-middle relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getCellBorderClasses() : ''
                 } ${isPinned ? "sticky z-10" : ""} ${isPinned === "left" ? "pinned-left-border" : isPinned === "right" ? "pinned-right-border" : ""
@@ -256,6 +244,8 @@ export function DataRow({
                     ? "2px 0 5px rgba(0,0,0,0.05)"
                     : "-2px 0 5px rgba(0,0,0,0.05)"
                   : "none",
+                transition: 'width 150ms cubic-bezier(0.4, 0, 0.2, 1), min-width 150ms cubic-bezier(0.4, 0, 0.2, 1), max-width 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                willChange: 'width',
               }}
             >
               {cell.getIsGrouped() ? (
@@ -289,10 +279,10 @@ export function DataRow({
               ) : cell.getIsPlaceholder() ? null : (
                 flexRender(cell.column.columnDef.cell, cell.getContext())
               )}
-            </motion.td>
+            </td>
           );
         })}
-      </motion.tr>
+      </tr>
 
       {/* Expanded Row Details */}
       {row.getIsExpanded() && !isGrouped && (
@@ -329,7 +319,7 @@ export function DataRow({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
                     <span>Full Details</span>
