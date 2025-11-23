@@ -14,10 +14,10 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
         const selectedFile = acceptedFiles[0];
         if (selectedFile) {
             const ext = selectedFile.name.split(".").pop()?.toLowerCase();
-            if (["csv", "xlsx", "xls"].includes(ext || "")) {
+            if (["csv", "xlsx", "xls", "json"].includes(ext || "")) {
                 setFile(selectedFile);
             } else {
-                alert("Please upload a CSV or Excel file (.csv, .xlsx, .xls)");
+                alert("Please upload a CSV, Excel, or JSON file (.csv, .xlsx, .xls, .json)");
             }
         }
     }, []);
@@ -28,6 +28,7 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
             "text/csv": [".csv"],
             "application/vnd.ms-excel": [".xls"],
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+            "application/json": [".json"],
         },
         maxFiles: 1,
     });
@@ -74,17 +75,60 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
             reader.readAsArrayBuffer(file);
         });
     };
+
+    const parseJSON = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const result = e.target?.result;
+                    if (!result) throw new Error("No data");
+
+                    const parsed = JSON.parse(result);
+
+                    // Handle if it's an array of objects
+                    if (Array.isArray(parsed)) {
+                        resolve(parsed);
+                    }
+                    // Handle if it's a single object with data array
+                    else if (parsed.data && Array.isArray(parsed.data)) {
+                        resolve(parsed.data);
+                    }
+                    // Handle if it's an object with other structure
+                    else if (typeof parsed === 'object') {
+                        resolve([parsed]);
+                    } else {
+                        throw new Error("JSON must be an array of objects or contain a 'data' array");
+                    }
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            reader.onerror = () => reject(new Error("File reading failed"));
+            reader.readAsText(file);
+        });
+    };
+
     const handleUpload = async () => {
         if (!file) return;
 
         setUploading(true);
         try {
             const ext = file.name.split(".").pop()?.toLowerCase();
-            const data = ext === "csv" ? await parseCSV(file) : await parseExcel(file);
+            let data;
+
+            if (ext === "csv") {
+                data = await parseCSV(file);
+            } else if (ext === "json") {
+                data = await parseJSON(file);
+            } else {
+                data = await parseExcel(file);
+            }
+
             onDataLoaded(data);
         } catch (error) {
             console.error("Parse error:", error);
-            alert("Failed to parse file. Please ensure it's a valid CSV/Excel file.");
+            alert("Failed to parse file. Please ensure it's a valid CSV/Excel/JSON file.");
         } finally {
             setUploading(false);
         }
@@ -139,7 +183,7 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
                                 </p>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Supported: CSV, XLSX, XLS
+                                Supported: CSV, XLSX, XLS, JSON
                             </p>
                         </div>
                     ) : (

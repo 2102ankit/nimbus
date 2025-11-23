@@ -41,13 +41,11 @@ export function analyzeData(rawData) {
 function cleanData(data) {
     return data
         .filter(row => {
-            // Filter out completely empty rows
             return Object.values(row).some(val =>
                 val !== null && val !== undefined && val !== ''
             );
         })
         .map(row => {
-            // Trim string values
             const cleaned = {};
             for (const [key, value] of Object.entries(row)) {
                 if (typeof value === 'string') {
@@ -76,28 +74,28 @@ function detectNestedData(data) {
  */
 function analyzeColumns(data) {
     const columns = {};
-    const sampleSize = Math.min(data.length, 100); // Sample first 100 rows
+    const sampleSize = Math.min(data.length, 100);
 
-    // Get all unique column names
     const allKeys = new Set();
     data.slice(0, sampleSize).forEach(row => {
         Object.keys(row).forEach(key => allKeys.add(key));
     });
 
-    // Analyze each column
     allKeys.forEach(key => {
         const values = data.slice(0, sampleSize)
             .map(row => row[key])
             .filter(val => val !== null && val !== undefined && val !== '');
 
+        const isNested = values.some(val => typeof val === 'object' && val !== null);
+
         columns[key] = {
             name: key,
-            dataType: detectDataType(values),
-            isEnum: isEnumColumn(values),
+            dataType: isNested ? 'nested' : detectDataType(values),
+            isEnum: !isNested && isEnumColumn(values),
             uniqueValues: getUniqueValues(values),
             hasNulls: data.some(row => row[key] === null || row[key] === undefined || row[key] === ''),
             maxLength: getMaxLength(values),
-            isNested: values.some(val => typeof val === 'object' && val !== null),
+            isNested: isNested,
         };
     });
 
@@ -110,7 +108,6 @@ function analyzeColumns(data) {
 function detectDataType(values) {
     if (values.length === 0) return 'text';
 
-    // Check for dates
     const datePattern = /^\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}/;
     if (values.slice(0, 10).every(val =>
         typeof val === 'string' && datePattern.test(val)
@@ -118,21 +115,18 @@ function detectDataType(values) {
         return 'date';
     }
 
-    // Check for numbers
     const numericValues = values.filter(val =>
         typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val))
     );
 
     if (numericValues.length / values.length > 0.8) {
-        // Check if it's currency
-        const currencyPattern = /^\$|€|£|¥/;
+        const currencyPattern = /^\$|â‚¬|Â£|Â¥/;
         if (values.some(val =>
             typeof val === 'string' && currencyPattern.test(val)
         )) {
             return 'currency';
         }
 
-        // Check if it's percentage
         if (values.some(val =>
             typeof val === 'string' && val.includes('%')
         )) {
@@ -142,7 +136,6 @@ function detectDataType(values) {
         return 'number';
     }
 
-    // Check for booleans
     const boolValues = values.filter(val =>
         typeof val === 'boolean' ||
         (typeof val === 'string' && ['true', 'false', 'yes', 'no', '1', '0'].includes(val.toLowerCase()))
@@ -156,17 +149,20 @@ function detectDataType(values) {
 }
 
 /**
- * Determines if a column should be treated as an enum (categorical data)
+ * Determines if a column should be treated as an enum
  */
 function isEnumColumn(values) {
     if (values.length === 0) return false;
 
-    const uniqueValues = new Set(values.map(v => String(v).toLowerCase()));
+    // Convert all values to strings for comparison, handle booleans explicitly
+    const uniqueValues = new Set(
+        values.map(v => {
+            if (typeof v === 'boolean') return String(v); // 'true' or 'false'
+            return String(v).toLowerCase();
+        })
+    );
     const uniqueRatio = uniqueValues.size / values.length;
 
-    // Consider it an enum if:
-    // 1. Less than 10 unique values OR
-    // 2. Unique values ratio is less than 20% (repeated values)
     return uniqueValues.size <= 10 || uniqueRatio < 0.2;
 }
 
@@ -174,8 +170,14 @@ function isEnumColumn(values) {
  * Gets unique values for enum detection
  */
 function getUniqueValues(values) {
-    const unique = new Set(values.map(v => String(v)));
-    return Array.from(unique).slice(0, 20); // Return max 20 for display
+    const unique = new Set(
+        values.map(v => {
+            // Handle booleans explicitly
+            if (typeof v === 'boolean') return String(v);
+            return String(v);
+        })
+    );
+    return Array.from(unique).slice(0, 20);
 }
 
 /**
@@ -194,7 +196,7 @@ function getMaxLength(values) {
 function generateColumnDefinitions(columnAnalysis, hasNestedData) {
     const columns = [];
 
-    // Add selection column
+    // Selection column
     columns.push({
         id: "select",
         header: ({ table }) => (
@@ -222,7 +224,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
         enableDrag: false,
     });
 
-    // Add expand column if nested data exists
+    // Expand column if nested data exists
     if (hasNestedData) {
         columns.push({
             id: "expand",
@@ -236,7 +238,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                         color: "var(--color-foreground)",
                     }}
                 >
-                    {row.getIsExpanded() ? '▼' : '▶'}
+                    {row.getIsExpanded() ? 'â–¼' : 'â–¶'}
                 </button>
             ),
             size: 50,
@@ -250,10 +252,9 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
         });
     }
 
-    // Add data columns
+    // Data columns
     Object.entries(columnAnalysis).forEach(([key, analysis]) => {
         if (analysis.isNested) {
-            // Skip nested columns for now, they'll be shown in expansion
             return;
         }
 
@@ -270,20 +271,21 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
             enableGrouping: analysis.isEnum,
         };
 
-        // Add custom cell renderer for enums
         if (analysis.isEnum) {
             column.cell = ({ getValue }) => {
                 const value = getValue();
+                // Ensure value is converted to string for display
+                const displayValue = typeof value === 'boolean' ? String(value) : value;
                 return (
                     <Badge
                         className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm border-2"
                         style={{
-                            backgroundColor: getEnumColor(value, analysis.uniqueValues).bg,
-                            color: getEnumColor(value, analysis.uniqueValues).text,
-                            borderColor: getEnumColor(value, analysis.uniqueValues).border,
+                            backgroundColor: getEnumColor(displayValue, analysis.uniqueValues).bg,
+                            color: getEnumColor(displayValue, analysis.uniqueValues).text,
+                            borderColor: getEnumColor(displayValue, analysis.uniqueValues).border,
                         }}
                     >
-                        {value}
+                        {displayValue}
                     </Badge>
                 );
             };
@@ -296,7 +298,6 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
             );
         }
 
-        // Add custom cell renderer for currency
         if (analysis.dataType === 'currency') {
             column.cell = ({ getValue }) => {
                 const value = getValue();
@@ -320,7 +321,6 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
             );
         }
 
-        // Add custom cell renderer for percentage
         if (analysis.dataType === 'percentage') {
             column.cell = ({ getValue }) => {
                 const value = getValue();
@@ -396,44 +396,53 @@ function mapDataType(dataType) {
 
 /**
  * Calculates optimal column width based on content
+ * Uses smart estimation including header length
  */
 function calculateColumnWidth(analysis) {
-    const baseWidth = 150;
-    const charWidth = 8;
+    const CHAR_WIDTH = 8.5;
+    const PADDING = 32;
+    const MIN_WIDTH = 80;
+    const MAX_WIDTH = 500;
 
+    // Start with a type-based minimum
+    const typeMinWidths = {
+        'date': 120,
+        'number': 110,
+        'currency': 130,
+        'percentage': 140,
+        'boolean': 100,
+        'nested': 150,
+        'text': 120,
+    };
+
+    let baseWidth = typeMinWidths[analysis.dataType] || 120;
+
+    // For enums, consider the unique values
     if (analysis.isEnum) {
         const maxValueLength = Math.max(
             ...analysis.uniqueValues.map(v => String(v).length)
         );
-        return Math.min(Math.max(baseWidth, maxValueLength * charWidth + 60), 300);
+        baseWidth = Math.max(baseWidth, maxValueLength * CHAR_WIDTH + 60);
+    } else {
+        // For text, use the actual max length observed
+        if (analysis.dataType === 'text' || analysis.dataType === 'nested') {
+            baseWidth = Math.max(
+                baseWidth,
+                Math.min(analysis.maxLength * CHAR_WIDTH, 300) + PADDING
+            );
+        }
     }
 
-    if (analysis.dataType === 'date') {
-        return 200;
-    }
-
-    if (analysis.dataType === 'number' || analysis.dataType === 'currency') {
-        return 180;
-    }
-
-    if (analysis.dataType === 'percentage') {
-        return 250;
-    }
-
-    // For text, use max length as guide
-    const estimatedWidth = Math.min(
-        Math.max(baseWidth, analysis.maxLength * charWidth),
-        400
-    );
-
-    return estimatedWidth;
+    return Math.min(baseWidth, MAX_WIDTH);
 }
 
 /**
  * Generates color scheme for enum values
  */
 function getEnumColor(value, allValues) {
-    const index = allValues.indexOf(String(value));
+    // Normalize value for comparison
+    const normalizedValue = typeof value === 'boolean' ? String(value) : String(value);
+    const index = allValues.indexOf(normalizedValue);
     const colors = [
         {
             bg: "color-mix(in oklch, var(--color-chart-2), transparent 90%)",

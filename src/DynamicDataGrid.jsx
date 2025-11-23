@@ -1,6 +1,4 @@
-import {
-    addHeadersToColumns,
-} from "@/components/Datagrid/columnDefinitions";
+import { addHeadersToColumns } from "@/components/Datagrid/columnDefinitions";
 import { DataGridPagination } from "@/components/Datagrid/DataGridPagination";
 import { DataGridTableBody } from "@/components/Datagrid/DataGridTableBody";
 import { DataGridTableHeader } from "@/components/Datagrid/DataGridTableHeader";
@@ -36,6 +34,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "../components/Datagrid/StatusBarModal";
 import { analyzeData } from "./dataAnalyzer";
 import { FileUploadHandler } from "./FileUploadHandler";
+import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
 
 const DynamicDataGrid = () => {
     const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -44,8 +43,8 @@ const DynamicDataGrid = () => {
     const [data, setData] = useState([]);
     const [columns, setColumns] = useState([]);
     const [metadata, setMetadata] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [showUpload, setShowUpload] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [showUpload, setShowUpload] = useState(false);
     const [globalFilter, setGlobalFilter] = useState("");
     const [rowSelection, setRowSelection] = useState({});
     const [expanded, setExpanded] = useState({});
@@ -55,14 +54,10 @@ const DynamicDataGrid = () => {
     const [prefs, setPrefs] = useState(loadPreferences);
     const [sorting, setSorting] = useState(prefs.sorting || []);
     const [columnFilters, setColumnFilters] = useState([]);
-    const [columnVisibility, setColumnVisibility] = useState(
-        prefs.columnVisibility || {}
-    );
+    const [columnVisibility, setColumnVisibility] = useState(prefs.columnVisibility || {});
     const [columnOrder, setColumnOrder] = useState(prefs.columnOrder || []);
     const [columnSizing, setColumnSizing] = useState(prefs.columnSizing || {});
-    const [columnPinning, setColumnPinning] = useState(
-        prefs.columnPinning || { left: [], right: [] }
-    );
+    const [columnPinning, setColumnPinning] = useState(prefs.columnPinning || { left: [], right: [] });
     const [showShortcutsModal, setShowShortcutsModal] = useState(false);
     const [exportMode, setExportMode] = useState(null);
     const [focusedColumnIndex, setFocusedColumnIndex] = useState(null);
@@ -76,45 +71,67 @@ const DynamicDataGrid = () => {
     const [groupMenuOpen, setGroupMenuOpen] = useState(false);
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
-    // Save preferences automatically with debouncing
-    const handleSavePrefs = useCallback(
-        (newPrefs) => {
-            const merged = { ...prefs, ...newPrefs };
-            savePreferences(merged);
-            setPrefs(merged);
-        },
-        [prefs]
-    );
+    // Load sample data on mount
+    useEffect(() => {
+        setLoading(true);
+        setTimeout(() => {
+            const sampleData = generateSampleData(250);
+            const analyzed = analyzeData(sampleData);
+            setData(analyzed.data);
+            setColumns(analyzed.columns);
+            setMetadata(analyzed.metadata);
+            setLoading(false);
+        }, 500);
+    }, []);
+
+    // Save preferences with debouncing
+    const handleSavePrefs = useCallback((newPrefs) => {
+        const merged = { ...prefs, ...newPrefs };
+        savePreferences(merged);
+        setPrefs(merged);
+    }, [prefs]);
 
     useEffect(() => {
         const timer = setTimeout(() => handleSavePrefs({ sorting }), 300);
         return () => clearTimeout(timer);
-    }, [sorting]);
+    }, [sorting, handleSavePrefs]);
 
     useEffect(() => {
         const timer = setTimeout(() => handleSavePrefs({ columnVisibility }), 300);
         return () => clearTimeout(timer);
-    }, [columnVisibility]);
+    }, [columnVisibility, handleSavePrefs]);
 
     useEffect(() => {
         const timer = setTimeout(() => handleSavePrefs({ columnOrder }), 300);
         return () => clearTimeout(timer);
-    }, [columnOrder]);
+    }, [columnOrder, handleSavePrefs]);
 
     useEffect(() => {
         const timer = setTimeout(() => handleSavePrefs({ columnSizing }), 300);
         return () => clearTimeout(timer);
-    }, [columnSizing]);
+    }, [columnSizing, handleSavePrefs]);
 
     useEffect(() => {
         const timer = setTimeout(() => handleSavePrefs({ columnPinning }), 300);
         return () => clearTimeout(timer);
-    }, [columnPinning]);
+    }, [columnPinning, handleSavePrefs]);
 
-    // Handle file upload and data analysis
+    // Handle file upload with state reset
     const handleDataLoaded = useCallback((rawData) => {
         setLoading(true);
         setShowUpload(false);
+
+        // Reset all states
+        setSorting([]);
+        setColumnFilters([]);
+        setColumnVisibility({});
+        setRowSelection({});
+        setGlobalFilter("");
+        setColumnOrder([]);
+        setColumnSizing({});
+        setColumnPinning({ left: [], right: [] });
+        setExpanded({});
+        setGrouping([]);
 
         requestAnimationFrame(() => {
             setTimeout(() => {
@@ -127,13 +144,11 @@ const DynamicDataGrid = () => {
         });
     }, []);
 
-    // Add headers to columns
     const columnsWithHeaders = useMemo(
         () => columns.length > 0 ? addHeadersToColumns(columns) : [],
         [columns]
     );
 
-    // Initialize table
     const table = useReactTable({
         data,
         columns: columnsWithHeaders,
@@ -191,16 +206,17 @@ const DynamicDataGrid = () => {
         },
     });
 
-    // Smooth scroll with animation
+    // Fixed scroll into view with proper calculations
     const scrollColumnIntoView = useCallback((column, direction, isWrapping = false) => {
         if (!column) return;
 
         requestAnimationFrame(() => {
-            const tableContainer = document.querySelector('.overflow-auto');
+            const tableContainer = document.querySelector('[role="grid"]')?.parentElement;
             if (!tableContainer) return;
 
-            const columnId = column.id;
-            const headerCell = document.querySelector(`[data-column-id="${columnId}"]`);
+            const headerCell = Array.from(document.querySelectorAll('th')).find(
+                th => th.textContent?.includes(column.columnDef?.meta?.headerText || column.id)
+            );
             if (!headerCell) return;
 
             const leftPinnedColumns = table.getState().columnPinning.left || [];
@@ -220,16 +236,15 @@ const DynamicDataGrid = () => {
             const containerRect = tableContainer.getBoundingClientRect();
             const cellRect = headerCell.getBoundingClientRect();
             const currentScroll = tableContainer.scrollLeft;
-            const borderWidth = 2;
-            let targetScrollLeft;
+            let targetScrollLeft = currentScroll;
 
             if (direction === 'right') {
                 const cellLeftRelativeToScroll = cellRect.left - containerRect.left + currentScroll;
-                targetScrollLeft = cellLeftRelativeToScroll - leftPinnedWidth;
+                targetScrollLeft = cellLeftRelativeToScroll - leftPinnedWidth - 10;
             } else if (direction === 'left') {
                 const cellRightRelativeToScroll = cellRect.right - containerRect.left + currentScroll;
                 const visibleAreaEnd = containerRect.width - rightPinnedWidth;
-                targetScrollLeft = cellRightRelativeToScroll + borderWidth - visibleAreaEnd;
+                targetScrollLeft = cellRightRelativeToScroll + 10 - visibleAreaEnd;
             }
 
             if (isWrapping) {
@@ -262,6 +277,65 @@ const DynamicDataGrid = () => {
     useHotkeys('f', () => setIsFullscreen((v) => !v), { enableOnFormTags: false });
     useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
+    useHotkeys('c', (e) => {
+        e.preventDefault();
+        if (!exportMenuOpen) {
+            if (exportMode === 'export') {
+                const rows = table.getFilteredRowModel().rows.map(r => r.original);
+                const cols = table.getVisibleLeafColumns()
+                    .filter(col => col.id !== 'select' && col.id !== 'expand')
+                    .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
+                exportToCSV(rows, cols);
+                setExportMode(null);
+            } else {
+                setColumnsMenuOpen((v) => !v);
+            }
+        }
+    }, { enableOnFormTags: false });
+
+    useHotkeys('e', () => {
+        if (exportMenuOpen) {
+            setExportMenuOpen(false);
+            setExportMode(null);
+        } else if (exportMode === 'export') {
+            const rows = table.getFilteredRowModel().rows.map(r => r.original);
+            const cols = table.getVisibleLeafColumns()
+                .filter(col => col.id !== 'select' && col.id !== 'expand')
+                .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
+            exportToExcel(rows, cols);
+            setExportMode(null);
+        } else {
+            setExportMenuOpen(true);
+            setExportMode('export');
+            setTimeout(() => {
+                if (!exportMenuOpen) {
+                    setExportMode(null);
+                }
+            }, 3000);
+        }
+    }, { enableOnFormTags: false });
+
+    useHotkeys('j', () => {
+        if (exportMode === 'export' && !exportMenuOpen) {
+            const rows = table.getFilteredRowModel().rows.map(r => r.original);
+            const cols = table.getVisibleLeafColumns()
+                .filter(col => col.id !== 'select' && col.id !== 'expand')
+                .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
+            exportToJSON(rows, cols);
+            setExportMode(null);
+        }
+    }, { enableOnFormTags: false });
+
+    useHotkeys('v', (e) => {
+        e.preventDefault();
+        setViewMenuOpen((v) => !v);
+    }, { enableOnFormTags: false });
+
+    useHotkeys('g', (e) => {
+        e.preventDefault();
+        setGroupMenuOpen((v) => !v);
+    }, { enableOnFormTags: false });
+
     useHotkeys('esc', (e) => {
         if (document.activeElement === searchInputRef.current) {
             searchInputRef.current?.blur();
@@ -280,7 +354,49 @@ const DynamicDataGrid = () => {
         if (table.getCanNextPage()) table.nextPage();
     }, { enableOnFormTags: false });
 
-    // Handle export
+    useHotkeys('left', (e) => {
+        if (document.activeElement === searchInputRef.current) return;
+        e.preventDefault();
+
+        const visibleColumns = table.getVisibleLeafColumns()
+            .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
+
+        if (visibleColumns.length === 0) return;
+
+        setFocusedColumnIndex(prev => {
+            const isWrapping = prev === null || prev <= 0;
+            if (isWrapping) {
+                const newIndex = visibleColumns.length - 1;
+                scrollColumnIntoView(visibleColumns[newIndex], 'left', true);
+                return newIndex;
+            }
+            const newIndex = prev - 1;
+            scrollColumnIntoView(visibleColumns[newIndex], 'left', false);
+            return newIndex;
+        });
+    }, { enableOnFormTags: false });
+
+    useHotkeys('right', (e) => {
+        if (document.activeElement === searchInputRef.current) return;
+        e.preventDefault();
+
+        const visibleColumns = table.getVisibleLeafColumns()
+            .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
+
+        if (visibleColumns.length === 0) return;
+
+        setFocusedColumnIndex(prev => {
+            const isWrapping = prev === null || prev >= visibleColumns.length - 1;
+            if (isWrapping) {
+                scrollColumnIntoView(visibleColumns[0], 'right', true);
+                return 0;
+            }
+            const newIndex = prev + 1;
+            scrollColumnIntoView(visibleColumns[newIndex], 'right', false);
+            return newIndex;
+        });
+    }, { enableOnFormTags: false });
+
     const handleExport = useCallback((format, rows, cols) => {
         switch (format) {
             case "csv":
@@ -295,7 +411,6 @@ const DynamicDataGrid = () => {
         }
     }, []);
 
-    // Reset preferences
     const handleResetPreferences = useCallback(() => {
         resetPreferences();
         setSorting([]);
@@ -353,7 +468,6 @@ const DynamicDataGrid = () => {
                 willChange: isFullscreen ? 'padding, margin' : 'auto'
             }}
         >
-            {/* File Upload Modal */}
             <AnimatePresence>
                 {showUpload && (
                     <FileUploadHandler
@@ -363,7 +477,6 @@ const DynamicDataGrid = () => {
                 )}
             </AnimatePresence>
 
-            {/* Main Content */}
             <motion.div
                 layout
                 className="w-full relative z-10"
@@ -378,7 +491,6 @@ const DynamicDataGrid = () => {
                 }}
             >
                 <div className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}>
-                    {/* Header */}
                     <AnimatePresence mode="wait">
                         {!isFullscreen && (
                             <motion.div
@@ -391,7 +503,7 @@ const DynamicDataGrid = () => {
                                     Nimbus<span className="text-white!">☁️</span>Enterprise DataGrid
                                 </h1>
                                 <p className="text-md mx-auto tracking-tighter leading-tight text-muted-foreground">
-                                    Upload CSV/Excel files for instant intelligent analysis with auto-detected columns, types, and enums
+                                    Upload CSV/Excel/JSON files for instant intelligent analysis with auto-detected columns, types, and enums
                                 </p>
                                 {metadata && (
                                     <div className="mt-2 text-sm text-muted-foreground">
@@ -410,19 +522,17 @@ const DynamicDataGrid = () => {
                         />
                     )}
 
-                    {/* Show upload button if data exists */}
                     {data.length > 0 && !isFullscreen && (
                         <Button
                             onClick={() => setShowUpload(true)}
                             variant="outline"
-                            className="absolute top-0 right-12 my-3 mx-2 border-2"
+                            className="absolute top-0 right-12 m-4 border-2"
                         >
-                            <Upload className="h-4 w-4" />
-                            Upload
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload New File
                         </Button>
                     )}
 
-                    {/* Table Card */}
                     {data.length > 0 && (
                         <motion.div
                             layout="position"
@@ -486,6 +596,7 @@ const DynamicDataGrid = () => {
                                     overscrollBehavior: 'none',
                                     scrollBehavior: 'smooth',
                                 }}
+                                role="grid"
                             >
                                 <table
                                     className="w-full text-sm border-collapse"
@@ -532,8 +643,7 @@ const DynamicDataGrid = () => {
                             transition={{ delay: 0.2 }}
                             className="text-center mt-6 text-sm text-muted-foreground"
                         >
-                            Built with ❤️ by {" "}
-                            <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "} • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
+                            Built with ❤️ • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
                             • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">u</kbd> to upload
                         </motion.div>
                     )}
