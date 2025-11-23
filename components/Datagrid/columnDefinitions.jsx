@@ -216,7 +216,7 @@ export const createColumns = () => [
             style={{ backgroundColor: "var(--color-muted)" }}
           >
             <div
-              className="h-2.5 rounded-full transition-all duration-300"
+              className="h-2.5 rounded-full transition-all duration-150"
               style={{
                 backgroundColor: getColor(value),
                 width: `${value}%`,

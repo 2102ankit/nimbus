@@ -230,6 +230,10 @@ export function ColumnHeader({
             onMouseDown={handleResizeMouseDown}
             onTouchStart={handleResizeMouseDown}
             onDoubleClick={() => column.resetSize()}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+            }}
+            data-dnd-kit-disabled="true"
             className={`absolute -right-1 -top-2 h-10 w-2 cursor-col-resize touch-none 
             select-none transition-colors ${column.getIsResizing() ? "bg-primary" : "hover:bg-primary/50"}`}
             style={{ userSelect: "none" }}

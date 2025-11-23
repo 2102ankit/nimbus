@@ -517,12 +517,8 @@ const AdvancedDataGrid = () => {
               maxHeight: isFullscreen ? "none" : "80vh",
             }}
             animate={{
-              borderRadius: isFullscreen ? "0" : "12px",
-              // boxShadow: isFullscreen
-              //   ? "0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)"
-              //   : "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              borderRadius: isFullscreen ? "0" : "12px"
             }}
-            // transition={{ type: "spring", stiffness: 300, damping: 30 }}
             transition={{
               layout: { duration: 0, stiffness: 0 }, // disable layout animation
               borderRadius: {

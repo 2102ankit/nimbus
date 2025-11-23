@@ -1,11 +1,14 @@
 // DataGridTableHeader.jsx
-import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { closestCenter, DndContext, KeyboardSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { flexRender } from "@tanstack/react-table";
+import { motion } from "motion/react";
+import { NoDragOnResizerSensor } from "./NoDragOnResizerSensor";
 
 function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPadding, getHeaderBorderClasses, focusedColumnIndex }) {
   const { attributes, listeners, setNodeRef, isDragging } = useSortable({
     id: header.column.id,
+    disabled: !header.column.columnDef.ena || header.column.columnDef.enableReordering === false,
   });
 
   const isFocused = !isPinned && focusedColumnIndex !== null && (() => {
@@ -24,13 +27,13 @@ function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPad
   const isBeforeRightPinned = nextColumn && nextColumn.getIsPinned() === 'right';
 
   return (
-    <th
+    <motion.th
       ref={setNodeRef}
       data-column-id={header.column.id}
       {...attributes}
       {...listeners}
       style={{
-        opacity: isDragging ? 0.7 : 1,
+        opacity: isDragging ? 0.9 : 1,
         cursor: isDragging ? 'grabbing' : 'grab',
         zIndex: isDragging ? 50 : isPinned ? 30 : 20,
         position: "sticky",
@@ -56,10 +59,12 @@ function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPad
         } ${isPinned === "left" ? "pinned-left-border" : isPinned === "right" ? "pinned-right-border" : ""
         } ${isBeforeRightPinned ? 'before-right-pinned' : ''}`}
     >
-      {header.isPlaceholder
-        ? null
-        : flexRender(header.column.columnDef.header, header.getContext())}
-    </th>
+      {
+        header.isPlaceholder
+          ? null
+          : flexRender(header.column.columnDef.header, header.getContext())
+      }
+    </motion.th >
   );
 }
 
@@ -72,32 +77,42 @@ export function DataGridTableHeader({
   focusedColumnIndex,
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(NoDragOnResizerSensor, {
+      activationConstraint: {
+        distance: 2,
+      },
+    }),
     useSensor(KeyboardSensor)
   );
 
-  // Live reordering: update column order while dragging
+  // ONLY CENTER COLUMNS — NEVER PINNED, NEVER SPECIAL
+  const reorderableIds = table
+    .getCenterLeafColumns()
+    .filter((c) => c.id !== "select" && c.id !== "expand")
+    .map((c) => c.id);
+
   const handleDragOver = (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const activeCol = table.getAllLeafColumns().find(c => c.id === active.id);
-    const overCol = table.getAllLeafColumns().find(c => c.id === over.id);
-    if (!activeCol || !overCol) return;
+    // BLOCK IF ANY COLUMN IS RESIZING
+    if (table.getState().columnSizingInfo.isResizingColumn) return;
 
-    // Move column in real time
+    const activeId = active.id;
+    const overId = over.id;
+
+    if (!reorderableIds.includes(activeId) || !reorderableIds.includes(overId))
+      return;
+
     table.setColumnOrder((prev) => {
-      const prevItems = Array.from(prev);
-      const activeIndex = prevItems.indexOf(active.id);
-      const overIndex = prevItems.indexOf(over.id);
+      const newOrder = [...prev];
+      const from = newOrder.indexOf(activeId);
+      const to = newOrder.indexOf(overId);
+      if (from === -1 || to === -1) return prev;
 
-      if (activeIndex === -1 || overIndex === -1) return prevItems;
-
-      const newItems = [...prevItems];
-      newItems.splice(activeIndex, 1);
-      newItems.splice(overIndex, 0, active.id);
-
-      return newItems;
+      newOrder.splice(from, 1);
+      newOrder.splice(to, 0, activeId);
+      return newOrder;
     });
   };
 
