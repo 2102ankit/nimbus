@@ -5,7 +5,6 @@ import { useState } from "react";
 
 /**
  * Wrappable cell component with expand functionality
- * Handles both normal text and long unbroken strings
  */
 export function WrappableCell({ value, maxLines = 2 }) {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -20,7 +19,7 @@ export function WrappableCell({ value, maxLines = 2 }) {
 
     if (!isLongText) {
         return (
-            <span className="text-sm" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+            <span className="text-sm text-foreground" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                 {stringValue}
             </span>
         );
@@ -29,7 +28,7 @@ export function WrappableCell({ value, maxLines = 2 }) {
     return (
         <>
             <div
-                className="text-sm"
+                className="text-sm text-foreground"
                 style={{
                     display: '-webkit-box',
                     WebkitLineClamp: maxLines,
@@ -73,18 +72,18 @@ export function CellExpandedModal({ value, onClose }) {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-card rounded-xl shadow-2xl p-6 max-w-2xl w-full border max-h-[80vh] flex flex-col"
+                className="bg-card rounded-xl shadow-2xl p-6 max-w-2xl w-full border border-border max-h-[80vh] flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Full Content</h3>
+                    <h3 className="text-lg font-semibold text-foreground">Full Content</h3>
                     <Button variant="ghost" size="icon" onClick={onClose}>
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
 
                 <div className="overflow-auto flex-1">
-                    <pre className="break-words whitespace-pre-wrap text-sm bg-muted/50 p-4 rounded-lg font-mono">
+                    <pre className="break-words whitespace-pre-wrap text-sm bg-muted/50 text-foreground p-4 rounded-lg font-mono">
                         {value}
                     </pre>
                 </div>
@@ -108,9 +107,9 @@ export function NestedDataViewer({ data }) {
     if (Array.isArray(data)) {
         return (
             <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
-                <p className="font-semibold text-sm mb-2">Array ({data.length} items)</p>
+                <p className="font-semibold text-sm mb-2 text-foreground">Array ({data.length} items)</p>
                 <div className="overflow-x-auto">
-                    <pre className="text-xs bg-background p-2 rounded border border-border overflow-auto max-h-60">
+                    <pre className="text-xs bg-background text-foreground p-2 rounded border border-border overflow-auto max-h-60">
                         {JSON.stringify(data, null, 2)}
                     </pre>
                 </div>
@@ -120,13 +119,13 @@ export function NestedDataViewer({ data }) {
 
     return (
         <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
-            <p className="font-semibold text-sm mb-2">Object</p>
+            <p className="font-semibold text-sm mb-2 text-foreground">Object</p>
             <div className="space-y-1">
                 {Object.entries(data).map(([key, val]) => (
-                    <div key={key} className="text-sm">
+                    <div key={key} className="text-sm text-foreground">
                         <span className="font-mono text-primary">{key}:</span>
                         {typeof val === 'object' ? (
-                            <pre className="text-xs bg-background p-2 rounded border border-border mt-1 overflow-auto">
+                            <pre className="text-xs bg-background text-foreground p-2 rounded border border-border mt-1 overflow-auto">
                                 {JSON.stringify(val, null, 2)}
                             </pre>
                         ) : (

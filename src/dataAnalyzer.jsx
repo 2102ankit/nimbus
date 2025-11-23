@@ -117,7 +117,7 @@ function analyzeColumns(data) {
             .filter(val => val !== null && val !== undefined && val !== '');
 
         const isNested = values.some(val => typeof val === 'object' && val !== null);
-        const dataType = isNested ? 'nested' : detectDataType(values);
+        const dataType = isNested ? 'nested' : detectDataType(values, key);
         const forceEnum = shouldForceEnum(key);
 
         columns[key] = {
@@ -135,9 +135,26 @@ function analyzeColumns(data) {
     return columns;
 }
 
-function detectDataType(values) {
+function detectDataType(values, columnName) {
     if (values.length === 0) return 'text';
 
+    const lowerColumnName = columnName.toLowerCase();
+
+    // Check for phone columns by name first
+    const phoneKeywords = ['phone', 'mobile', 'tel', 'contact'];
+    const isPhoneColumn = phoneKeywords.some(keyword => lowerColumnName.includes(keyword));
+
+    if (isPhoneColumn) {
+        const phonePattern = /^[\d\s\-\(\)\+]+$/;
+        const phoneValues = values.filter(val =>
+            typeof val === 'string' && phonePattern.test(val) && val.replace(/\D/g, '').length >= 7
+        );
+        if (phoneValues.length / values.length > 0.5) {
+            return 'phone';
+        }
+    }
+
+    // Check for dates
     const datePattern = /^\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}/;
     if (values.slice(0, 10).every(val =>
         typeof val === 'string' && datePattern.test(val)
@@ -145,14 +162,7 @@ function detectDataType(values) {
         return 'date';
     }
 
-    const phonePattern = /^[\d\s\-\(\)\+]+$/;
-    const phoneValues = values.filter(val =>
-        typeof val === 'string' && phonePattern.test(val) && val.replace(/\D/g, '').length >= 7
-    );
-    if (phoneValues.length / values.length > 0.8) {
-        return 'phone';
-    }
-
+    // Check for numbers
     const numericValues = values.filter(val =>
         typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val))
     );
@@ -174,6 +184,7 @@ function detectDataType(values) {
         return 'number';
     }
 
+    // Check for booleans
     const boolValues = values.filter(val =>
         typeof val === 'boolean' ||
         (typeof val === 'string' && ['true', 'false', 'yes', 'no', '1', '0'].includes(val.toLowerCase()))
@@ -249,11 +260,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
             cell: ({ row }) => (
                 <button
                     onClick={() => row.toggleExpanded()}
-                    className="p-1 rounded-md transition-colors"
-                    style={{
-                        backgroundColor: "color-mix(in oklch, var(--color-muted), transparent 90%)",
-                        color: "var(--color-foreground)",
-                    }}
+                    className="p-1 rounded-md transition-colors bg-muted/50 hover:bg-muted text-foreground"
                 >
                     {row.getIsExpanded() ? '▼' : '▶'}
                 </button>
@@ -276,7 +283,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
             accessorKey: key,
             header: formatHeaderName(key),
             filterFn: "advanced",
-            size: calculateColumnWidth(analysis),
+            size: calculateColumnWidth(analysis, key),
             meta: {
                 dataType: mapDataType(analysis.dataType),
                 headerText: formatHeaderName(key),
@@ -298,14 +305,14 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                             borderColor: getEnumColor(displayValue, analysis.uniqueValues).border,
                         }}
                     >
-                        {displayValue}
+                        {displayValue ? displayValue : "-"}
                     </Badge>
                 );
             };
 
             column.aggregationFn = "count";
             column.aggregatedCell = ({ getValue }) => (
-                <span className="font-bold" style={{ color: "var(--color-primary)" }}>
+                <span className="font-bold text-primary">
                     {getValue()} items
                 </span>
             );
@@ -317,15 +324,19 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                 const numValue = typeof value === 'string'
                     ? parseFloat(value.replace(/[^0-9.-]/g, ''))
                     : value;
-                return new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                }).format(numValue);
+                return (
+                    <span className="text-foreground">
+                        {new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                        }).format(numValue)}
+                    </span>
+                );
             };
 
             column.aggregationFn = "sum";
             column.aggregatedCell = ({ getValue }) => (
-                <span className="font-bold" style={{ color: "var(--color-chart-2)" }}>
+                <span className="font-bold text-chart-2">
                     Total: {new Intl.NumberFormat("en-US", {
                         style: "currency",
                         currency: "USD",
@@ -343,10 +354,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
 
                 return (
                     <div className="flex items-center gap-2">
-                        <div
-                            className="flex-1 rounded-full h-2.5 overflow-hidden"
-                            style={{ backgroundColor: "var(--color-muted)" }}
-                        >
+                        <div className="flex-1 rounded-full h-2.5 overflow-hidden bg-muted">
                             <div
                                 className="h-2.5 rounded-full transition-all duration-150"
                                 style={{
@@ -357,7 +365,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                                 }}
                             />
                         </div>
-                        <span className="text-xs font-bold w-10" style={{ color: "var(--color-foreground)" }}>
+                        <span className="text-xs font-bold w-10 text-foreground">
                             {numValue}%
                         </span>
                     </div>
@@ -366,7 +374,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
 
             column.aggregationFn = "mean";
             column.aggregatedCell = ({ getValue }) => (
-                <span className="font-bold" style={{ color: "var(--color-primary)" }}>
+                <span className="font-bold text-primary">
                     Avg: {Math.round(getValue())}%
                 </span>
             );
@@ -387,6 +395,16 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                         {phoneStr}
                     </a>
                 );
+            };
+        }
+
+        if (analysis.dataType === 'number') {
+            column.cell = ({ getValue }) => {
+                const value = getValue();
+                if (value === null || value === undefined) {
+                    return <span className="text-muted-foreground">-</span>;
+                }
+                return <span className="text-foreground font-mono text-sm">{value}</span>;
             };
         }
 
@@ -423,23 +441,27 @@ function mapDataType(dataType) {
     }
 }
 
-function calculateColumnWidth(analysis) {
-    const CHAR_WIDTH = 9;
-    const PADDING = 48;
-    const MIN_WIDTH = 100;
+function calculateColumnWidth(analysis, columnName) {
+    const CHAR_WIDTH = 10;
+    const HEADER_PADDING = 60;
+    const MIN_WIDTH = 120;
     const MAX_WIDTH = 600;
 
+    const headerText = formatHeaderName(columnName);
+    const headerLength = headerText.length;
+    const headerBasedWidth = (headerLength * CHAR_WIDTH) + HEADER_PADDING;
+
     const typeMinWidths = {
-        'date': 140,
-        'number': 120,
-        'currency': 140,
-        'percentage': 150,
-        'boolean': 100,
+        'date': 150,
+        'number': 130,
+        'currency': 150,
+        'percentage': 160,
+        'boolean': 110,
         'nested': 180,
         'text': 150,
-        'phone': 140,
-        'email': 200,
-        'url': 200,
+        'phone': 150,
+        'email': 220,
+        'url': 220,
     };
 
     let baseWidth = typeMinWidths[analysis.dataType] || 150;
@@ -449,16 +471,10 @@ function calculateColumnWidth(analysis) {
             ...analysis.uniqueValues.map(v => String(v).length)
         );
         baseWidth = Math.max(baseWidth, maxValueLength * CHAR_WIDTH + 60);
-    } else {
-        if (analysis.dataType === 'text' || analysis.dataType === 'nested') {
-            baseWidth = Math.max(
-                baseWidth,
-                Math.min(analysis.maxLength * CHAR_WIDTH, 300) + PADDING
-            );
-        }
     }
 
-    return Math.min(Math.max(baseWidth, MIN_WIDTH), MAX_WIDTH);
+    const finalWidth = Math.max(headerBasedWidth, baseWidth);
+    return Math.min(Math.max(finalWidth, MIN_WIDTH), MAX_WIDTH);
 }
 
 function getEnumColor(value, allValues) {

@@ -1,51 +1,34 @@
 /**
- * Column Configuration System
- * Allows users to explicitly configure column behavior
+ * Column Configuration System - FIXED
+ * Properly applies configurations to columns
  */
 
-// Global column overrides - users can set this before data analysis
 let globalColumnConfig = {};
 
 /**
  * Set explicit configuration for specific columns
- * @param {string} columnName - Column name/header
- * @param {object} config - Configuration object
- * 
- * @example
- * setColumnConfig('status', { forceEnum: true });
- * setColumnConfig('email', { dataType: 'email', hideInGrid: false });
- * setColumnConfig('phone', { dataType: 'phone', forceEnum: true });
  */
-export function setColumnConfig(columnName, config) {
-    globalColumnConfig[columnName] = {
-        ...globalColumnConfig[columnName],
+export function setColumnConfig(columnId, config) {
+    globalColumnConfig[columnId] = {
+        ...globalColumnConfig[columnId],
         ...config
     };
 }
 
 /**
  * Set multiple column configurations at once
- * @param {object} configs - Object mapping column names to config objects
- * 
- * @example
- * setColumnsConfig({
- *     'status': { forceEnum: true },
- *     'priority': { forceEnum: true },
- *     'phone': { dataType: 'phone' },
- *     'email': { dataType: 'email' }
- * });
  */
 export function setColumnsConfig(configs) {
-    Object.entries(configs).forEach(([colName, config]) => {
-        setColumnConfig(colName, config);
+    Object.entries(configs).forEach(([colId, config]) => {
+        setColumnConfig(colId, config);
     });
 }
 
 /**
  * Get configuration for a specific column
  */
-export function getColumnConfig(columnName) {
-    return globalColumnConfig[columnName] || {};
+export function getColumnConfig(columnId) {
+    return globalColumnConfig[columnId] || {};
 }
 
 /**
@@ -63,66 +46,81 @@ export function getAllColumnConfigs() {
 }
 
 /**
- * Apply column configurations to analysis results
- * Call this after analyzeData() to apply user overrides
+ * Apply column configurations to columns array
+ * THIS IS THE KEY FUNCTION THAT WAS MISSING
  */
-export function applyColumnConfigs(columnAnalysis) {
-    const updated = { ...columnAnalysis };
+export function applyColumnConfigs(columns) {
+    return columns.map(column => {
+        const config = globalColumnConfig[column.id];
+        if (!config || Object.keys(config).length === 0) {
+            return column;
+        }
 
-    Object.entries(globalColumnConfig).forEach(([columnName, config]) => {
-        if (updated[columnName]) {
-            // Force enum
-            if (config.forceEnum === true) {
-                updated[columnName].isEnum = true;
-                updated[columnName].forceEnum = true;
-            } else if (config.forceEnum === false) {
-                updated[columnName].isEnum = false;
-                updated[columnName].forceEnum = false;
-            }
+        const updatedColumn = { ...column };
 
-            // Override data type
-            if (config.dataType) {
-                updated[columnName].dataType = config.dataType;
-            }
-
-            // Merge other configs
-            updated[columnName] = {
-                ...updated[columnName],
-                ...config
+        // Apply forceEnum
+        if (config.forceEnum !== undefined) {
+            updatedColumn.meta = {
+                ...updatedColumn.meta,
+                isEnum: config.forceEnum,
+                forceEnum: config.forceEnum
             };
         }
-    });
 
-    return updated;
+        // Apply dataType
+        if (config.dataType) {
+            updatedColumn.meta = {
+                ...updatedColumn.meta,
+                dataType: config.dataType
+            };
+        }
+
+        // Apply hideInGrid
+        if (config.hideInGrid !== undefined) {
+            updatedColumn.enableHiding = !config.hideInGrid;
+            if (config.hideInGrid) {
+                // If hiding, we might want to set initial visibility to false
+                updatedColumn.defaultIsVisible = false;
+            }
+        }
+
+        // Apply sortable
+        if (config.sortable !== undefined) {
+            updatedColumn.enableSorting = config.sortable;
+        }
+
+        // Apply filterable
+        if (config.filterable !== undefined) {
+            updatedColumn.enableColumnFilter = config.filterable;
+        }
+
+        // Apply resizable
+        if (config.resizable !== undefined) {
+            updatedColumn.enableResizing = config.resizable;
+        }
+
+        return updatedColumn;
+    });
 }
 
 /**
  * Configuration templates for common use cases
  */
 export const COLUMN_CONFIG_TEMPLATES = {
-    // Boolean-like columns
     STATUS: { forceEnum: true, dataType: 'text' },
     STATE: { forceEnum: true, dataType: 'text' },
     ACTIVE: { forceEnum: true, dataType: 'boolean' },
     ENABLED: { forceEnum: true, dataType: 'boolean' },
-
-    // Contact info
     PHONE: { forceEnum: false, dataType: 'phone' },
     EMAIL: { forceEnum: false, dataType: 'email' },
     URL: { forceEnum: false, dataType: 'url' },
-
-    // Date/Time
     DATE: { dataType: 'date' },
     TIMESTAMP: { dataType: 'date' },
     DATETIME: { dataType: 'date' },
-
-    // Finance
     PRICE: { dataType: 'currency' },
     AMOUNT: { dataType: 'currency' },
     RATE: { dataType: 'percentage' },
     PERCENTAGE: { dataType: 'percentage' },
-
-    // Categorical
     CATEGORY: { forceEnum: true },
     LEVEL: { forceEnum: true },
     PRIORITY: { forceEnum: true },
@@ -132,17 +130,14 @@ export const COLUMN_CONFIG_TEMPLATES = {
 };
 
 /**
- * Quick setup helper - apply template configurations
- * @example
- * applyTemplate('status', COLUMN_CONFIG_TEMPLATES.STATUS);
+ * Apply template configuration
  */
-export function applyTemplate(columnName, template) {
-    setColumnConfig(columnName, template);
+export function applyTemplate(columnId, template) {
+    setColumnConfig(columnId, template);
 }
 
 /**
- * Configuration UI Helper - generates form fields for column configuration
- * Returns configuration object that can be displayed in a UI
+ * Configuration UI Helper
  */
 export function getConfigurationUISchema() {
     return {
@@ -195,14 +190,14 @@ export function getConfigurationUISchema() {
 }
 
 /**
- * Export current config as JSON for saving/sharing
+ * Export config as JSON
  */
 export function exportConfig() {
     return JSON.stringify(globalColumnConfig, null, 2);
 }
 
 /**
- * Import config from JSON string
+ * Import config from JSON
  */
 export function importConfig(jsonString) {
     try {
@@ -215,10 +210,9 @@ export function importConfig(jsonString) {
 }
 
 /**
- * Quick preset for common data scenarios
+ * Preset configurations for common scenarios
  */
 export const PRESET_CONFIGS = {
-    // E-commerce
     ECOMMERCE: {
         'product_id': { forceEnum: false },
         'product_name': { forceEnum: false },
@@ -228,8 +222,6 @@ export const PRESET_CONFIGS = {
         'status': { forceEnum: true },
         'created_at': { dataType: 'date' },
     },
-
-    // CRM/Contacts
     CRM: {
         'id': { forceEnum: false },
         'name': { forceEnum: false },
@@ -240,8 +232,6 @@ export const PRESET_CONFIGS = {
         'country': { forceEnum: true },
         'created_date': { dataType: 'date' },
     },
-
-    // HR/Employee
     HR: {
         'employee_id': { forceEnum: false },
         'name': { forceEnum: false },
@@ -252,8 +242,6 @@ export const PRESET_CONFIGS = {
         'hire_date': { dataType: 'date' },
         'gender': { forceEnum: true },
     },
-
-    // Analytics/Events
     ANALYTICS: {
         'event_id': { forceEnum: false },
         'event_type': { forceEnum: true },
@@ -266,9 +254,7 @@ export const PRESET_CONFIGS = {
 };
 
 /**
- * Apply a preset configuration
- * @example
- * applyPreset('ECOMMERCE');
+ * Apply preset configuration
  */
 export function applyPreset(presetName) {
     const preset = PRESET_CONFIGS[presetName.toUpperCase()];

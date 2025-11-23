@@ -35,13 +35,12 @@ import StatusBarModal from "../components/Datagrid/StatusBarModal";
 import { analyzeData } from "./dataAnalyzer";
 import { FileUploadHandler } from "./FileUploadHandler";
 import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
-import { applyColumnConfigs } from "./columnConfigSystem";
+import { applyColumnConfigs } from "./columnConfigSystem"; // FIXED: Now imports the working function
 import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
 
 const DynamicDataGrid = () => {
     const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
 
-    // State management
     const [data, setData] = useState([]);
     const [columns, setColumns] = useState([]);
     const [metadata, setMetadata] = useState(null);
@@ -52,7 +51,6 @@ const DynamicDataGrid = () => {
     const [expanded, setExpanded] = useState({});
     const [grouping, setGrouping] = useState([]);
 
-    // Load preferences
     const [prefs, setPrefs] = useState(loadPreferences);
     const [sorting, setSorting] = useState(prefs.sorting || []);
     const [columnFilters, setColumnFilters] = useState([]);
@@ -66,7 +64,6 @@ const DynamicDataGrid = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
 
-    // Refs for keyboard shortcuts
     const searchInputRef = useRef(null);
     const [viewMenuOpen, setViewMenuOpen] = useState(false);
     const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
@@ -74,7 +71,11 @@ const DynamicDataGrid = () => {
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
     const [configReloadTrigger, setConfigReloadTrigger] = useState(0);
 
-    // Load sample data on mount
+    // FIXED: Callback to trigger re-application of configs
+    const handleConfigChange = useCallback(() => {
+        setConfigReloadTrigger(t => t + 1);
+    }, []);
+
     useEffect(() => {
         setLoading(true);
         setTimeout(() => {
@@ -87,13 +88,13 @@ const DynamicDataGrid = () => {
         }, 500);
     }, []);
 
-    // Save preferences with debouncing
     const handleSavePrefs = useCallback((newPrefs) => {
         const merged = { ...prefs, ...newPrefs };
         savePreferences(merged);
         setPrefs(merged);
     }, [prefs]);
 
+    // Debounced preference saves
     useEffect(() => {
         const timer = setTimeout(() => handleSavePrefs({ sorting }), 300);
         return () => clearTimeout(timer);
@@ -119,12 +120,10 @@ const DynamicDataGrid = () => {
         return () => clearTimeout(timer);
     }, [columnPinning, handleSavePrefs]);
 
-    // Handle file upload with state reset
     const handleDataLoaded = useCallback((rawData) => {
         setLoading(true);
         setShowUpload(false);
 
-        // Reset all states
         setSorting([]);
         setColumnFilters([]);
         setColumnVisibility({});
@@ -139,32 +138,30 @@ const DynamicDataGrid = () => {
         requestAnimationFrame(() => {
             setTimeout(() => {
                 const analyzed = analyzeData(rawData);
-
-                // Apply column configurations (user overrides)
-                const configuredColumns = applyColumnConfigs(analyzed.columns);
-
-                // Regenerate column definitions with applied configs
-                const updatedAnalyzed = {
-                    ...analyzed,
-                    columns: Object.values(configuredColumns),
-                };
-
-                setData(updatedAnalyzed.data);
-                setColumns(updatedAnalyzed.columns);
-                setMetadata(updatedAnalyzed.metadata);
+                setData(analyzed.data);
+                setColumns(analyzed.columns);
+                setMetadata(analyzed.metadata);
                 setLoading(false);
             }, 300);
         });
     }, []);
 
-    const columnsWithHeaders = useMemo(
-        () => columns.length > 0 ? addHeadersToColumns(columns) : [],
-        [columns]
-    );
+    // FIXED: Apply column configs and add headers - THIS IS KEY
+    const columnsWithHeadersAndConfigs = useMemo(() => {
+        if (columns.length === 0) return [];
+
+        // First apply configurations
+        const configuredColumns = applyColumnConfigs(columns);
+
+        // Then add headers
+        const withHeaders = addHeadersToColumns(configuredColumns);
+
+        return withHeaders;
+    }, [columns, configReloadTrigger]); // Re-run when trigger changes
 
     const table = useReactTable({
         data,
-        columns: columnsWithHeaders,
+        columns: columnsWithHeadersAndConfigs, // FIXED: Use configured columns
         state: {
             sorting,
             columnFilters,
@@ -219,7 +216,6 @@ const DynamicDataGrid = () => {
         },
     });
 
-    // Fixed scroll into view with proper calculations
     const scrollColumnIntoView = useCallback((column, direction, isWrapping = false) => {
         if (!column) return;
 
@@ -274,7 +270,6 @@ const DynamicDataGrid = () => {
         });
     }, [table]);
 
-    // Keyboard shortcuts
     useHotkeys('slash', (e) => {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -573,7 +568,17 @@ const DynamicDataGrid = () => {
                                 columns={columns}
                                 onExport={handleExport}
                                 onResetPreferences={handleResetPreferences}
-                                onRefresh={() => setShowUpload(true)}
+                                onRefresh={() => {
+                                    setLoading(true);
+                                    setTimeout(() => {
+                                        const sampleData = generateSampleData(250);
+                                        const analyzed = analyzeData(sampleData);
+                                        setData(analyzed.data);
+                                        setColumns(analyzed.columns);
+                                        setMetadata(analyzed.metadata);
+                                        setLoading(false);
+                                    }, 500);
+                                }}
                                 globalFilter={globalFilter}
                                 onGlobalFilterChange={setGlobalFilter}
                                 searchInputRef={searchInputRef}
@@ -588,8 +593,8 @@ const DynamicDataGrid = () => {
                                 extraButtons={
                                     <>
                                         <ColumnConfigurationMenu
-                                            columns={columnsWithHeaders}
-                                            onConfigChange={() => setConfigReloadTrigger(t => t + 1)}
+                                            columns={columnsWithHeadersAndConfigs}
+                                            onConfigChange={handleConfigChange}
                                         />
                                         <Button
                                             variant="ghost"
@@ -613,7 +618,8 @@ const DynamicDataGrid = () => {
                                 className="flex-1 overflow-auto min-h-0"
                                 style={{
                                     overscrollBehavior: 'none',
-                                    scrollBehavior: 'smooth',
+                                    scrollBehavior: 'auto',
+                                    willChange: 'scroll-position',
                                 }}
                                 role="grid"
                             >
