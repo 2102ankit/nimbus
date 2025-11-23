@@ -12,6 +12,9 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -32,8 +35,8 @@ import {
   RotateCcw,
   Rows,
   Search,
-  Settings,
-  Sun
+  Sun,
+  Sigma
 } from "lucide-react";
 import { useState } from "react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
@@ -71,26 +74,20 @@ export function DataGridToolbar({
   } = useTheme();
   const [searchDebounce, setSearchDebounce] = useState(null);
 
-  // Helper to get custom header text from config or column definition
   const getColumnHeaderText = (col) => {
-    const columnId = col.id || col.accessorKey;
+    const columnId = col.id;
     const config = getColumnConfig(columnId);
     if (config?.headerText) return config.headerText;
 
     const header = col.columnDef?.header || col.columnDef?.meta?.headerText || col.id;
-    // If header is a function (component) or object, fallback to ID
     if (typeof header === 'function' || typeof header === 'object') {
-      return col.id;
+      return col.columnDef?.meta?.headerText || col.columnDef?.meta?.originalKey || col.id;
     }
     return String(header);
   };
 
   const handleGlobalSearch = (value) => {
     onGlobalFilterChange(value);
-    // if (searchDebounce) clearTimeout(searchDebounce);
-    // const timeout = setTimeout(() => {
-    // }, 300);
-    // setSearchDebounce(timeout);
   };
 
   const clearAllFilters = () => {
@@ -122,13 +119,25 @@ export function DataGridToolbar({
     onExport(format, rows, visibleColumns);
   };
 
+  const handleAggregationChange = (columnId, aggregationFn) => {
+    const column = table.getAllColumns().find(c => c.id === columnId);
+    if (column) {
+      column.columnDef.aggregationFn = aggregationFn;
+      table.resetColumnFilters(); // Trigger a re-render
+    }
+  };
+
+  const getColumnAggregation = (col) => {
+    return col.columnDef?.aggregationFn || 'sum';
+  };
+
   return (
     <div
       className="border-b-2"
       style={{
         background: `linear-gradient(to right, 
-          color-mix(in oklch, var(--color-muted), transparent 90%), 
-          color-mix(in oklch, var(--color-background), transparent 95%))`,
+                    color-mix(in oklch, var(--color-muted), transparent 90%), 
+                    color-mix(in oklch, var(--color-background), transparent 95%))`,
         borderBottomColor: "var(--color-border)",
       }}
     >
@@ -333,7 +342,7 @@ export function DataGridToolbar({
                               onCheckedChange={() => col.toggleVisibility()}
                               className="h-4 w-4"
                             />
-                            <span className="text-sm font-medium text-foreground">
+                            <span className="text-sm font-medium text-foreground truncate">
                               {getColumnHeaderText(col)}
                             </span>
                           </label>
@@ -381,7 +390,7 @@ export function DataGridToolbar({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Grouping */}
+            {/* Grouping & Aggregation */}
             <DropdownMenu open={groupMenuOpen} onOpenChange={setGroupMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -396,7 +405,7 @@ export function DataGridToolbar({
                     ` (${table.getState().grouping.length})`}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 max-h-80 shadow-lg">
+              <DropdownMenuContent align="end" className="w-64 max-h-96 shadow-lg overflow-auto">
                 <DropdownMenuLabel
                   className="text-xs font-bold"
                   style={{ color: "var(--color-muted-foreground)" }}
@@ -406,9 +415,7 @@ export function DataGridToolbar({
                 {table
                   .getAllColumns()
                   .filter((col) => {
-                    // Only show columns that have grouping enabled (enums)
                     if (!col.columnDef?.enableGrouping) return false;
-                    // Also check if column can be grouped in table state
                     return col.getCanGroup && col.getCanGroup();
                   })
                   .map((col) => {
@@ -432,6 +439,46 @@ export function DataGridToolbar({
                       </DropdownMenuCheckboxItem>
                     );
                   })}
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuLabel
+                  className="text-xs font-bold"
+                  style={{ color: "var(--color-muted-foreground)" }}
+                >
+                  AGGREGATIONS
+                </DropdownMenuLabel>
+                {table
+                  .getAllColumns()
+                  .filter((col) => {
+                    const dataType = col.columnDef?.meta?.dataType;
+                    return ['number', 'currency', 'percentage'].includes(dataType);
+                  })
+                  .map((col) => {
+                    const currentAgg = getColumnAggregation(col);
+                    return (
+                      <DropdownMenuSub key={col.id}>
+                        <DropdownMenuSubTrigger>
+                          <Sigma className="h-4 w-4 mr-2" />
+                          <span className="truncate">{getColumnHeaderText(col)}</span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuRadioGroup
+                            value={currentAgg}
+                            onValueChange={(value) => handleAggregationChange(col.id, value)}
+                          >
+                            <DropdownMenuRadioItem value="sum">Sum</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="mean">Average</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="median">Median</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="min">Minimum</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="max">Maximum</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="count">Count</DropdownMenuRadioItem>
+                          </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    );
+                  })}
+
                 {table.getState().grouping.length > 0 && (
                   <>
                     <DropdownMenuSeparator />

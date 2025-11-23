@@ -35,6 +35,15 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
         { value: 'url', label: 'URL' },
     ], []);
 
+    const aggregationOptions = useMemo(() => [
+        { value: 'sum', label: 'Sum' },
+        { value: 'mean', label: 'Average (Mean)' },
+        { value: 'median', label: 'Median' },
+        { value: 'min', label: 'Minimum' },
+        { value: 'max', label: 'Maximum' },
+        { value: 'count', label: 'Count' },
+    ], []);
+
     const filteredColumns = useMemo(() => {
         return columns.filter(col =>
             col.id !== 'select' &&
@@ -44,19 +53,22 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, [columns]);
 
     const getColumnTitle = useCallback((col) => {
-        const config = getColumnConfig(col.id || col.accessorKey);
+        const config = getColumnConfig(col.id);
         if (config?.headerText) return config.headerText;
 
         const header = col.header || col.columnDef?.header || col.meta?.headerText || col.accessorKey;
-        // If header is a function (component) or object, fallback to accessorKey/id
         if (typeof header === 'function' || typeof header === 'object') {
-            return col.meta?.headerText || col.accessorKey || col.id;
+            return col.meta?.headerText || col.meta?.originalKey || col.accessorKey || col.id;
         }
         return String(header);
     }, []);
 
     const getColumnType = useCallback((col) => {
         return col.meta?.dataType || col.columnDef?.meta?.dataType || 'text';
+    }, []);
+
+    const getColumnAggregation = useCallback((col) => {
+        return col.columnDef?.aggregationFn || col.aggregationFn || 'sum';
     }, []);
 
     useEffect(() => {
@@ -83,9 +95,8 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     const handleColumnSelect = useCallback((columnId) => {
         setSelectedColumnId(columnId);
         const existingConfig = getColumnConfig(columnId);
-        const selectedCol = filteredColumns.find(col => (col.id || col.accessorKey) === columnId);
+        const selectedCol = filteredColumns.find(col => col.id === columnId);
 
-        // Initialize from column metadata if no existing config
         if (!existingConfig && selectedCol) {
             setLocalConfigs({
                 dataType: selectedCol.meta?.dataType || 'text',
@@ -94,6 +105,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                 filterable: true,
                 resizable: true,
                 hideInGrid: false,
+                aggregationFn: selectedCol.columnDef?.aggregationFn || 'sum',
             });
         } else {
             setLocalConfigs(existingConfig || {});
@@ -113,7 +125,6 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
             if (onConfigChange) {
                 onConfigChange();
             }
-            // Show saved feedback
             setShowSaved(true);
             setTimeout(() => setShowSaved(false), 2000);
         }
@@ -131,7 +142,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, [onConfigChange]);
 
     const handleStartHeaderEdit = useCallback(() => {
-        const selectedCol = filteredColumns.find(col => (col.id || col.accessorKey) === selectedColumnId);
+        const selectedCol = filteredColumns.find(col => col.id === selectedColumnId);
         setEditedHeaderText(localConfigs.headerText || getColumnTitle(selectedCol));
         setIsEditingHeader(true);
     }, [selectedColumnId, localConfigs, filteredColumns, getColumnTitle]);
@@ -147,9 +158,15 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, []);
 
     const selectedColumn = useMemo(() =>
-        filteredColumns.find(col => (col.id || col.accessorKey) === selectedColumnId),
+        filteredColumns.find(col => col.id === selectedColumnId),
         [filteredColumns, selectedColumnId]
     );
+
+    const canAggregate = useMemo(() => {
+        if (!selectedColumn) return false;
+        const dataType = localConfigs.dataType || getColumnType(selectedColumn);
+        return ['number', 'currency', 'percentage'].includes(dataType) || localConfigs.forceEnum;
+    }, [selectedColumn, localConfigs, getColumnType]);
 
     return (
         <div>
@@ -187,7 +204,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                         Column Configuration
                                     </h2>
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        Customize column appearance and behavior
+                                        Customize column appearance, behavior, and aggregations
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -219,7 +236,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                     </div>
                                     <div className="flex flex-col">
                                         {filteredColumns.map(col => {
-                                            const colId = col.id || col.accessorKey;
+                                            const colId = col.id;
                                             const isSelected = selectedColumnId === colId;
                                             const columnTitle = getColumnTitle(col);
                                             const columnType = getColumnType(col);
@@ -235,7 +252,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                             : "hover:bg-muted/50 text-foreground border-l-4 border-l-transparent"
                                                     )}
                                                 >
-                                                    <span className="font-semibold text-sm">{columnTitle}</span>
+                                                    <span className="font-semibold text-sm truncate">{columnTitle}</span>
                                                     <span className="text-xs text-muted-foreground capitalize mt-0.5">
                                                         {columnType}
                                                     </span>
@@ -287,13 +304,14 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                         </Button>
                                                     </div>
                                                 ) : (
-                                                    <div className="text-lg font-medium text-foreground">
+                                                    <div className="text-lg font-medium text-foreground truncate">
                                                         {localConfigs.headerText || getColumnTitle(selectedColumn)}
                                                     </div>
                                                 )}
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-3">
+                                                {/* Data Type */}
                                                 <div className="bg-card border border-border rounded-lg p-4">
                                                     <Label htmlFor="data-type" className="text-sm font-semibold text-foreground mb-2 block">
                                                         Data Type
@@ -319,6 +337,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                     </Select>
                                                 </div>
 
+                                                {/* Enum Toggle */}
                                                 <div className="bg-card border border-border rounded-lg p-4">
                                                     <div className="flex items-center justify-between">
                                                         <Label htmlFor="force-enum" className="text-sm font-semibold text-foreground">
@@ -326,13 +345,45 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                         </Label>
                                                         <Switch
                                                             id="force-enum"
-                                                            checked={localConfigs.forceEnum !== undefined ? localConfigs.forceEnum : (selectedColumn?.meta?.isEnum || selectedColumn?.columnDef?.meta?.isEnum || false)}
+                                                            checked={localConfigs.forceEnum !== undefined ? localConfigs.forceEnum : (selectedColumn?.meta?.isEnum || false)}
                                                             onCheckedChange={(checked) => handleConfigChange('forceEnum', checked)}
                                                         />
                                                     </div>
                                                     <p className="text-xs text-muted-foreground mt-1">Colored badges</p>
                                                 </div>
 
+                                                {/* Aggregation Function */}
+                                                {canAggregate && (
+                                                    <div className="bg-card border border-border rounded-lg p-4 col-span-2">
+                                                        <Label htmlFor="aggregation-fn" className="text-sm font-semibold text-foreground mb-2 block">
+                                                            Aggregation Function
+                                                        </Label>
+                                                        <Select
+                                                            value={localConfigs.aggregationFn || getColumnAggregation(selectedColumn)}
+                                                            onValueChange={(value) => handleConfigChange('aggregationFn', value)}
+                                                        >
+                                                            <SelectTrigger id="aggregation-fn" className="w-full bg-background border border-border text-foreground">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-card border border-border">
+                                                                {aggregationOptions.map(opt => (
+                                                                    <SelectItem
+                                                                        key={opt.value}
+                                                                        value={opt.value}
+                                                                        className="text-foreground hover:bg-muted focus:bg-muted"
+                                                                    >
+                                                                        {opt.label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <p className="text-xs text-muted-foreground mt-2">
+                                                            Used when grouping data by other columns
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {/* Sortable */}
                                                 <div className="bg-card border border-border rounded-lg p-4">
                                                     <div className="flex items-center justify-between">
                                                         <Label htmlFor="sortable" className="text-sm font-semibold text-foreground">
@@ -347,6 +398,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                     <p className="text-xs text-muted-foreground mt-1">Allow sorting</p>
                                                 </div>
 
+                                                {/* Filterable */}
                                                 <div className="bg-card border border-border rounded-lg p-4">
                                                     <div className="flex items-center justify-between">
                                                         <Label htmlFor="filterable" className="text-sm font-semibold text-foreground">
@@ -361,6 +413,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                     <p className="text-xs text-muted-foreground mt-1">Allow filtering</p>
                                                 </div>
 
+                                                {/* Resizable */}
                                                 <div className="bg-card border border-border rounded-lg p-4">
                                                     <div className="flex items-center justify-between">
                                                         <Label htmlFor="resizable" className="text-sm font-semibold text-foreground">
@@ -375,6 +428,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                     <p className="text-xs text-muted-foreground mt-1">Width adjustment</p>
                                                 </div>
 
+                                                {/* Hide Column */}
                                                 <div className="bg-destructive/5 border border-destructive/50 rounded-lg p-4">
                                                     <div className="flex items-center justify-between">
                                                         <Label htmlFor="hide-grid" className="text-sm font-semibold text-foreground">

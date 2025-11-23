@@ -84,25 +84,6 @@ function detectNestedData(data) {
     );
 }
 
-function shouldForceEnum(columnName) {
-    if (!columnName) return false;
-    const lowerName = columnName.toLowerCase();
-    const enumKeywords = [
-        'status', 'state', 'type', 'category', 'kind',
-        'level', 'priority', 'severity', 'importance',
-        'role', 'permission', 'access', 'mode',
-        'gender', 'sex', 'orientation',
-        'country', 'region', 'city', 'department',
-        'color', 'size', 'shape', 'style',
-        'yes', 'no', 'active', 'inactive',
-        'enabled', 'disabled', 'verified', 'pending',
-        'approved', 'rejected', 'draft', 'published',
-        'membership', 'tier', 'plan', 'subscription',
-        'payment', 'shipping', 'delivery',
-    ];
-    return enumKeywords.some(keyword => lowerName.includes(keyword));
-}
-
 function analyzeColumns(data) {
     const columns = {};
     const sampleSize = Math.min(data.length, 100);
@@ -118,8 +99,6 @@ function analyzeColumns(data) {
 
         const isNested = values.some(val => typeof val === 'object' && val !== null);
         const dataType = isNested ? 'nested' : detectDataType(values, key);
-        // Remove aggressive forceEnum based on name. Rely on data analysis.
-        // const forceEnum = shouldForceEnum(key); 
 
         columns[key] = {
             name: key,
@@ -129,7 +108,7 @@ function analyzeColumns(data) {
             hasNulls: data.some(row => row[key] === null || row[key] === undefined || row[key] === ''),
             maxLength: getMaxLength(values),
             isNested: isNested,
-            forceEnum: false, // Default to false
+            forceEnum: false,
         };
     });
 
@@ -224,6 +203,12 @@ function getMaxLength(values) {
     return Math.max(...values.map(v => String(v).length), 0);
 }
 
+// Sanitize column key to make it safe as an accessor
+function sanitizeColumnKey(key) {
+    // Replace special characters with underscores, but keep the mapping
+    return key.replace(/[^a-zA-Z0-9_]/g, '_');
+}
+
 // Exported function to get cell renderer based on data type
 export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
     if (isEnum) {
@@ -278,7 +263,7 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
                                 backgroundColor: numValue >= 70 ? "var(--color-chart-2)" :
                                     numValue >= 40 ? "var(--color-chart-3)" :
                                         "var(--color-destructive)",
-                                width: `${numValue}%`,
+                                width: `${Math.min(Math.max(numValue, 0), 100)}%`,
                             }}
                         />
                     </div>
@@ -296,7 +281,6 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             if (!value) return <span className="text-muted-foreground">-</span>;
 
             const phoneStr = String(value);
-            // Format phone number: (XXX) XXX-XXXX if 10 digits
             const digits = phoneStr.replace(/\D/g, '');
             let formattedPhone = phoneStr;
             if (digits.length === 10) {
@@ -323,7 +307,6 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             if (value === null || value === undefined) {
                 return <span className="text-muted-foreground">-</span>;
             }
-            // Handle large numbers to avoid scientific notation
             let displayValue = value;
             if (typeof value === 'number') {
                 if (Math.abs(value) >= 1e15) {
@@ -399,9 +382,11 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
     Object.entries(columnAnalysis).forEach(([key, analysis]) => {
         if (analysis.isNested) return;
 
+        const sanitizedKey = sanitizeColumnKey(key);
+
         const column = {
-            id: key,  // Explicit ID
-            accessorFn: row => row[key],  // Use accessor function to treat key as literal string
+            id: sanitizedKey,
+            accessorKey: key, // Keep original key for data access
             header: formatHeaderName(key),
             filterFn: "advanced",
             size: calculateColumnWidth(analysis, key),
@@ -410,18 +395,18 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                 headerText: formatHeaderName(key),
                 uniqueValues: analysis.uniqueValues,
                 isEnum: analysis.isEnum,
+                originalKey: key, // Store original key
             },
             enableColumnFilter: true,
             enableGrouping: analysis.isEnum,
         };
 
-        // Use the centralized getCellRenderer
         const renderer = getCellRenderer(analysis.dataType, analysis.isEnum, analysis.uniqueValues);
         if (renderer) {
             column.cell = renderer;
         }
 
-        // Add aggregation functions
+        // Add aggregation functions based on data type
         if (analysis.isEnum) {
             column.aggregationFn = "count";
             column.aggregatedCell = ({ getValue }) => (
@@ -429,16 +414,38 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                     {getValue()} items
                 </span>
             );
-        } else if (analysis.dataType === 'currency') {
+        } else if (analysis.dataType === 'currency' || analysis.dataType === 'number') {
+            // For numeric columns, enable multiple aggregations
             column.aggregationFn = "sum";
-            column.aggregatedCell = ({ getValue }) => (
-                <span className="font-bold text-chart-2">
-                    Total: {new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                    }).format(getValue())}
-                </span>
-            );
+            column.aggregatedCell = ({ getValue, column }) => {
+                const aggFn = column.columnDef.aggregationFn;
+                if (analysis.dataType === 'currency') {
+                    return (
+                        <span className="font-bold text-chart-2">
+                            {aggFn === 'sum' && 'Total: '}
+                            {aggFn === 'mean' && 'Avg: '}
+                            {aggFn === 'min' && 'Min: '}
+                            {aggFn === 'max' && 'Max: '}
+                            {new Intl.NumberFormat("en-US", {
+                                style: "currency",
+                                currency: "USD",
+                            }).format(getValue())}
+                        </span>
+                    );
+                } else {
+                    return (
+                        <span className="font-bold text-primary">
+                            {aggFn === 'sum' && 'Sum: '}
+                            {aggFn === 'mean' && 'Avg: '}
+                            {aggFn === 'min' && 'Min: '}
+                            {aggFn === 'max' && 'Max: '}
+                            {aggFn === 'median' && 'Median: '}
+                            {aggFn === 'count' && 'Count: '}
+                            {typeof getValue() === 'number' ? getValue().toLocaleString('en-US', { maximumFractionDigits: 2 }) : getValue()}
+                        </span>
+                    );
+                }
+            };
         } else if (analysis.dataType === 'percentage') {
             column.aggregationFn = "mean";
             column.aggregatedCell = ({ getValue }) => (
@@ -456,6 +463,12 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
 
 function formatHeaderName(key) {
     if (!key) return '';
+
+    // Truncate very long headers
+    if (key.length > 50) {
+        return key.substring(0, 47) + '...';
+    }
+
     return key
         .replace(/_/g, ' ')
         .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -477,7 +490,7 @@ function calculateColumnWidth(analysis, columnName) {
     const MAX_WIDTH = 600;
 
     const headerText = formatHeaderName(columnName);
-    const headerLength = headerText.length;
+    const headerLength = Math.min(headerText.length, 50); // Cap at 50 for calculation
     const headerBasedWidth = (headerLength * CHAR_WIDTH) + HEADER_PADDING;
 
     const typeMinWidths = {
