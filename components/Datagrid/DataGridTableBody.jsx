@@ -83,10 +83,9 @@ export function EmptyState() {
 }
 
 // Group Row Component
-export function GroupRow({ row, getDensityPadding }) {
-  // Calculate indentation based on grouping depth
+export function GroupRow({ row, getDensityPadding, table }) {
   const depth = row.depth || 0;
-  const indentPx = depth * 32; // 32px per level
+  const indentPx = depth * 32 *0;
 
   return (
     <motion.tr
@@ -112,60 +111,123 @@ export function GroupRow({ row, getDensityPadding }) {
           color-mix(in oklch, var(--color-muted), transparent 95%))`)
       }
     >
-      <td
-        colSpan={row.getVisibleCells().length}
-        className={getDensityPadding()}
-      >
-        <div className="flex items-center gap-3" style={{ paddingLeft: `${indentPx}px` }}>
-          <button
-            onClick={() => row.toggleExpanded()}
-            className="p-1.5 rounded-md transition-colors"
+      {/* Render each cell in the group row */}
+      {row.getVisibleCells().map((cell) => {
+        const isPinned = cell.column.getIsPinned();
+        const leftPos = isPinned === "left" ? getLeftPosition(cell.column, table) : undefined;
+        const rightPos = isPinned === "right" ? getRightPosition(cell.column, table) : undefined;
+
+        // Check if this is the grouped column
+        const isGroupedCell = cell.getIsGrouped();
+
+        return (
+          <td
+            key={cell.id}
+            className={getDensityPadding()}
             style={{
-              backgroundColor: "transparent",
+              position: isPinned ? 'sticky' : 'relative',
+              left: leftPos !== undefined ? `${leftPos}px` : undefined,
+              right: rightPos !== undefined ? `${rightPos}px` : undefined,
+              backgroundColor: isPinned ? 'var(--color-muted)' : 'transparent',
+              zIndex: isPinned ? 10 : 1,
             }}
-            onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor =
-              "color-mix(in oklch, var(--color-muted), transparent 70%)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "transparent")
-            }
           >
-            {row.getIsExpanded() ? (
-              <ChevronDown
-                className="h-4 w-4"
-                style={{ color: "var(--color-foreground)" }}
-              />
+            {isGroupedCell ? (
+              // This is the grouped column - show the group toggle and info
+              <div className="flex items-center gap-3" style={{ paddingLeft: `${indentPx}px` }}>
+                <button
+                  onClick={() => row.toggleExpanded()}
+                  className="p-1.5 rounded-md transition-colors"
+                  style={{
+                    backgroundColor: "transparent",
+                  }}
+                  onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "color-mix(in oklch, var(--color-muted), transparent 70%)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "transparent")
+                  }
+                >
+                  {row.getIsExpanded() ? (
+                    <ChevronDown
+                      className="h-4 w-4"
+                      style={{ color: "var(--color-foreground)" }}
+                    />
+                  ) : (
+                    <ChevronRight
+                      className="h-4 w-4"
+                      style={{ color: "var(--color-foreground)" }}
+                    />
+                  )}
+                </button>
+                <Layers
+                  className="h-4 w-4"
+                  style={{ color: "var(--color-muted-foreground)" }}
+                />
+                <span style={{ color: "var(--color-foreground)" }}>
+                  {cell.column.columnDef.meta?.headerText || cell.column.id}:{" "}
+                  <strong style={{ color: "var(--color-primary)" }}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </strong>
+                </span>
+                <span
+                  className="text-sm ml-2 px-2.5 py-0.5 rounded-full font-medium"
+                  style={{
+                    backgroundColor: "var(--color-muted)",
+                    color: "var(--color-muted-foreground)",
+                  }}
+                >
+                  {row.subRows.length} {row.subRows.length === 1 ? "item" : "items"}
+                </span>
+              </div>
+            ) : cell.getIsAggregated() ? (
+              // This cell has an aggregated value
+              <div>
+                {flexRender(
+                  cell.column.columnDef.aggregatedCell ?? cell.column.columnDef.cell,
+                  cell.getContext()
+                )}
+              </div>
+            ) : cell.getIsPlaceholder() ? (
+              // Empty placeholder cell
+              null
             ) : (
-              <ChevronRight
-                className="h-4 w-4"
-                style={{ color: "var(--color-foreground)" }}
-              />
+              // Regular cell (shouldn't happen in group rows but just in case)
+              flexRender(cell.column.columnDef.cell, cell.getContext())
             )}
-          </button>
-          <Layers
-            className="h-4 w-4"
-            style={{ color: "var(--color-muted-foreground)" }}
-          />
-          <span style={{ color: "var(--color-foreground)" }}>
-            {row.groupingColumnId}:{" "}
-            <strong style={{ color: "var(--color-primary)" }}>
-              {row.groupingValue}
-            </strong>
-          </span>
-          <span
-            className="text-sm ml-2 px-2.5 py-0.5 rounded-full font-medium"
-            style={{
-              backgroundColor: "var(--color-muted)",
-              color: "var(--color-muted-foreground)",
-            }}
-          >
-            {row.subRows.length} {row.subRows.length === 1 ? "item" : "items"}
-          </span>
-        </div>
-      </td>
+          </td>
+        );
+      })}
     </motion.tr>
   );
+}
+
+// Helper functions for pinned columns
+function getLeftPosition(column, table) {
+  const leftPinnedColumns = table.getState().columnPinning.left || [];
+  const index = leftPinnedColumns.indexOf(column.id);
+  if (index === -1) return 0;
+
+  let left = 0;
+  for (let i = 0; i < index; i++) {
+    const col = table.getAllLeafColumns().find((c) => c.id === leftPinnedColumns[i]);
+    if (col) left += col.getSize();
+  }
+  return left;
+}
+
+function getRightPosition(column, table) {
+  const rightPinnedColumns = table.getState().columnPinning.right || [];
+  const index = rightPinnedColumns.indexOf(column.id);
+  if (index === -1) return 0;
+
+  let right = 0;
+  for (let i = index + 1; i < rightPinnedColumns.length; i++) {
+    const col = table.getAllLeafColumns().find((c) => c.id === rightPinnedColumns[i]);
+    if (col) right += col.getSize();
+  }
+  return right;
 }
 
 // Data Row Component
@@ -181,7 +243,7 @@ export function DataRow({
   const isGrouped = row.getIsGrouped();
 
   if (isGrouped) {
-    return <GroupRow row={row} getDensityPadding={getDensityPadding} />;
+    return <GroupRow row={row} getDensityPadding={getDensityPadding} table={table} />;
   }
 
   return (
@@ -217,12 +279,10 @@ export function DataRow({
           const rightPos =
             isPinned === "right" ? getRightPosition(cell.column) : undefined;
 
-          // Check if this column is right before a right-pinned column
           const allColumns = table.getVisibleLeafColumns();
           const currentIndex = allColumns.findIndex(c => c.id === cell.column.id);
           const nextColumn = allColumns[currentIndex + 1];
           const isBeforeRightPinned = nextColumn && nextColumn.getIsPinned() === 'right';
-
 
           return (
             <motion.td
@@ -329,7 +389,7 @@ export function DataRow({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
                     <span>Full Details</span>
