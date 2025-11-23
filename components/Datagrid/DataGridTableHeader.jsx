@@ -1,55 +1,45 @@
 // DataGridTableHeader.jsx
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { flexRender } from "@tanstack/react-table";
-import { motion } from "framer-motion";
 
-function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPadding, getHeaderBorderClasses }) {
+const SortableHeaderCell = ({ header, isPinned, leftPos, rightPos, getDensityPadding, getHeaderBorderClasses }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useSortable({
     id: header.column.id,
   });
 
   return (
-    <motion.th
+    <th
       ref={setNodeRef}
-      layout="position"
-      layoutRoot // Critical: makes this the animation root
-      transition={{
-        type: "spring",
-        stiffness: 500,
-        damping: 40,
-        mass: 0.8,
-      }}
       {...attributes}
       {...listeners}
       style={{
         opacity: isDragging ? 0.7 : 1,
-        transform: isDragging ? CSS.Transform.toString({ x: 0, y: 0, scale: 1.02 }) : undefined,
-        zIndex: isDragging ? 50 : isPinned ? 30 : 1,
-        position: "relative",
-        background: isDragging ? "var(--color-primary)/0.1" : "inherit",
+        cursor: isDragging ? 'grabbing' : 'grab',
+        zIndex: isDragging ? 50 : isPinned ? 30 : 20,
+        position: "sticky",
+        top: 0,
+        backgroundColor: "var(--color-card)",
         color: "var(--color-foreground)",
         width: header.getSize(),
         minWidth: header.getSize(),
         maxWidth: header.getSize(),
-        left: leftPos ? `${leftPos}px` : undefined,
-        right: rightPos ? `${rightPos}px` : undefined,
+        left: leftPos !== undefined ? `${leftPos}px` : undefined,
+        right: rightPos !== undefined ? `${rightPos}px` : undefined,
         boxShadow: isPinned
           ? isPinned === "left"
             ? "2px 0 8px rgba(0,0,0,0.1)"
             : "-2px 0 8px rgba(0,0,0,0.1)"
           : "none",
       }}
-      className={`text-left align-middle font-bold ${getDensityPadding()} ${getHeaderBorderClasses()} ${isPinned ? "sticky z-30" : ""} bg-card`}
+      className={`text-left align-middle font-bold ${getDensityPadding()} ${getHeaderBorderClasses()}`}
     >
       {header.isPlaceholder
         ? null
         : flexRender(header.column.columnDef.header, header.getContext())}
-    </motion.th>
+    </th>
   );
 }
-
 
 export function DataGridTableHeader({
   table,
