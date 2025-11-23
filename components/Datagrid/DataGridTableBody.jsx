@@ -176,6 +176,7 @@ export function DataRow({
   getCellBorderClasses,
   getLeftPosition,
   getRightPosition,
+  table
 }) {
   const isGrouped = row.getIsGrouped();
 
@@ -216,6 +217,13 @@ export function DataRow({
           const rightPos =
             isPinned === "right" ? getRightPosition(cell.column) : undefined;
 
+          // Check if this column is right before a right-pinned column
+          const allColumns = table.getVisibleLeafColumns();
+          const currentIndex = allColumns.findIndex(c => c.id === cell.column.id);
+          const nextColumn = allColumns[currentIndex + 1];
+          const isBeforeRightPinned = nextColumn && nextColumn.getIsPinned() === 'right';
+
+
           return (
             <motion.td
               layout="position"
@@ -226,8 +234,9 @@ export function DataRow({
                 mass: 0.8,
               }}
               key={cell.id}
-              className={`align-middle ${getDensityPadding()} ${getCellBorderClasses()} ${isPinned ? "sticky z-10" : ""
-                }`}
+              className={`align-middle relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getCellBorderClasses() : ''
+                } ${isPinned ? "sticky z-10" : ""} ${isPinned === "left" ? "pinned-left-border" : isPinned === "right" ? "pinned-right-border" : ""
+                } ${isBeforeRightPinned ? 'before-right-pinned' : ''}`}
               style={{
                 color: "var(--color-foreground)",
                 width: cell.column.getSize(),
@@ -240,6 +249,8 @@ export function DataRow({
                     ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
                     : "var(--color-card)"
                   : "inherit",
+                borderBottom: "1px solid var(--color-border)",
+                borderRight: isBeforeRightPinned ? 'none' : undefined,
                 boxShadow: isPinned
                   ? isPinned === "left"
                     ? "2px 0 5px rgba(0,0,0,0.05)"
@@ -428,6 +439,7 @@ export function DataGridTableBody({
             getCellBorderClasses={getCellBorderClasses}
             getLeftPosition={getLeftPosition}
             getRightPosition={getRightPosition}
+            table={table}
           />
         ))}
       </AnimatePresence>

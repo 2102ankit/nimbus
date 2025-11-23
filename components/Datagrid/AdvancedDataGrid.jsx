@@ -35,6 +35,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "./StatusBarModal";
+import { animate } from "motion";
 
 const AdvancedDataGrid = () => {
   const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -181,7 +182,7 @@ const AdvancedDataGrid = () => {
     },
   });
 
-  const scrollColumnIntoView = (column) => {
+  const scrollColumnIntoView = (column, direction, isWrapping = false) => {
     if (!column) return;
 
     setTimeout(() => {
@@ -194,10 +195,18 @@ const AdvancedDataGrid = () => {
 
       // Calculate total width of left pinned columns
       const leftPinnedColumns = table.getState().columnPinning.left || [];
-      let pinnedWidth = 0;
+      let leftPinnedWidth = 0;
       leftPinnedColumns.forEach(colId => {
         const col = table.getAllLeafColumns().find(c => c.id === colId);
-        if (col) pinnedWidth += col.getSize();
+        if (col) leftPinnedWidth += col.getSize();
+      });
+
+      // Calculate right pinned columns width
+      const rightPinnedColumns = table.getState().columnPinning.right || [];
+      let rightPinnedWidth = 0;
+      rightPinnedColumns.forEach(colId => {
+        const col = table.getAllLeafColumns().find(c => c.id === colId);
+        if (col) rightPinnedWidth += col.getSize();
       });
 
       const containerRect = tableContainer.getBoundingClientRect();
@@ -206,27 +215,36 @@ const AdvancedDataGrid = () => {
       // Get current scroll position
       const currentScroll = tableContainer.scrollLeft;
 
-      // Calculate cell position relative to container's scrollable content
-      const cellLeftInContainer = cellRect.left - containerRect.left;
-      const cellRightInContainer = cellRect.right - containerRect.left;
+      const borderWidth = 2;
+      let targetScrollLeft;
 
-      // Define the visible scrollable area (excluding pinned columns)
-      const visibleAreaStart = pinnedWidth;
-      const visibleAreaEnd = containerRect.width;
-      const visibleAreaWidth = visibleAreaEnd - visibleAreaStart;
-
-      // Check if cell is outside visible area and calculate new scroll
-      if (cellLeftInContainer < visibleAreaStart) {
-        // Cell is hidden behind pinned columns - scroll left to show it
-        const offset = visibleAreaStart - cellLeftInContainer;
-        tableContainer.scrollLeft = currentScroll - offset;
-      } else if (cellRightInContainer > visibleAreaEnd) {
-        // Cell is hidden on the right - scroll right to show it
-        const offset = cellRightInContainer - visibleAreaEnd;
-        tableContainer.scrollLeft = currentScroll + offset;
+      if (direction === 'right') {
+        // Moving right: align left border of cell to right border of left-pinned columns
+        const cellLeftRelativeToScroll = cellRect.left - containerRect.left + currentScroll;
+        targetScrollLeft = cellLeftRelativeToScroll - leftPinnedWidth;
+      } else if (direction === 'left') {
+        // Moving left: align right border of cell to left border of right-pinned columns
+        const cellRightRelativeToScroll = cellRect.right - containerRect.left + currentScroll;
+        const visibleAreaEnd = containerRect.width - rightPinnedWidth;
+        targetScrollLeft = cellRightRelativeToScroll + borderWidth - visibleAreaEnd;
       }
-    }, 10);
+
+      // If wrapping around, use instant scroll; otherwise animate smoothly
+      if (isWrapping) {
+        tableContainer.scrollLeft = targetScrollLeft;
+      } else {
+        // Animate the scroll with framer motion
+        animate(currentScroll, targetScrollLeft, {
+          duration: 0.3,
+          ease: [0.4, 0.0, 0.2, 1],
+          onUpdate: (latest) => {
+            tableContainer.scrollLeft = latest;
+          }
+        });
+      }
+    }, 0);
   };
+
   // Keyboard shortcuts using react-hotkeys-hook (after table initialization)
   useHotkeys('slash', (e) => {
     e.preventDefault();
@@ -331,7 +349,7 @@ const AdvancedDataGrid = () => {
     e.preventDefault();
     if (table.getCanNextPage()) table.nextPage();
   }, { enableOnFormTags: false });
-  
+
   useHotkeys('left', (e) => {
     if (document.activeElement === searchInputRef.current) return;
     e.preventDefault();
@@ -342,15 +360,16 @@ const AdvancedDataGrid = () => {
     if (visibleColumns.length === 0) return;
 
     setFocusedColumnIndex(prev => {
-      // If no column is focused or trying to go before first, focus last column
-      if (prev === null || prev <= 0) {
+      const isWrapping = prev === null || prev <= 0;
+
+      if (isWrapping) {
         const newIndex = visibleColumns.length - 1;
-        scrollColumnIntoView(visibleColumns[newIndex]);
+        scrollColumnIntoView(visibleColumns[newIndex], 'left', true); // Pass true for wrapping
         return newIndex;
       }
 
       const newIndex = prev - 1;
-      scrollColumnIntoView(visibleColumns[newIndex]);
+      scrollColumnIntoView(visibleColumns[newIndex], 'left', false);
       return newIndex;
     });
   }, { enableOnFormTags: false });
@@ -364,15 +383,17 @@ const AdvancedDataGrid = () => {
 
     if (visibleColumns.length === 0) return;
 
+
     setFocusedColumnIndex(prev => {
-      // If no column is focused or at the end, wrap to first column
-      if (prev === null || prev >= visibleColumns.length - 1) {
-        scrollColumnIntoView(visibleColumns[0]);
+      const isWrapping = prev === null || prev >= visibleColumns.length - 1;
+
+      if (isWrapping) {
+        scrollColumnIntoView(visibleColumns[0], 'right', true); // Pass true for wrapping
         return 0;
       }
 
       const newIndex = prev + 1;
-      scrollColumnIntoView(visibleColumns[newIndex]);
+      scrollColumnIntoView(visibleColumns[newIndex], 'right', false);
       return newIndex;
     });
   }, { enableOnFormTags: false });
