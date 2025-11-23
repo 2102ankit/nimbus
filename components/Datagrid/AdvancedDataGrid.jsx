@@ -109,7 +109,7 @@ const AdvancedDataGrid = () => {
   const loadData = () => {
     setLoading(true);
     setTimeout(() => {
-      setData(generateSampleData(100));
+      setData(generateSampleData(250));
       setLoading(false);
     }, 500);
   };
@@ -493,7 +493,7 @@ const AdvancedDataGrid = () => {
                 className="mb-4 w-full text-center"
               >
                 <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
-                  Nimbus - Advanced Enterprise DataGrid
+                  Nimbus<span className="text-white!">☁️</span>- Enterprise DataGrid
                 </h1>
                 <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
                   Complete table with Advanced Filters, Multi-Column Sort, Column Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
@@ -576,8 +576,16 @@ const AdvancedDataGrid = () => {
             {/* Scrollable Table */}
             <div
               className="flex-1 overflow-auto min-h-0"
+              style={{
+                overscrollBehavior: 'none',
+              }}
             >
-              <table className="w-full text-sm border-collapse">
+              <table className="w-full text-sm border-collapse"
+                style={{
+                  width: 'max-content',
+                  minWidth: '100%'
+                }}
+              >
                 <DataGridTableHeader
                   table={table}
                   getDensityPadding={getDensityPadding}

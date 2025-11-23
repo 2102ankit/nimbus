@@ -377,10 +377,10 @@ export function DataRow({
                     <Button size="sm" className="shadow-sm">
                       View Profile
                     </Button>
-                    <Button size="sm" variant="outline" className="shadow-sm">
+                    <Button size="sm" variant="secondary" className="shadow-sm">
                       Edit
                     </Button>
-                    <Button size="sm" variant="outline" className="shadow-sm">
+                    <Button size="sm" variant="secondary" className="shadow-sm">
                       Duplicate
                     </Button>
                     <Button
