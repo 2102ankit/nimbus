@@ -79,13 +79,13 @@ export function DataGridTableHeader({
   const sensors = useSensors(
     useSensor(NoDragOnResizerSensor, {
       activationConstraint: {
-        distance: 2,
+        distance: 5,
       },
     }),
     useSensor(KeyboardSensor)
   );
 
-  // ONLY CENTER COLUMNS — NEVER PINNED, NEVER SPECIAL
+  // ONLY CENTER COLUMNS – NEVER PINNED, NEVER SPECIAL
   const reorderableIds = table
     .getCenterLeafColumns()
     .filter((c) => c.id !== "select" && c.id !== "expand")
@@ -95,23 +95,33 @@ export function DataGridTableHeader({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    // BLOCK IF ANY COLUMN IS RESIZING
-    if (table.getState().columnSizingInfo.isResizingColumn) return;
-
     const activeId = active.id;
     const overId = over.id;
 
-    if (!reorderableIds.includes(activeId) || !reorderableIds.includes(overId))
+    // Only allow reordering of center columns (not pinned, not select/expand)
+    if (!reorderableIds.includes(activeId) || !reorderableIds.includes(overId)) {
       return;
+    }
 
     table.setColumnOrder((prev) => {
-      const newOrder = [...prev];
-      const from = newOrder.indexOf(activeId);
-      const to = newOrder.indexOf(overId);
-      if (from === -1 || to === -1) return prev;
+      // If columnOrder is empty, initialize with all column IDs
+      const currentOrder = prev.length > 0
+        ? prev
+        : table.getAllLeafColumns().map(c => c.id);
 
-      newOrder.splice(from, 1);
-      newOrder.splice(to, 0, activeId);
+      const newOrder = [...currentOrder];
+      const fromIndex = newOrder.indexOf(activeId);
+      const toIndex = newOrder.indexOf(overId);
+
+      // Safety check
+      if (fromIndex === -1 || toIndex === -1) {
+        return currentOrder;
+      }
+
+      // Perform the reorder
+      newOrder.splice(fromIndex, 1);
+      newOrder.splice(toIndex, 0, activeId);
+
       return newOrder;
     });
   };
@@ -123,18 +133,24 @@ export function DataGridTableHeader({
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragOver={handleDragOver}   // This enables live reordering
-            onDragEnd={() => { }}          // Optional: cleanup if needed
+            onDragOver={handleDragOver}
           >
             <SortableContext
-              items={headerGroup.headers.map(h => h.column.id)}
+              items={reorderableIds}
               strategy={horizontalListSortingStrategy}
             >
               {headerGroup.headers.map((header) => {
                 const isPinned = header.column.getIsPinned();
                 const leftPos = isPinned === "left" ? getLeftPosition(header.column) : undefined;
                 const rightPos = isPinned === "right" ? getRightPosition(header.column) : undefined;
-                return <SortableHeaderCell header={header} isPinned={isPinned} leftPos={leftPos} rightPos={rightPos} getDensityPadding={getDensityPadding} getHeaderBorderClasses={getHeaderBorderClasses}
+                return <SortableHeaderCell
+                  key={header.id}
+                  header={header}
+                  isPinned={isPinned}
+                  leftPos={leftPos}
+                  rightPos={rightPos}
+                  getDensityPadding={getDensityPadding}
+                  getHeaderBorderClasses={getHeaderBorderClasses}
                   focusedColumnIndex={focusedColumnIndex}
                 />
               })}
