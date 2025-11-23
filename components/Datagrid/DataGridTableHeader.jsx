@@ -3,14 +3,23 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, us
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { flexRender } from "@tanstack/react-table";
 
-const SortableHeaderCell = ({ header, isPinned, leftPos, rightPos, getDensityPadding, getHeaderBorderClasses }) => {
+const SortableHeaderCell = ({ header, isPinned, leftPos, rightPos, getDensityPadding, getHeaderBorderClasses, focusedColumnIndex }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useSortable({
     id: header.column.id,
   });
+  
+  const isFocused = !isPinned && focusedColumnIndex !== null && (() => {
+    const table = header.getContext().table;
+    const nonPinnedColumns = table.getVisibleLeafColumns()
+      .filter(c => c.id !== 'select' && c.id !== 'expand' && !c.getIsPinned());
+    const columnIndexInNonPinned = nonPinnedColumns.findIndex(c => c.id === header.column.id);
+    return columnIndexInNonPinned === focusedColumnIndex;
+  })();
 
   return (
     <th
       ref={setNodeRef}
+      data-column-id={header.column.id}
       {...attributes}
       {...listeners}
       style={{
@@ -47,6 +56,7 @@ export function DataGridTableHeader({
   getHeaderBorderClasses,
   getLeftPosition,
   getRightPosition,
+  focusedColumnIndex,
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -96,7 +106,9 @@ export function DataGridTableHeader({
                 const isPinned = header.column.getIsPinned();
                 const leftPos = isPinned === "left" ? getLeftPosition(header.column) : undefined;
                 const rightPos = isPinned === "right" ? getRightPosition(header.column) : undefined;
-                return <SortableHeaderCell header={header} isPinned={isPinned} leftPos={leftPos} rightPos={rightPos} getDensityPadding={getDensityPadding} getHeaderBorderClasses={getHeaderBorderClasses} />
+                return <SortableHeaderCell header={header} isPinned={isPinned} leftPos={leftPos} rightPos={rightPos} getDensityPadding={getDensityPadding} getHeaderBorderClasses={getHeaderBorderClasses}
+                  focusedColumnIndex={focusedColumnIndex}
+                />
               })}
             </SortableContext>
           </DndContext>

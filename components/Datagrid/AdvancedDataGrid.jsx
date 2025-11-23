@@ -61,7 +61,7 @@ const AdvancedDataGrid = () => {
   );
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [exportMode, setExportMode] = useState(null);
-
+  const [focusedColumnIndex, setFocusedColumnIndex] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
 
@@ -181,6 +181,52 @@ const AdvancedDataGrid = () => {
     },
   });
 
+  const scrollColumnIntoView = (column) => {
+    if (!column) return;
+
+    setTimeout(() => {
+      const tableContainer = document.querySelector('.overflow-auto');
+      if (!tableContainer) return;
+
+      const columnId = column.id;
+      const headerCell = document.querySelector(`[data-column-id="${columnId}"]`);
+      if (!headerCell) return;
+
+      // Calculate total width of left pinned columns
+      const leftPinnedColumns = table.getState().columnPinning.left || [];
+      let pinnedWidth = 0;
+      leftPinnedColumns.forEach(colId => {
+        const col = table.getAllLeafColumns().find(c => c.id === colId);
+        if (col) pinnedWidth += col.getSize();
+      });
+
+      const containerRect = tableContainer.getBoundingClientRect();
+      const cellRect = headerCell.getBoundingClientRect();
+
+      // Get current scroll position
+      const currentScroll = tableContainer.scrollLeft;
+
+      // Calculate cell position relative to container's scrollable content
+      const cellLeftInContainer = cellRect.left - containerRect.left;
+      const cellRightInContainer = cellRect.right - containerRect.left;
+
+      // Define the visible scrollable area (excluding pinned columns)
+      const visibleAreaStart = pinnedWidth;
+      const visibleAreaEnd = containerRect.width;
+      const visibleAreaWidth = visibleAreaEnd - visibleAreaStart;
+
+      // Check if cell is outside visible area and calculate new scroll
+      if (cellLeftInContainer < visibleAreaStart) {
+        // Cell is hidden behind pinned columns - scroll left to show it
+        const offset = visibleAreaStart - cellLeftInContainer;
+        tableContainer.scrollLeft = currentScroll - offset;
+      } else if (cellRightInContainer > visibleAreaEnd) {
+        // Cell is hidden on the right - scroll right to show it
+        const offset = cellRightInContainer - visibleAreaEnd;
+        tableContainer.scrollLeft = currentScroll + offset;
+      }
+    }, 10);
+  };
   // Keyboard shortcuts using react-hotkeys-hook (after table initialization)
   useHotkeys('slash', (e) => {
     e.preventDefault();
@@ -267,14 +313,14 @@ const AdvancedDataGrid = () => {
 
   useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
-useHotkeys('esc', (e) => {
-  // e.preventDefault();
-  if (document.activeElement === searchInputRef.current) {
-    searchInputRef.current?.blur();
-  } else if (isFullscreen) {
-    setIsFullscreen(false);
-  }
-}, { enableOnFormTags: true });
+  useHotkeys('esc', (e) => {
+    // e.preventDefault();
+    if (document.activeElement === searchInputRef.current) {
+      searchInputRef.current?.blur();
+    } else if (isFullscreen) {
+      setIsFullscreen(false);
+    }
+  }, { enableOnFormTags: true });
 
   useHotkeys('pageup', (e) => {
     e.preventDefault();
@@ -285,6 +331,52 @@ useHotkeys('esc', (e) => {
     e.preventDefault();
     if (table.getCanNextPage()) table.nextPage();
   }, { enableOnFormTags: false });
+  
+  useHotkeys('left', (e) => {
+    if (document.activeElement === searchInputRef.current) return;
+    e.preventDefault();
+
+    const visibleColumns = table.getVisibleLeafColumns()
+      .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
+
+    if (visibleColumns.length === 0) return;
+
+    setFocusedColumnIndex(prev => {
+      // If no column is focused or trying to go before first, focus last column
+      if (prev === null || prev <= 0) {
+        const newIndex = visibleColumns.length - 1;
+        scrollColumnIntoView(visibleColumns[newIndex]);
+        return newIndex;
+      }
+
+      const newIndex = prev - 1;
+      scrollColumnIntoView(visibleColumns[newIndex]);
+      return newIndex;
+    });
+  }, { enableOnFormTags: false });
+
+  useHotkeys('right', (e) => {
+    if (document.activeElement === searchInputRef.current) return;
+    e.preventDefault();
+
+    const visibleColumns = table.getVisibleLeafColumns()
+      .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
+
+    if (visibleColumns.length === 0) return;
+
+    setFocusedColumnIndex(prev => {
+      // If no column is focused or at the end, wrap to first column
+      if (prev === null || prev >= visibleColumns.length - 1) {
+        scrollColumnIntoView(visibleColumns[0]);
+        return 0;
+      }
+
+      const newIndex = prev + 1;
+      scrollColumnIntoView(visibleColumns[newIndex]);
+      return newIndex;
+    });
+  }, { enableOnFormTags: false });
+
 
   // Handle export
   const handleExport = (format, rows, cols) => {
@@ -471,6 +563,7 @@ useHotkeys('esc', (e) => {
                   getHeaderBorderClasses={getHeaderBorderClasses}
                   getLeftPosition={getLeftPos}
                   getRightPosition={getRightPos}
+                  focusedColumnIndex={focusedColumnIndex}
                 />
                 <DataGridTableBody
                   table={table}
