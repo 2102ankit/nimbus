@@ -76,7 +76,13 @@ export function DataGridToolbar({
     const columnId = col.id || col.accessorKey;
     const config = getColumnConfig(columnId);
     if (config?.headerText) return config.headerText;
-    return col.columnDef?.header || col.columnDef?.meta?.headerText || col.id;
+
+    const header = col.columnDef?.header || col.columnDef?.meta?.headerText || col.id;
+    // If header is a function (component) or object, fallback to ID
+    if (typeof header === 'function' || typeof header === 'object') {
+      return col.id;
+    }
+    return String(header);
   };
 
   const handleGlobalSearch = (value) => {

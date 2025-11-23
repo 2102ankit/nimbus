@@ -46,7 +46,13 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     const getColumnTitle = useCallback((col) => {
         const config = getColumnConfig(col.id || col.accessorKey);
         if (config?.headerText) return config.headerText;
-        return col.header || col.columnDef?.header || col.meta?.headerText || col.accessorKey;
+
+        const header = col.header || col.columnDef?.header || col.meta?.headerText || col.accessorKey;
+        // If header is a function (component) or object, fallback to accessorKey/id
+        if (typeof header === 'function' || typeof header === 'object') {
+            return col.meta?.headerText || col.accessorKey || col.id;
+        }
+        return String(header);
     }, []);
 
     const getColumnType = useCallback((col) => {
@@ -208,7 +214,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                             <div className="flex-1 overflow-hidden flex">
                                 {/* Column List */}
                                 <div className="w-1/3 border-r border-border overflow-y-auto bg-muted/10">
-                                    <div className="p-4 border-b border-border bg-muted/30 sticky top-0 z-10">
+                                    <div className="p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
                                         <p className="text-sm font-semibold text-foreground">Columns ({filteredColumns.length})</p>
                                     </div>
                                     <div className="flex flex-col">

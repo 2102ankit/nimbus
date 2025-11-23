@@ -118,17 +118,18 @@ function analyzeColumns(data) {
 
         const isNested = values.some(val => typeof val === 'object' && val !== null);
         const dataType = isNested ? 'nested' : detectDataType(values, key);
-        const forceEnum = shouldForceEnum(key);
+        // Remove aggressive forceEnum based on name. Rely on data analysis.
+        // const forceEnum = shouldForceEnum(key); 
 
         columns[key] = {
             name: key,
             dataType: dataType,
-            isEnum: forceEnum || (!isNested && isEnumColumn(values)),
+            isEnum: !isNested && isEnumColumn(values),
             uniqueValues: getUniqueValues(values),
             hasNulls: data.some(row => row[key] === null || row[key] === undefined || row[key] === ''),
             maxLength: getMaxLength(values),
             isNested: isNested,
-            forceEnum: forceEnum,
+            forceEnum: false, // Default to false
         };
     });
 
@@ -295,13 +296,22 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             if (!value) return <span className="text-muted-foreground">-</span>;
 
             const phoneStr = String(value);
+            // Format phone number: (XXX) XXX-XXXX if 10 digits
+            const digits = phoneStr.replace(/\D/g, '');
+            let formattedPhone = phoneStr;
+            if (digits.length === 10) {
+                formattedPhone = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+            } else if (digits.length === 11 && digits.startsWith('1')) {
+                formattedPhone = `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+            }
+
             return (
                 <a
-                    href={`tel:${phoneStr.replace(/\D/g, '')}`}
-                    className="text-primary hover:underline font-mono text-sm"
-                    title={`Call ${phoneStr}`}
+                    href={`tel:${digits}`}
+                    className="text-primary hover:underline font-mono text-sm whitespace-nowrap"
+                    title={`Call ${formattedPhone}`}
                 >
-                    {phoneStr}
+                    {formattedPhone}
                 </a>
             );
         };
@@ -313,7 +323,16 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             if (value === null || value === undefined) {
                 return <span className="text-muted-foreground">-</span>;
             }
-            return <span className="text-foreground font-mono text-sm">{value}</span>;
+            // Handle large numbers to avoid scientific notation
+            let displayValue = value;
+            if (typeof value === 'number') {
+                if (Math.abs(value) >= 1e15) {
+                    displayValue = BigInt(Math.round(value)).toString();
+                } else {
+                    displayValue = value.toLocaleString('en-US', { maximumFractionDigits: 3 });
+                }
+            }
+            return <span className="text-foreground font-mono text-sm">{displayValue}</span>;
         };
     }
 
@@ -381,8 +400,8 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
         if (analysis.isNested) return;
 
         const column = {
-            id: key,  // Explicit ID to match accessorKey
-            accessorKey: key,
+            id: key,  // Explicit ID
+            accessorFn: row => row[key],  // Use accessor function to treat key as literal string
             header: formatHeaderName(key),
             filterFn: "advanced",
             size: calculateColumnWidth(analysis, key),
@@ -396,48 +415,21 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
             enableGrouping: analysis.isEnum,
         };
 
-        if (analysis.isEnum) {
-            column.cell = ({ getValue }) => {
-                const value = getValue();
-                const displayValue = typeof value === 'boolean' ? String(value) : value;
-                return (
-                    <Badge
-                        className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm border-2"
-                        style={{
-                            backgroundColor: getEnumColor(displayValue, analysis.uniqueValues).bg,
-                            color: getEnumColor(displayValue, analysis.uniqueValues).text,
-                            borderColor: getEnumColor(displayValue, analysis.uniqueValues).border,
-                        }}
-                    >
-                        {displayValue ? displayValue : "-"}
-                    </Badge>
-                );
-            };
+        // Use the centralized getCellRenderer
+        const renderer = getCellRenderer(analysis.dataType, analysis.isEnum, analysis.uniqueValues);
+        if (renderer) {
+            column.cell = renderer;
+        }
 
+        // Add aggregation functions
+        if (analysis.isEnum) {
             column.aggregationFn = "count";
             column.aggregatedCell = ({ getValue }) => (
                 <span className="font-bold text-primary">
                     {getValue()} items
                 </span>
             );
-        }
-
-        if (analysis.dataType === 'currency') {
-            column.cell = ({ getValue }) => {
-                const value = getValue();
-                const numValue = typeof value === 'string'
-                    ? parseFloat(value.replace(/[^0-9.-]/g, ''))
-                    : value;
-                return (
-                    <span className="text-foreground">
-                        {new Intl.NumberFormat("en-US", {
-                            style: "currency",
-                            currency: "USD",
-                        }).format(numValue)}
-                    </span>
-                );
-            };
-
+        } else if (analysis.dataType === 'currency') {
             column.aggregationFn = "sum";
             column.aggregatedCell = ({ getValue }) => (
                 <span className="font-bold text-chart-2">
@@ -447,73 +439,13 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                     }).format(getValue())}
                 </span>
             );
-        }
-
-        if (analysis.dataType === 'percentage') {
-            column.cell = ({ getValue }) => {
-                const value = getValue();
-                const numValue = typeof value === 'string'
-                    ? parseFloat(value.replace('%', ''))
-                    : value;
-
-                return (
-                    <div className="flex items-center gap-2">
-                        <div className="flex-1 rounded-full h-2.5 overflow-hidden bg-muted">
-                            <div
-                                className="h-2.5 rounded-full transition-all duration-150"
-                                style={{
-                                    backgroundColor: numValue >= 70 ? "var(--color-chart-2)" :
-                                        numValue >= 40 ? "var(--color-chart-3)" :
-                                            "var(--color-destructive)",
-                                    width: `${numValue}%`,
-                                }}
-                            />
-                        </div>
-                        <span className="text-xs font-bold w-10 text-foreground">
-                            {numValue}%
-                        </span>
-                    </div>
-                );
-            };
-
+        } else if (analysis.dataType === 'percentage') {
             column.aggregationFn = "mean";
             column.aggregatedCell = ({ getValue }) => (
                 <span className="font-bold text-primary">
                     Avg: {Math.round(getValue())}%
                 </span>
             );
-        }
-
-        if (analysis.dataType === 'phone') {
-            column.cell = ({ getValue }) => {
-                const value = getValue();
-                if (!value) return <span className="text-muted-foreground">-</span>;
-
-                const phoneStr = String(value);
-                return (
-                    <a
-                        href={`tel:${phoneStr.replace(/\D/g, '')}`}
-                        className="text-primary hover:underline font-mono text-sm"
-                        title={`Call ${phoneStr}`}
-                    >
-                        {phoneStr}
-                    </a>
-                );
-            };
-        }
-
-        if (analysis.dataType === 'number') {
-            column.cell = ({ getValue }) => {
-                const value = getValue();
-                if (value === null || value === undefined) {
-                    return <span className="text-muted-foreground">-</span>;
-                }
-                return <span className="text-foreground font-mono text-sm">{value}</span>;
-            };
-        }
-
-        if (analysis.dataType === 'text' && !analysis.isEnum) {
-            column.cell = ({ getValue }) => <ExpandableTextCell value={getValue()} />;
         }
 
         columns.push(column);

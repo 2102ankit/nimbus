@@ -142,7 +142,10 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
                 data = await parseExcel(file);
             }
 
-            onDataLoaded(data);
+            if (onDataLoaded) {
+                onDataLoaded(data, file.name);
+            }
+            onClose();
         } catch (error) {
             console.error("Parse error:", error);
             alert("Failed to parse file. Please ensure it's a valid CSV/Excel/JSON file.");

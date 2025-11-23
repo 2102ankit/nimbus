@@ -91,8 +91,8 @@ export function applyColumnConfigs(columns) {
             updatedColumn.cell = newRenderer;
         }
 
-        // Apply header text if configured
-        if (config.headerText) {
+        // Apply header text if configured and valid
+        if (config.headerText && typeof config.headerText === 'string' && config.headerText !== '[object Object]') {
             updatedColumn.header = config.headerText;
         }
 

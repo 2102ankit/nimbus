@@ -35,7 +35,7 @@ import StatusBarModal from "../components/Datagrid/StatusBarModal";
 import { analyzeData } from "./dataAnalyzer";
 import { FileUploadHandler } from "./FileUploadHandler";
 import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
-import { applyColumnConfigs } from "./columnConfigSystem"; // FIXED: Now imports the working function
+import { applyColumnConfigs } from "./columnConfigSystem";
 import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
 
 const DynamicDataGrid = () => {
@@ -46,6 +46,7 @@ const DynamicDataGrid = () => {
     const [metadata, setMetadata] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showUpload, setShowUpload] = useState(false);
+    const [filename, setFilename] = useState("");
     const [globalFilter, setGlobalFilter] = useState("");
     const [rowSelection, setRowSelection] = useState({});
     const [expanded, setExpanded] = useState({});
@@ -71,7 +72,6 @@ const DynamicDataGrid = () => {
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
     const [configReloadTrigger, setConfigReloadTrigger] = useState(0);
 
-    // FIXED: Callback to trigger re-application of configs
     const handleConfigChange = useCallback(() => {
         setConfigReloadTrigger(t => t + 1);
     }, []);
@@ -94,7 +94,6 @@ const DynamicDataGrid = () => {
         setPrefs(merged);
     }, [prefs]);
 
-    // Debounced preference saves
     useEffect(() => {
         const timer = setTimeout(() => handleSavePrefs({ sorting }), 300);
         return () => clearTimeout(timer);
@@ -120,9 +119,10 @@ const DynamicDataGrid = () => {
         return () => clearTimeout(timer);
     }, [columnPinning, handleSavePrefs]);
 
-    const handleDataLoaded = useCallback((rawData) => {
+    const handleDataLoaded = useCallback((rawData, name = "Uploaded File") => {
         setLoading(true);
         setShowUpload(false);
+        setFilename(name);
 
         setSorting([]);
         setColumnFilters([]);
@@ -146,22 +146,16 @@ const DynamicDataGrid = () => {
         });
     }, []);
 
-    // FIXED: Apply column configs and add headers - THIS IS KEY
     const columnsWithHeadersAndConfigs = useMemo(() => {
         if (columns.length === 0) return [];
-
-        // First apply configurations
         const configuredColumns = applyColumnConfigs(columns);
-
-        // Then add headers
         const withHeaders = addHeadersToColumns(configuredColumns);
-
         return withHeaders;
-    }, [columns, configReloadTrigger]); // Re-run when trigger changes
+    }, [columns, configReloadTrigger]);
 
     const table = useReactTable({
         data,
-        columns: columnsWithHeadersAndConfigs, // FIXED: Use configured columns
+        columns: columnsWithHeadersAndConfigs,
         state: {
             sorting,
             columnFilters,
@@ -499,35 +493,26 @@ const DynamicDataGrid = () => {
                 }}
             >
                 <div className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}>
-                    <AnimatePresence mode="wait">
+                    {/* Header - Hidden in fullscreen */}
+                    <AnimatePresence>
                         {!isFullscreen && (
                             <motion.div
                                 initial={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                exit={{ opacity: 0, y: -50 }}
+                                transition={{ duration: 0.3 }}
                                 className="mb-4 w-full text-center"
                             >
-                                <h1 className="text-4xl font-black mb-2 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
-                                    Nimbus<span className="text-white!">☁️</span>Enterprise DataGrid
+                                <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
+                                    Nimbus<span className="text-white!">☁️</span>- Enterprise DataGrid
                                 </h1>
-                                <p className="text-md mx-auto tracking-tighter leading-tight text-muted-foreground">
-                                    Upload CSV/Excel/JSON files for instant intelligent analysis with auto-detected columns, types, and enums
+                                <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
+                                    Complete table with Advanced Filters, Multi-Column Sort, Column Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
                                 </p>
-                                {metadata && (
-                                    <div className="mt-2 text-sm text-muted-foreground">
-                                        {metadata.rowCount} rows • {metadata.columnCount} columns
-                                        {metadata.hasNestedData && " • Nested data detected"}
-                                    </div>
-                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>
-
                     {!isFullscreen && (
-                        <Info
-                            className="absolute top-0 right-0 text-primary m-4 cursor-pointer transition-transform hover:scale-110 duration-200"
-                            onClick={() => setShowShortcutsModal((v) => !v)}
-                        />
+                        <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
                     )}
 
                     {data.length > 0 && !isFullscreen && (
@@ -662,20 +647,16 @@ const DynamicDataGrid = () => {
                     )}
 
                     {!isFullscreen && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="text-center mt-6 text-sm text-muted-foreground"
-                        >
-                            Built with ❤️ • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
-                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">u</kbd> to upload
-                        </motion.div>
+                        <div className="text-center mt-6 text-sm text-muted-foreground">
+                            Built with ❤️ by {" "}
+                            <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
+                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
+                        </div>
                     )}
                 </div>
             </motion.div>
 
-            <StatusBarModal open={showStatusModal} onOpenChange={setShowStatusModal} table={table} rowSelection={rowSelection} />
+            <StatusBarModal open={showStatusModal} onOpenChange={setShowStatusModal} table={table} rowSelection={rowSelection} filename={filename} />
             <KeyboardShortcutsModal open={showShortcutsModal} onOpenChange={setShowShortcutsModal} />
         </div>
     );

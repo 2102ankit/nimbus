@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Info } from "lucide-react";
 
-export function StatusBarModal({ table, rowSelection, open, onOpenChange }) {
+export function StatusBarModal({ table, rowSelection, open, onOpenChange, filename }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto"
@@ -20,6 +20,10 @@ export function StatusBarModal({ table, rowSelection, open, onOpenChange }) {
                     </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 text-sm">
+                    <div className="flex justify-between">
+                        <span className="text-muted-foreground">File</span>
+                        <span className="font-medium truncate max-w-[300px]" title={filename}>{filename || "No file loaded"}</span>
+                    </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Total Rows</span>
                         <span className="font-medium">{table.getFilteredRowModel().rows.length.toLocaleString()}</span>
