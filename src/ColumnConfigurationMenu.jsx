@@ -36,6 +36,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     ], []);
 
     const aggregationOptions = useMemo(() => [
+        { value: 'none', label: 'None' },
         { value: 'sum', label: 'Sum' },
         { value: 'mean', label: 'Average (Mean)' },
         { value: 'median', label: 'Median' },
@@ -48,7 +49,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
         return columns.filter(col =>
             col.id !== 'select' &&
             col.id !== 'expand' &&
-            col.accessorKey
+            (col.accessorKey || col.accessorFn)
         );
     }, [columns]);
 
@@ -68,7 +69,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, []);
 
     const getColumnAggregation = useCallback((col) => {
-        return col.columnDef?.aggregationFn || col.aggregationFn || 'sum';
+        return col.columnDef?.aggregationFn || col.aggregationFn || 'none';
     }, []);
 
     useEffect(() => {
@@ -105,7 +106,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                 filterable: true,
                 resizable: true,
                 hideInGrid: false,
-                aggregationFn: selectedCol.columnDef?.aggregationFn || 'sum',
+                aggregationFn: selectedCol.columnDef?.aggregationFn || 'none',
             });
         } else {
             setLocalConfigs(existingConfig || {});

@@ -283,8 +283,14 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             const phoneStr = String(value);
             const digits = phoneStr.replace(/\D/g, '');
             let formattedPhone = phoneStr;
-            if (digits.length === 10) {
-                formattedPhone = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+
+            // Handle international format (e.g., 919000000000 -> +91 900 000 0000)
+            if (digits.length === 12 && digits.startsWith('91')) {
+                formattedPhone = `+91 ${digits.slice(2, 5)} ${digits.slice(5, 8)} ${digits.slice(8)}`;
+            } else if (digits.length === 11 && digits.startsWith('91')) {
+                formattedPhone = `+91 ${digits.slice(2, 5)} ${digits.slice(5, 8)} ${digits.slice(8)}`;
+            } else if (digits.length === 10) {
+                formattedPhone = `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
             } else if (digits.length === 11 && digits.startsWith('1')) {
                 formattedPhone = `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
             }
@@ -309,7 +315,11 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             }
             let displayValue = value;
             if (typeof value === 'number') {
-                if (Math.abs(value) >= 1e15) {
+                // Always format large numbers to avoid scientific notation
+                if (Math.abs(value) >= 1e10) {
+                    // For very large numbers, show as integer without decimals
+                    displayValue = value.toLocaleString('en-US', { maximumFractionDigits: 0, useGrouping: true });
+                } else if (Math.abs(value) >= 1e15) {
                     displayValue = BigInt(Math.round(value)).toString();
                 } else {
                     displayValue = value.toLocaleString('en-US', { maximumFractionDigits: 3 });
@@ -386,7 +396,8 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
 
         const column = {
             id: sanitizedKey,
-            accessorKey: key, // Keep original key for data access
+            // Use accessorFn instead of accessorKey to handle keys with dots
+            accessorFn: (row) => row[key],
             header: formatHeaderName(key),
             filterFn: "advanced",
             size: calculateColumnWidth(analysis, key),

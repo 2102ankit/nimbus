@@ -39,10 +39,40 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
         return new Promise((resolve, reject) => {
             Papa.parse(file, {
                 header: true,
-                dynamicTyping: true,
+                dynamicTyping: false, // Keep as strings to prevent number conversion issues
                 skipEmptyLines: true,
                 transformHeader: (h) => h.trim(),
-                complete: (results) => resolve(results.data),
+                complete: (results) => {
+                    // Post-process to handle numbers correctly
+                    const processed = results.data.map(row => {
+                        const newRow = {};
+                        for (const [key, value] of Object.entries(row)) {
+                            if (typeof value === 'string') {
+                                // Try to detect if it's a large number that should stay as string
+                                const trimmed = value.trim();
+                                // Check if it's a phone number pattern (starts with country code or has specific format)
+                                if (/^(\+?\d{1,3}[\s-]?)?\d{10,}$/.test(trimmed)) {
+                                    newRow[key] = trimmed; // Keep as string
+                                }
+                                // Check if it's a very large integer (more than 15 digits)
+                                else if (/^\d{16,}$/.test(trimmed)) {
+                                    newRow[key] = trimmed; // Keep as string
+                                }
+                                // Try to parse as number if it looks like one
+                                else if (/^-?\d+\.?\d*$/.test(trimmed) && trimmed.length < 16) {
+                                    const num = parseFloat(trimmed);
+                                    newRow[key] = isNaN(num) ? value : num;
+                                } else {
+                                    newRow[key] = value;
+                                }
+                            } else {
+                                newRow[key] = value;
+                            }
+                        }
+                        return newRow;
+                    });
+                    resolve(processed);
+                },
                 error: (err) => reject(err),
             });
         });
@@ -57,33 +87,73 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
                     if (!result) throw new Error("No data");
 
                     const data = new Uint8Array(result);
-                    const workbook = XLSX.read(data, { type: "array" });
+                    const workbook = XLSX.read(data, {
+                        type: "array",
+                        cellText: false, // Use actual cell values
+                        cellDates: false, // Don't convert dates
+                        raw: false, // Format cells
+                    });
                     const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
                     if (!sheet) throw new Error("Empty workbook");
 
-                    // Convert to JSON with raw formatting to preserve large numbers
-                    const json = XLSX.utils.sheet_to_json(sheet, {
-                        raw: true,  // Keep raw values
-                        defval: null,
-                    });
+                    // Get the range
+                    const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
 
-                    // Post-process to handle large numbers that get corrupted
-                    const processedJson = json.map(row => {
-                        const processed = {};
-                        Object.entries(row).forEach(([key, value]) => {
-                            // If it looks like corrupted scientific notation, try to get original
-                            if (typeof value === 'number' && Math.abs(value) > 1e15) {
-                                // This is likely a large ID that should be text
-                                processed[key] = String(value);
-                            } else {
-                                processed[key] = value;
+                    // Extract headers
+                    const headers = [];
+                    for (let C = range.s.c; C <= range.e.c; ++C) {
+                        const address = XLSX.utils.encode_cell({ r: range.s.r, c: C });
+                        const cell = sheet[address];
+                        headers[C] = cell ? String(cell.v) : `Column${C}`;
+                    }
+
+                    // Extract rows
+                    const rows = [];
+                    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+                        const row = {};
+                        for (let C = range.s.c; C <= range.e.c; ++C) {
+                            const address = XLSX.utils.encode_cell({ r: R, c: C });
+                            const cell = sheet[address];
+                            const header = headers[C];
+
+                            if (!cell) {
+                                row[header] = null;
+                                continue;
                             }
-                        });
-                        return processed;
-                    });
 
-                    resolve(processedJson);
+                            // Handle different cell types
+                            if (cell.t === 'n') { // Number
+                                // Check if it's a very large number (likely an ID or phone)
+                                if (Math.abs(cell.v) >= 1e15) {
+                                    // Keep as string to preserve all digits
+                                    row[header] = cell.w || String(Math.round(cell.v));
+                                } else {
+                                    row[header] = cell.v;
+                                }
+                            } else if (cell.t === 's') { // String
+                                const strVal = String(cell.v).trim();
+                                // Check if it looks like a phone number
+                                if (/^(\+?\d{1,3}[\s-]?)?\d{10,}$/.test(strVal)) {
+                                    row[header] = strVal; // Keep as string
+                                } else {
+                                    row[header] = cell.v;
+                                }
+                            } else if (cell.t === 'b') { // Boolean
+                                row[header] = cell.v;
+                            } else if (cell.t === 'd') { // Date
+                                row[header] = cell.w || cell.v;
+                            } else {
+                                row[header] = cell.w || cell.v;
+                            }
+                        }
+                        // Only add non-empty rows
+                        if (Object.values(row).some(v => v !== null && v !== undefined && v !== '')) {
+                            rows.push(row);
+                        }
+                    }
+
+                    resolve(rows);
                 } catch (error) {
                     reject(error);
                 }
@@ -103,16 +173,11 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
 
                     const parsed = JSON.parse(result);
 
-                    // Handle if it's an array of objects
                     if (Array.isArray(parsed)) {
                         resolve(parsed);
-                    }
-                    // Handle if it's a single object with data array
-                    else if (parsed.data && Array.isArray(parsed.data)) {
+                    } else if (parsed.data && Array.isArray(parsed.data)) {
                         resolve(parsed.data);
-                    }
-                    // Handle if it's an object with other structure
-                    else if (typeof parsed === 'object') {
+                    } else if (typeof parsed === 'object') {
                         resolve([parsed]);
                     } else {
                         throw new Error("JSON must be an array of objects or contain a 'data' array");

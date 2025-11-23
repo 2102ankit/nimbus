@@ -122,13 +122,13 @@ export function DataGridToolbar({
   const handleAggregationChange = (columnId, aggregationFn) => {
     const column = table.getAllColumns().find(c => c.id === columnId);
     if (column) {
-      column.columnDef.aggregationFn = aggregationFn;
+      column.columnDef.aggregationFn = aggregationFn === 'none' ? undefined : aggregationFn;
       table.resetColumnFilters(); // Trigger a re-render
     }
   };
 
   const getColumnAggregation = (col) => {
-    return col.columnDef?.aggregationFn || 'sum';
+    return col.columnDef?.aggregationFn || 'none';
   };
 
   return (
@@ -467,6 +467,7 @@ export function DataGridToolbar({
                             value={currentAgg}
                             onValueChange={(value) => handleAggregationChange(col.id, value)}
                           >
+                            <DropdownMenuRadioItem value="none">None</DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="sum">Sum</DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="mean">Average</DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="median">Median</DropdownMenuRadioItem>
