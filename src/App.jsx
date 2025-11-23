@@ -1,10 +1,10 @@
 import ThemeProvider from "@/components/ThemeProvider";
-import AdvancedDataGrid from "@/components/Datagrid/AdvancedDataGrid";
+import DynamicDataGrid from "./DynamicDataGrid";
 
 const App = () => {
   return (
     <ThemeProvider>
-      <AdvancedDataGrid />
+      <DynamicDataGrid />
     </ThemeProvider>
   );
 };

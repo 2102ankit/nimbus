@@ -70,11 +70,11 @@ export function DataGridToolbar({
   const [searchDebounce, setSearchDebounce] = useState(null);
 
   const handleGlobalSearch = (value) => {
-    if (searchDebounce) clearTimeout(searchDebounce);
-    const timeout = setTimeout(() => {
-      onGlobalFilterChange(value);
-    }, 300);
-    setSearchDebounce(timeout);
+    onGlobalFilterChange(value);
+    // if (searchDebounce) clearTimeout(searchDebounce);
+    // const timeout = setTimeout(() => {
+    // }, 300);
+    // setSearchDebounce(timeout);
   };
 
   const clearAllFilters = () => {
@@ -380,7 +380,7 @@ export function DataGridToolbar({
                     ` (${table.getState().grouping.length})`}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 shadow-lg">
+              <DropdownMenuContent align="end" className="w-56 max-h-80 shadow-lg">
                 <DropdownMenuLabel
                   className="text-xs font-bold"
                   style={{ color: "var(--color-muted-foreground)" }}

@@ -1,0 +1,549 @@
+import {
+    addHeadersToColumns,
+} from "@/components/Datagrid/columnDefinitions";
+import { DataGridPagination } from "@/components/Datagrid/DataGridPagination";
+import { DataGridTableBody } from "@/components/Datagrid/DataGridTableBody";
+import { DataGridTableHeader } from "@/components/Datagrid/DataGridTableHeader";
+import { DataGridToolbar } from "@/components/Datagrid/DataGridToolbar";
+import {
+    advancedFilterFn,
+    exportToCSV,
+    exportToExcel,
+    exportToJSON,
+    getLeftPosition,
+    getRightPosition,
+    loadPreferences,
+    resetPreferences,
+    savePreferences,
+} from "@/components/Datagrid/dataGridUtils";
+import { KeyboardShortcutsModal } from "@/components/Datagrid/KeyboardShortcutsModal";
+import { useTheme } from "@/components/ThemeProvider";
+import { Button } from "@/components/ui/button";
+import {
+    getCoreRowModel,
+    getExpandedRowModel,
+    getFilteredRowModel,
+    getGroupedRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable,
+} from "@tanstack/react-table";
+import { Info, Maximize2, Minimize2, Upload } from "lucide-react";
+import { animate } from "motion";
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
+import StatusBarModal from "../components/Datagrid/StatusBarModal";
+import { analyzeData } from "./dataAnalyzer";
+import { FileUploadHandler } from "./FileUploadHandler";
+
+const DynamicDataGrid = () => {
+    const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
+
+    // State management
+    const [data, setData] = useState([]);
+    const [columns, setColumns] = useState([]);
+    const [metadata, setMetadata] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [showUpload, setShowUpload] = useState(true);
+    const [globalFilter, setGlobalFilter] = useState("");
+    const [rowSelection, setRowSelection] = useState({});
+    const [expanded, setExpanded] = useState({});
+    const [grouping, setGrouping] = useState([]);
+
+    // Load preferences
+    const [prefs, setPrefs] = useState(loadPreferences);
+    const [sorting, setSorting] = useState(prefs.sorting || []);
+    const [columnFilters, setColumnFilters] = useState([]);
+    const [columnVisibility, setColumnVisibility] = useState(
+        prefs.columnVisibility || {}
+    );
+    const [columnOrder, setColumnOrder] = useState(prefs.columnOrder || []);
+    const [columnSizing, setColumnSizing] = useState(prefs.columnSizing || {});
+    const [columnPinning, setColumnPinning] = useState(
+        prefs.columnPinning || { left: [], right: [] }
+    );
+    const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+    const [exportMode, setExportMode] = useState(null);
+    const [focusedColumnIndex, setFocusedColumnIndex] = useState(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [showStatusModal, setShowStatusModal] = useState(false);
+
+    // Refs for keyboard shortcuts
+    const searchInputRef = useRef(null);
+    const [viewMenuOpen, setViewMenuOpen] = useState(false);
+    const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+    const [groupMenuOpen, setGroupMenuOpen] = useState(false);
+    const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+    // Save preferences automatically with debouncing
+    const handleSavePrefs = useCallback(
+        (newPrefs) => {
+            const merged = { ...prefs, ...newPrefs };
+            savePreferences(merged);
+            setPrefs(merged);
+        },
+        [prefs]
+    );
+
+    useEffect(() => {
+        const timer = setTimeout(() => handleSavePrefs({ sorting }), 300);
+        return () => clearTimeout(timer);
+    }, [sorting]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => handleSavePrefs({ columnVisibility }), 300);
+        return () => clearTimeout(timer);
+    }, [columnVisibility]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => handleSavePrefs({ columnOrder }), 300);
+        return () => clearTimeout(timer);
+    }, [columnOrder]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => handleSavePrefs({ columnSizing }), 300);
+        return () => clearTimeout(timer);
+    }, [columnSizing]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => handleSavePrefs({ columnPinning }), 300);
+        return () => clearTimeout(timer);
+    }, [columnPinning]);
+
+    // Handle file upload and data analysis
+    const handleDataLoaded = useCallback((rawData) => {
+        setLoading(true);
+        setShowUpload(false);
+
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const analyzed = analyzeData(rawData);
+                setData(analyzed.data);
+                setColumns(analyzed.columns);
+                setMetadata(analyzed.metadata);
+                setLoading(false);
+            }, 300);
+        });
+    }, []);
+
+    // Add headers to columns
+    const columnsWithHeaders = useMemo(
+        () => columns.length > 0 ? addHeadersToColumns(columns) : [],
+        [columns]
+    );
+
+    // Initialize table
+    const table = useReactTable({
+        data,
+        columns: columnsWithHeaders,
+        state: {
+            sorting,
+            columnFilters,
+            columnVisibility,
+            rowSelection,
+            globalFilter,
+            columnOrder,
+            columnSizing,
+            columnPinning,
+            expanded,
+            grouping,
+        },
+        enableRowSelection: true,
+        enableMultiRowSelection: true,
+        enableColumnResizing: true,
+        columnResizeMode: "onChange",
+        columnResizeDirection: "ltr",
+        enableSorting: true,
+        enableMultiSort: true,
+        enableFilters: true,
+        enablePinning: true,
+        enableExpanding: metadata?.hasNestedData || false,
+        enableGrouping: true,
+        onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
+        onColumnVisibilityChange: setColumnVisibility,
+        onRowSelectionChange: setRowSelection,
+        onGlobalFilterChange: setGlobalFilter,
+        onColumnOrderChange: setColumnOrder,
+        onColumnSizingChange: setColumnSizing,
+        onColumnPinningChange: setColumnPinning,
+        onExpandedChange: setExpanded,
+        onGroupingChange: setGrouping,
+        getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getExpandedRowModel: getExpandedRowModel(),
+        getGroupedRowModel: getGroupedRowModel(),
+        filterFns: {
+            advanced: advancedFilterFn,
+        },
+        globalFilterFn: "includesString",
+        defaultColumn: {
+            minSize: 100,
+            maxSize: 600,
+        },
+        initialState: {
+            pagination: {
+                pageSize: prefs.pageSize || 20,
+            },
+        },
+    });
+
+    // Smooth scroll with animation
+    const scrollColumnIntoView = useCallback((column, direction, isWrapping = false) => {
+        if (!column) return;
+
+        requestAnimationFrame(() => {
+            const tableContainer = document.querySelector('.overflow-auto');
+            if (!tableContainer) return;
+
+            const columnId = column.id;
+            const headerCell = document.querySelector(`[data-column-id="${columnId}"]`);
+            if (!headerCell) return;
+
+            const leftPinnedColumns = table.getState().columnPinning.left || [];
+            let leftPinnedWidth = 0;
+            leftPinnedColumns.forEach(colId => {
+                const col = table.getAllLeafColumns().find(c => c.id === colId);
+                if (col) leftPinnedWidth += col.getSize();
+            });
+
+            const rightPinnedColumns = table.getState().columnPinning.right || [];
+            let rightPinnedWidth = 0;
+            rightPinnedColumns.forEach(colId => {
+                const col = table.getAllLeafColumns().find(c => c.id === colId);
+                if (col) rightPinnedWidth += col.getSize();
+            });
+
+            const containerRect = tableContainer.getBoundingClientRect();
+            const cellRect = headerCell.getBoundingClientRect();
+            const currentScroll = tableContainer.scrollLeft;
+            const borderWidth = 2;
+            let targetScrollLeft;
+
+            if (direction === 'right') {
+                const cellLeftRelativeToScroll = cellRect.left - containerRect.left + currentScroll;
+                targetScrollLeft = cellLeftRelativeToScroll - leftPinnedWidth;
+            } else if (direction === 'left') {
+                const cellRightRelativeToScroll = cellRect.right - containerRect.left + currentScroll;
+                const visibleAreaEnd = containerRect.width - rightPinnedWidth;
+                targetScrollLeft = cellRightRelativeToScroll + borderWidth - visibleAreaEnd;
+            }
+
+            if (isWrapping) {
+                tableContainer.scrollLeft = targetScrollLeft;
+            } else {
+                animate(currentScroll, targetScrollLeft, {
+                    duration: 0.25,
+                    ease: [0.25, 1, 0.5, 1],
+                    onUpdate: (latest) => {
+                        tableContainer.scrollLeft = latest;
+                    }
+                });
+            }
+        });
+    }, [table]);
+
+    // Keyboard shortcuts
+    useHotkeys('slash', (e) => {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+    }, { enableOnFormTags: true });
+
+    useHotkeys('u', (e) => {
+        e.preventDefault();
+        setShowUpload(true);
+    }, { enableOnFormTags: false });
+
+    useHotkeys('d', () => toggleTheme(), { enableOnFormTags: false });
+    useHotkeys('i', () => setShowShortcutsModal((v) => !v), { enableOnFormTags: false });
+    useHotkeys('f', () => setIsFullscreen((v) => !v), { enableOnFormTags: false });
+    useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
+
+    useHotkeys('esc', (e) => {
+        if (document.activeElement === searchInputRef.current) {
+            searchInputRef.current?.blur();
+        } else if (isFullscreen) {
+            setIsFullscreen(false);
+        }
+    }, { enableOnFormTags: true });
+
+    useHotkeys('pageup', (e) => {
+        e.preventDefault();
+        if (table.getCanPreviousPage()) table.previousPage();
+    }, { enableOnFormTags: false });
+
+    useHotkeys('pagedown', (e) => {
+        e.preventDefault();
+        if (table.getCanNextPage()) table.nextPage();
+    }, { enableOnFormTags: false });
+
+    // Handle export
+    const handleExport = useCallback((format, rows, cols) => {
+        switch (format) {
+            case "csv":
+                exportToCSV(rows, cols);
+                break;
+            case "excel":
+                exportToExcel(rows, cols);
+                break;
+            case "json":
+                exportToJSON(rows, cols);
+                break;
+        }
+    }, []);
+
+    // Reset preferences
+    const handleResetPreferences = useCallback(() => {
+        resetPreferences();
+        setSorting([]);
+        setColumnVisibility({});
+        setColumnOrder([]);
+        setColumnSizing({});
+        setColumnPinning({ left: [], right: [] });
+        setColumnFilters([]);
+        setGlobalFilter("");
+        setGrouping([]);
+        table.resetColumnVisibility();
+        table.resetColumnOrder();
+        table.resetColumnSizing();
+        table.resetSorting();
+        table.setPageSize(20);
+    }, [table]);
+
+    const getDensityPadding = useCallback(() => {
+        switch (density) {
+            case "compact":
+                return "py-1 pl-2";
+            case "comfortable":
+                return "py-4 pl-4";
+            default:
+                return "py-2 pl-4";
+        }
+    }, [density]);
+
+    const isEmpty = table.getFilteredRowModel().rows.length === 0;
+
+    const getCellBorderClasses = useCallback(() => {
+        const borders = [];
+        if (showRowLines) borders.push("border-b");
+        if (showGridLines) borders.push("border-r");
+        return borders.join(" ") + " border-(--color-border)";
+    }, [showRowLines, showGridLines]);
+
+    const getHeaderBorderClasses = useCallback(() => {
+        const borders = ["border-b-2"];
+        if (showHeaderLines || showGridLines) borders.push("border-r-2");
+        return (
+            borders.join(" ") +
+            " border-[color-mix(in_oklch,var(--color-border),transparent_50%)]"
+        );
+    }, [showHeaderLines, showGridLines]);
+
+    const getLeftPos = useCallback((column) => getLeftPosition(column, table), [table]);
+    const getRightPos = useCallback((column) => getRightPosition(column, table), [table]);
+
+    return (
+        <div
+            className="w-full min-h-screen transition-colors relative scrollbar-hide"
+            style={{
+                backgroundColor: "var(--color-background)",
+                willChange: isFullscreen ? 'padding, margin' : 'auto'
+            }}
+        >
+            {/* File Upload Modal */}
+            <AnimatePresence>
+                {showUpload && (
+                    <FileUploadHandler
+                        onDataLoaded={handleDataLoaded}
+                        onClose={() => setShowUpload(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Main Content */}
+            <motion.div
+                layout
+                className="w-full relative z-10"
+                animate={{
+                    padding: isFullscreen ? "0" : "0.5rem 2rem",
+                    marginTop: isFullscreen ? "0" : "0",
+                }}
+                transition={{
+                    type: "tween",
+                    duration: 0.3,
+                    ease: [0.25, 1, 0.5, 1]
+                }}
+            >
+                <div className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}>
+                    {/* Header */}
+                    <AnimatePresence mode="wait">
+                        {!isFullscreen && (
+                            <motion.div
+                                initial={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                className="mb-4 w-full text-center"
+                            >
+                                <h1 className="text-4xl font-black mb-2 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
+                                    Nimbus<span className="text-white!">☁️</span>Enterprise DataGrid
+                                </h1>
+                                <p className="text-md mx-auto tracking-tighter leading-tight text-muted-foreground">
+                                    Upload CSV/Excel files for instant intelligent analysis with auto-detected columns, types, and enums
+                                </p>
+                                {metadata && (
+                                    <div className="mt-2 text-sm text-muted-foreground">
+                                        {metadata.rowCount} rows • {metadata.columnCount} columns
+                                        {metadata.hasNestedData && " • Nested data detected"}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {!isFullscreen && (
+                        <Info
+                            className="absolute top-0 right-0 text-primary m-4 cursor-pointer transition-transform hover:scale-110 duration-200"
+                            onClick={() => setShowShortcutsModal((v) => !v)}
+                        />
+                    )}
+
+                    {/* Show upload button if data exists */}
+                    {data.length > 0 && !isFullscreen && (
+                        <Button
+                            onClick={() => setShowUpload(true)}
+                            variant="outline"
+                            className="absolute top-0 right-12 my-3 mx-2 border-2"
+                        >
+                            <Upload className="h-4 w-4" />
+                            Upload
+                        </Button>
+                    )}
+
+                    {/* Table Card */}
+                    {data.length > 0 && (
+                        <motion.div
+                            layout="position"
+                            className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                            style={{
+                                backgroundColor: "var(--color-card)",
+                                borderColor: "var(--color-border)",
+                                height: isFullscreen ? "100dvh" : "auto",
+                                maxHeight: isFullscreen ? "none" : "80vh",
+                            }}
+                            animate={{
+                                borderRadius: isFullscreen ? "0" : "12px"
+                            }}
+                            transition={{
+                                layout: { duration: 0 },
+                                borderRadius: {
+                                    type: "tween",
+                                    duration: 0.3,
+                                    ease: [0.25, 1, 0.5, 1]
+                                },
+                            }}
+                        >
+                            <DataGridToolbar
+                                table={table}
+                                columns={columns}
+                                onExport={handleExport}
+                                onResetPreferences={handleResetPreferences}
+                                onRefresh={() => setShowUpload(true)}
+                                globalFilter={globalFilter}
+                                onGlobalFilterChange={setGlobalFilter}
+                                searchInputRef={searchInputRef}
+                                viewMenuOpen={viewMenuOpen}
+                                setViewMenuOpen={setViewMenuOpen}
+                                columnsMenuOpen={columnsMenuOpen}
+                                setColumnsMenuOpen={setColumnsMenuOpen}
+                                groupMenuOpen={groupMenuOpen}
+                                setGroupMenuOpen={setGroupMenuOpen}
+                                exportMenuOpen={exportMenuOpen}
+                                setExportMenuOpen={setExportMenuOpen}
+                                extraButtons={
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setIsFullscreen(!isFullscreen)}
+                                        title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                                        className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
+                                        style={{ color: "var(--color-muted-foreground)" }}
+                                    >
+                                        {isFullscreen ? (
+                                            <Minimize2 className="h-4 w-4" />
+                                        ) : (
+                                            <Maximize2 className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                }
+                            />
+
+                            <div
+                                className="flex-1 overflow-auto min-h-0"
+                                style={{
+                                    overscrollBehavior: 'none',
+                                    scrollBehavior: 'smooth',
+                                }}
+                            >
+                                <table
+                                    className="w-full text-sm border-collapse"
+                                    style={{
+                                        width: 'max-content',
+                                        minWidth: '100%',
+                                        contain: 'layout style paint',
+                                    }}
+                                >
+                                    <DataGridTableHeader
+                                        table={table}
+                                        getDensityPadding={getDensityPadding}
+                                        getHeaderBorderClasses={getHeaderBorderClasses}
+                                        getLeftPosition={getLeftPos}
+                                        getRightPosition={getRightPos}
+                                        focusedColumnIndex={focusedColumnIndex}
+                                    />
+                                    <DataGridTableBody
+                                        table={table}
+                                        loading={loading}
+                                        isEmpty={isEmpty}
+                                        getDensityPadding={getDensityPadding}
+                                        getCellBorderClasses={getCellBorderClasses}
+                                        getLeftPosition={getLeftPos}
+                                        getRightPosition={getRightPos}
+                                    />
+                                </table>
+                            </div>
+
+                            <motion.div
+                                initial={{ opacity: 1 }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <DataGridPagination table={table} />
+                            </motion.div>
+                        </motion.div>
+                    )}
+
+                    {!isFullscreen && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="text-center mt-6 text-sm text-muted-foreground"
+                        >
+                            Built with ❤️ by {" "}
+                            <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "} • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
+                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">u</kbd> to upload
+                        </motion.div>
+                    )}
+                </div>
+            </motion.div>
+
+            <StatusBarModal open={showStatusModal} onOpenChange={setShowStatusModal} table={table} rowSelection={rowSelection} />
+            <KeyboardShortcutsModal open={showShortcutsModal} onOpenChange={setShowShortcutsModal} />
+        </div>
+    );
+};
+
+export default DynamicDataGrid;
