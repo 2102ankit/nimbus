@@ -1,4 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
+import { getColumnConfig } from "../../src/columnConfigSystem";
 
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,14 @@ export function DataGridToolbar({
     toggleRowLines,
   } = useTheme();
   const [searchDebounce, setSearchDebounce] = useState(null);
+
+  // Helper to get custom header text from config or column definition
+  const getColumnHeaderText = (col) => {
+    const columnId = col.id || col.accessorKey;
+    const config = getColumnConfig(columnId);
+    if (config?.headerText) return config.headerText;
+    return col.columnDef?.header || col.columnDef?.meta?.headerText || col.id;
+  };
 
   const handleGlobalSearch = (value) => {
     onGlobalFilterChange(value);
@@ -318,8 +327,8 @@ export function DataGridToolbar({
                               onCheckedChange={() => col.toggleVisibility()}
                               className="h-4 w-4"
                             />
-                            <span className="text-sm capitalize font-medium text-foreground">
-                              {col.id}
+                            <span className="text-sm font-medium text-foreground">
+                              {getColumnHeaderText(col)}
                             </span>
                           </label>
                           {col.getCanPin() && (
@@ -390,7 +399,12 @@ export function DataGridToolbar({
                 </DropdownMenuLabel>
                 {table
                   .getAllColumns()
-                  .filter((col) => col.getCanGroup && col.getCanGroup())
+                  .filter((col) => {
+                    // Only show columns that have grouping enabled (enums)
+                    if (!col.columnDef?.enableGrouping) return false;
+                    // Also check if column can be grouped in table state
+                    return col.getCanGroup && col.getCanGroup();
+                  })
                   .map((col) => {
                     const isGrouped = table
                       .getState()
@@ -408,7 +422,7 @@ export function DataGridToolbar({
                           );
                         }}
                       >
-                        <span className="capitalize">{col.id}</span>
+                        <span>{getColumnHeaderText(col)}</span>
                       </DropdownMenuCheckboxItem>
                     );
                   })}

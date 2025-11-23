@@ -1,73 +1,83 @@
-/**
- * Column Configuration System - FIXED
- * Properly applies configurations to columns
- */
+import { Badge } from "@/components/ui/badge";
+import { getEnumColor, ExpandableTextCell, getCellRenderer } from "./dataAnalyzer";
 
+const STORAGE_KEY = 'nimbus_column_config_v1';
+
+// Initialize from localStorage if available
 let globalColumnConfig = {};
+try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        globalColumnConfig = JSON.parse(saved);
+    }
+} catch (e) {
+    console.error('Failed to load column config:', e);
+}
 
-/**
- * Set explicit configuration for specific columns
- */
+function saveToStorage() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(globalColumnConfig));
+    } catch (e) {
+        console.error('Failed to save column config:', e);
+    }
+}
+
+export function getColumnConfig(columnId) {
+    return globalColumnConfig[columnId];
+}
+
 export function setColumnConfig(columnId, config) {
     globalColumnConfig[columnId] = {
         ...globalColumnConfig[columnId],
         ...config
     };
+    saveToStorage();
 }
 
-/**
- * Set multiple column configurations at once
- */
 export function setColumnsConfig(configs) {
     Object.entries(configs).forEach(([colId, config]) => {
-        setColumnConfig(colId, config);
+        globalColumnConfig[colId] = {
+            ...globalColumnConfig[colId],
+            ...config
+        };
     });
+    saveToStorage();
 }
 
-/**
- * Get configuration for a specific column
- */
-export function getColumnConfig(columnId) {
-    return globalColumnConfig[columnId] || {};
-}
-
-/**
- * Clear all configurations
- */
 export function clearColumnConfigs() {
     globalColumnConfig = {};
+    saveToStorage();
 }
 
-/**
- * Get all configurations
- */
-export function getAllColumnConfigs() {
-    return { ...globalColumnConfig };
-}
-
-/**
- * Apply column configurations to columns array
- * THIS IS THE KEY FUNCTION THAT WAS MISSING
- */
 export function applyColumnConfigs(columns) {
     return columns.map(column => {
-        const config = globalColumnConfig[column.id];
+        // CRITICAL FIX: Use same ID logic as ColumnConfigurationMenu
+        // Configs are saved with (col.id || col.accessorKey), so we must look them up the same way
+        const columnId = column.id || column.accessorKey;
+        const config = globalColumnConfig[columnId];
+
         if (!config || Object.keys(config).length === 0) {
             return column;
         }
 
         const updatedColumn = { ...column };
 
-        // Apply forceEnum
+        // Determine effective properties
+        const effectiveDataType = config.dataType || updatedColumn.meta?.dataType || 'text';
+        const effectiveIsEnum = config.forceEnum !== undefined ? config.forceEnum : updatedColumn.meta?.isEnum;
+        const uniqueValues = updatedColumn.meta?.uniqueValues || [];
+
+        // Apply forceEnum metadata
         if (config.forceEnum !== undefined) {
             updatedColumn.meta = {
                 ...updatedColumn.meta,
                 isEnum: config.forceEnum,
                 forceEnum: config.forceEnum
             };
+            updatedColumn.enableGrouping = config.forceEnum;
         }
 
-        // Apply dataType
+        // Apply dataType metadata
         if (config.dataType) {
             updatedColumn.meta = {
                 ...updatedColumn.meta,
@@ -75,11 +85,52 @@ export function applyColumnConfigs(columns) {
             };
         }
 
+        // Apply new cell renderer based on effective configuration
+        const newRenderer = getCellRenderer(effectiveDataType, effectiveIsEnum, uniqueValues);
+        if (newRenderer) {
+            updatedColumn.cell = newRenderer;
+        }
+
+        // Apply header text if configured
+        if (config.headerText) {
+            updatedColumn.header = config.headerText;
+        }
+
+        // Update aggregation function if type changed
+        if (effectiveIsEnum) {
+            updatedColumn.aggregationFn = "count";
+            updatedColumn.aggregatedCell = ({ getValue }) => (
+                <span className="font-bold text-primary">
+                    {getValue()} items
+                </span>
+            );
+        } else if (effectiveDataType === 'currency') {
+            updatedColumn.aggregationFn = "sum";
+            updatedColumn.aggregatedCell = ({ getValue }) => (
+                <span className="font-bold text-chart-2">
+                    Total: {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                    }).format(getValue())}
+                </span>
+            );
+        } else if (effectiveDataType === 'percentage') {
+            updatedColumn.aggregationFn = "mean";
+            updatedColumn.aggregatedCell = ({ getValue }) => (
+                <span className="font-bold text-primary">
+                    Avg: {Math.round(getValue())}%
+                </span>
+            );
+        } else {
+            // Reset aggregation for other types
+            updatedColumn.aggregationFn = undefined;
+            updatedColumn.aggregatedCell = undefined;
+        }
+
         // Apply hideInGrid
         if (config.hideInGrid !== undefined) {
             updatedColumn.enableHiding = !config.hideInGrid;
             if (config.hideInGrid) {
-                // If hiding, we might want to set initial visibility to false
                 updatedColumn.defaultIsVisible = false;
             }
         }
@@ -130,66 +181,6 @@ export const COLUMN_CONFIG_TEMPLATES = {
 };
 
 /**
- * Apply template configuration
- */
-export function applyTemplate(columnId, template) {
-    setColumnConfig(columnId, template);
-}
-
-/**
- * Configuration UI Helper
- */
-export function getConfigurationUISchema() {
-    return {
-        forceEnum: {
-            type: 'boolean',
-            label: 'Force as Enum/Category',
-            description: 'Treat column as categorical with limited unique values',
-        },
-        dataType: {
-            type: 'select',
-            label: 'Data Type',
-            options: [
-                { value: 'text', label: 'Text' },
-                { value: 'number', label: 'Number' },
-                { value: 'currency', label: 'Currency' },
-                { value: 'percentage', label: 'Percentage' },
-                { value: 'date', label: 'Date' },
-                { value: 'boolean', label: 'Boolean' },
-                { value: 'phone', label: 'Phone Number' },
-                { value: 'email', label: 'Email' },
-                { value: 'url', label: 'URL' },
-                { value: 'nested', label: 'Nested Object' },
-            ],
-            description: 'Select the data type for this column',
-        },
-        hideInGrid: {
-            type: 'boolean',
-            label: 'Hide in Grid',
-            description: 'Hide this column from the data grid',
-        },
-        sortable: {
-            type: 'boolean',
-            label: 'Allow Sorting',
-            description: 'Allow users to sort by this column',
-            default: true,
-        },
-        filterable: {
-            type: 'boolean',
-            label: 'Allow Filtering',
-            description: 'Allow users to filter by this column',
-            default: true,
-        },
-        resizable: {
-            type: 'boolean',
-            label: 'Allow Resizing',
-            description: 'Allow users to resize this column',
-            default: true,
-        },
-    };
-}
-
-/**
  * Export config as JSON
  */
 export function exportConfig() {
@@ -202,6 +193,7 @@ export function exportConfig() {
 export function importConfig(jsonString) {
     try {
         globalColumnConfig = JSON.parse(jsonString);
+        saveToStorage();
         return true;
     } catch (error) {
         console.error('Failed to import config:', error);

@@ -8,15 +8,20 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Settings, X, Check } from "lucide-react";
+import { Settings, X, Check, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useCallback, useEffect, useMemo, memo } from "react";
+import { useState, useCallback, useEffect, useMemo, memo, useRef } from "react";
 import { setColumnConfig, getColumnConfig, clearColumnConfigs } from "./columnConfigSystem";
+import { cn } from "@/lib/utils";
 
 export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ columns = [], onConfigChange }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedColumnId, setSelectedColumnId] = useState(null); // FIXED: Use column ID only
+    const [selectedColumnId, setSelectedColumnId] = useState(null);
     const [localConfigs, setLocalConfigs] = useState({});
+    const [showSaved, setShowSaved] = useState(false);
+    const [isEditingHeader, setIsEditingHeader] = useState(false);
+    const [editedHeaderText, setEditedHeaderText] = useState("");
+    const headerInputRef = useRef(null);
 
     const dataTypeOptions = useMemo(() => [
         { value: 'text', label: 'Text' },
@@ -28,23 +33,20 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
         { value: 'phone', label: 'Phone Number' },
         { value: 'email', label: 'Email' },
         { value: 'url', label: 'URL' },
-        { value: 'nested', label: 'Nested Object' },
     ], []);
 
-    const filteredColumns = useMemo(() =>
-        columns.filter(col => col.id !== 'select' && col.id !== 'expand'),
-        [columns]
-    );
+    const filteredColumns = useMemo(() => {
+        return columns.filter(col =>
+            col.id !== 'select' &&
+            col.id !== 'expand' &&
+            col.accessorKey
+        );
+    }, [columns]);
 
     const getColumnTitle = useCallback((col) => {
-        if (typeof col?.header === 'string') {
-            return col.header;
-        } else if (col?.meta?.headerText) {
-            return col.meta.headerText;
-        } else if (col?.columnDef?.meta?.headerText) {
-            return col.columnDef.meta.headerText;
-        }
-        return col.id;
+        const config = getColumnConfig(col.id || col.accessorKey);
+        if (config?.headerText) return config.headerText;
+        return col.header || col.columnDef?.header || col.meta?.headerText || col.accessorKey;
     }, []);
 
     const getColumnType = useCallback((col) => {
@@ -54,18 +56,43 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     useEffect(() => {
         const handleEscape = (e) => {
             if (e.key === 'Escape' && isOpen) {
-                setIsOpen(false);
+                if (isEditingHeader) {
+                    setIsEditingHeader(false);
+                } else {
+                    setIsOpen(false);
+                }
             }
         };
         window.addEventListener('keydown', handleEscape);
         return () => window.removeEventListener('keydown', handleEscape);
-    }, [isOpen]);
+    }, [isOpen, isEditingHeader]);
+
+    useEffect(() => {
+        if (isEditingHeader && headerInputRef.current) {
+            headerInputRef.current.focus();
+            headerInputRef.current.select();
+        }
+    }, [isEditingHeader]);
 
     const handleColumnSelect = useCallback((columnId) => {
-        setSelectedColumnId(columnId); // FIXED: Store ID only
+        setSelectedColumnId(columnId);
         const existingConfig = getColumnConfig(columnId);
-        setLocalConfigs(existingConfig || {});
-    }, []);
+        const selectedCol = filteredColumns.find(col => (col.id || col.accessorKey) === columnId);
+
+        // Initialize from column metadata if no existing config
+        if (!existingConfig && selectedCol) {
+            setLocalConfigs({
+                dataType: selectedCol.meta?.dataType || 'text',
+                forceEnum: selectedCol.meta?.isEnum || false,
+                sortable: true,
+                filterable: true,
+                resizable: true,
+                hideInGrid: false,
+            });
+        } else {
+            setLocalConfigs(existingConfig || {});
+        }
+    }, [filteredColumns]);
 
     const handleConfigChange = useCallback((key, value) => {
         setLocalConfigs(prev => ({
@@ -76,10 +103,13 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
 
     const handleSaveConfig = useCallback(() => {
         if (selectedColumnId) {
-            setColumnConfig(selectedColumnId, localConfigs); // Use ID
+            setColumnConfig(selectedColumnId, localConfigs);
             if (onConfigChange) {
                 onConfigChange();
             }
+            // Show saved feedback
+            setShowSaved(true);
+            setTimeout(() => setShowSaved(false), 2000);
         }
     }, [selectedColumnId, localConfigs, onConfigChange]);
 
@@ -94,9 +124,24 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
         }
     }, [onConfigChange]);
 
-    // FIXED: Find selected column by ID for display
+    const handleStartHeaderEdit = useCallback(() => {
+        const selectedCol = filteredColumns.find(col => (col.id || col.accessorKey) === selectedColumnId);
+        setEditedHeaderText(localConfigs.headerText || getColumnTitle(selectedCol));
+        setIsEditingHeader(true);
+    }, [selectedColumnId, localConfigs, filteredColumns, getColumnTitle]);
+
+    const handleSaveHeaderEdit = useCallback(() => {
+        handleConfigChange('headerText', editedHeaderText);
+        setIsEditingHeader(false);
+    }, [editedHeaderText, handleConfigChange]);
+
+    const handleCancelHeaderEdit = useCallback(() => {
+        setIsEditingHeader(false);
+        setEditedHeaderText("");
+    }, []);
+
     const selectedColumn = useMemo(() =>
-        filteredColumns.find(col => col.id === selectedColumnId),
+        filteredColumns.find(col => (col.id || col.accessorKey) === selectedColumnId),
         [filteredColumns, selectedColumnId]
     );
 
@@ -118,74 +163,128 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                         onClick={() => setIsOpen(false)}
                     >
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
+                            initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="bg-card rounded-xl shadow-2xl border-2 border-border max-w-5xl w-full max-h-[90vh] flex flex-col"
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-card border-2 border-border rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="flex items-center justify-between p-6 border-b-2 border-border bg-card rounded-t-xl">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-6 border-b border-border bg-muted/30">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-foreground">Column Configuration</h2>
-                                    <p className="text-sm text-muted-foreground mt-1">Customize how columns behave and display</p>
+                                    <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                                        <Settings className="h-6 w-6" />
+                                        Column Configuration
+                                    </h2>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Customize column appearance and behavior
+                                    </p>
                                 </div>
-                                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-foreground hover:bg-muted">
-                                    <X className="h-5 w-5" />
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleClearAll}
+                                        className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                                    >
+                                        Reset All
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setIsOpen(false)}
+                                        className="h-8 w-8"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </Button>
+                                </div>
                             </div>
 
-                            <div className="flex flex-1 overflow-hidden">
-                                <div className="w-80 border-r-2 border-border overflow-y-auto bg-muted/20">
-                                    <div className="sticky top-0 p-4 border-b-2 border-border bg-card z-10">
+                            {/* Content */}
+                            <div className="flex-1 overflow-hidden flex">
+                                {/* Column List */}
+                                <div className="w-1/3 border-r border-border overflow-y-auto bg-muted/10">
+                                    <div className="p-4 border-b border-border bg-muted/30 sticky top-0 z-10">
                                         <p className="text-sm font-semibold text-foreground">Columns ({filteredColumns.length})</p>
                                     </div>
                                     <div className="flex flex-col">
                                         {filteredColumns.map(col => {
-                                            // FIXED: Compare by ID only
-                                            const isSelected = selectedColumnId === col.id;
+                                            const colId = col.id || col.accessorKey;
+                                            const isSelected = selectedColumnId === colId;
                                             const columnTitle = getColumnTitle(col);
                                             const columnType = getColumnType(col);
 
-                                            // Get actual column definition to check for special rendering
-                                            const hasSpecialRendering = col.cell && typeof col.cell === 'function';
-
                                             return (
                                                 <button
-                                                    key={col.id}
-                                                    onClick={() => handleColumnSelect(col.id)}
-                                                    className={`w-full flex flex-col text-left px-4 py-3 border-b border-border transition-all ${isSelected
-                                                        ? 'bg-primary/15 border-l-4 border-l-primary text-foreground'
-                                                        : 'hover:bg-muted/50 text-foreground border-l-4 border-l-transparent'
-                                                        }`}
+                                                    key={colId}
+                                                    onClick={() => handleColumnSelect(colId)}
+                                                    className={cn(
+                                                        "w-full flex flex-col text-left px-4 py-3 border-b border-border transition-all",
+                                                        isSelected
+                                                            ? "bg-primary/15 border-l-4 border-l-primary text-foreground"
+                                                            : "hover:bg-muted/50 text-foreground border-l-4 border-l-transparent"
+                                                    )}
                                                 >
-                                                    <div className="font-medium truncate">{columnTitle}</div>
-                                                    <div className="text-xs text-muted-foreground truncate mt-1">
-                                                        <span className="bg-muted px-1.5 py-0.5 rounded text-xs">
-                                                            {columnType}
-                                                            {hasSpecialRendering && columnType === 'percentage' && ' (with bar)'}
-                                                        </span>
-                                                    </div>
+                                                    <span className="font-semibold text-sm">{columnTitle}</span>
+                                                    <span className="text-xs text-muted-foreground capitalize mt-0.5">
+                                                        {columnType}
+                                                    </span>
                                                 </button>
                                             );
                                         })}
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-6 bg-background">
+                                {/* Configuration Panel */}
+                                <div className="flex-1 overflow-y-auto p-6">
                                     {selectedColumn ? (
-                                        <div className="space-y-4 max-w-2xl">
-                                            <div className="bg-card border border-border rounded-lg p-4 flex justify-between">
-                                                <h3 className="text-lg font-semibold text-foreground">
-                                                    {getColumnTitle(selectedColumn)}
-                                                </h3>
-                                                <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-                                                    <span className="bg-muted px-2 py-0.5 rounded">{getColumnType(selectedColumn)}</span>
+                                        <div className="space-y-4">
+                                            {/* Header Text with Inline Edit */}
+                                            <div className="bg-muted/30 border border-border rounded-lg p-4">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <Label className="text-sm font-semibold text-foreground">
+                                                        Column Header
+                                                    </Label>
+                                                    {!isEditingHeader && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={handleStartHeaderEdit}
+                                                            className="h-7 px-2"
+                                                        >
+                                                            <Pencil className="h-3 w-3" />
+                                                        </Button>
+                                                    )}
                                                 </div>
+                                                {isEditingHeader ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            ref={headerInputRef}
+                                                            type="text"
+                                                            className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                                            value={editedHeaderText}
+                                                            onChange={(e) => setEditedHeaderText(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') handleSaveHeaderEdit();
+                                                                if (e.key === 'Escape') handleCancelHeaderEdit();
+                                                            }}
+                                                        />
+                                                        <Button size="sm" onClick={handleSaveHeaderEdit} className="h-9">
+                                                            <Check className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button size="sm" variant="ghost" onClick={handleCancelHeaderEdit} className="h-9">
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-lg font-medium text-foreground">
+                                                        {localConfigs.headerText || getColumnTitle(selectedColumn)}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-3">
@@ -217,11 +316,11 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                 <div className="bg-card border border-border rounded-lg p-4">
                                                     <div className="flex items-center justify-between">
                                                         <Label htmlFor="force-enum" className="text-sm font-semibold text-foreground">
-                                                            Category
+                                                            Enum
                                                         </Label>
                                                         <Switch
                                                             id="force-enum"
-                                                            checked={localConfigs.forceEnum || false}
+                                                            checked={localConfigs.forceEnum !== undefined ? localConfigs.forceEnum : (selectedColumn?.meta?.isEnum || selectedColumn?.columnDef?.meta?.isEnum || false)}
                                                             onCheckedChange={(checked) => handleConfigChange('forceEnum', checked)}
                                                         />
                                                     </div>
@@ -284,42 +383,30 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                     <p className="text-xs text-muted-foreground mt-1">Hide column</p>
                                                 </div>
                                             </div>
+
+                                            <div className="flex justify-end pt-4">
+                                                <Button
+                                                    onClick={handleSaveConfig}
+                                                    className="bg-primary text-primary-foreground hover:bg-primary/90 relative"
+                                                    disabled={showSaved}
+                                                >
+                                                    {showSaved ? (
+                                                        <>
+                                                            <Check className="h-4 w-4 mr-2" />
+                                                            Saved!
+                                                        </>
+                                                    ) : (
+                                                        'Save Changes'
+                                                    )}
+                                                </Button>
+                                            </div>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center justify-center h-full">
-                                            <div className="text-center space-y-4">
-                                                <Settings className="h-16 w-16 text-muted-foreground mx-auto" />
-                                                <p className="text-lg text-muted-foreground">Select a column to configure</p>
-                                                <p className="text-sm text-muted-foreground">Choose from the list on the left</p>
-                                            </div>
+                                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                                            <p>Select a column to configure</p>
                                         </div>
                                     )}
                                 </div>
-                            </div>
-
-                            <div className="border-t-2 border-border p-6 flex gap-3 justify-end bg-card rounded-b-xl">
-                                <Button
-                                    variant="outline"
-                                    onClick={handleClearAll}
-                                    className="mr-auto border-2 text-foreground hover:bg-muted"
-                                >
-                                    Clear All
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsOpen(false)}
-                                    className="border-2 text-foreground hover:bg-muted"
-                                >
-                                    Close
-                                </Button>
-                                <Button
-                                    onClick={handleSaveConfig}
-                                    disabled={!selectedColumn}
-                                    className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                                >
-                                    <Check className="h-4 w-4" />
-                                    Save Configuration
-                                </Button>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -328,5 +415,3 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
         </div>
     );
 });
-
-export default ColumnConfigurationMenu;

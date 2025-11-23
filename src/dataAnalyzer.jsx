@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 
-function ExpandableTextCell({ value }) {
+export function ExpandableTextCell({ value }) {
     const [isExpanded, setIsExpanded] = useState(false);
 
     if (value === null || value === undefined) {
@@ -223,6 +223,107 @@ function getMaxLength(values) {
     return Math.max(...values.map(v => String(v).length), 0);
 }
 
+// Exported function to get cell renderer based on data type
+export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
+    if (isEnum) {
+        return ({ getValue }) => {
+            const value = getValue();
+            const displayValue = typeof value === 'boolean' ? String(value) : value;
+            return (
+                <Badge
+                    className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm border-2"
+                    style={{
+                        backgroundColor: getEnumColor(displayValue, uniqueValues).bg,
+                        color: getEnumColor(displayValue, uniqueValues).text,
+                        borderColor: getEnumColor(displayValue, uniqueValues).border,
+                    }}
+                >
+                    {displayValue ? displayValue : "-"}
+                </Badge>
+            );
+        };
+    }
+
+    if (dataType === 'currency') {
+        return ({ getValue }) => {
+            const value = getValue();
+            const numValue = typeof value === 'string'
+                ? parseFloat(value.replace(/[^0-9.-]/g, ''))
+                : value;
+            return (
+                <span className="text-foreground">
+                    {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                    }).format(numValue)}
+                </span>
+            );
+        };
+    }
+
+    if (dataType === 'percentage') {
+        return ({ getValue }) => {
+            const value = getValue();
+            const numValue = typeof value === 'string'
+                ? parseFloat(value.replace('%', ''))
+                : value;
+
+            return (
+                <div className="flex items-center gap-2">
+                    <div className="flex-1 rounded-full h-2.5 overflow-hidden bg-muted">
+                        <div
+                            className="h-2.5 rounded-full transition-all duration-150"
+                            style={{
+                                backgroundColor: numValue >= 70 ? "var(--color-chart-2)" :
+                                    numValue >= 40 ? "var(--color-chart-3)" :
+                                        "var(--color-destructive)",
+                                width: `${numValue}%`,
+                            }}
+                        />
+                    </div>
+                    <span className="text-xs font-bold w-10 text-foreground">
+                        {numValue}%
+                    </span>
+                </div>
+            );
+        };
+    }
+
+    if (dataType === 'phone') {
+        return ({ getValue }) => {
+            const value = getValue();
+            if (!value) return <span className="text-muted-foreground">-</span>;
+
+            const phoneStr = String(value);
+            return (
+                <a
+                    href={`tel:${phoneStr.replace(/\D/g, '')}`}
+                    className="text-primary hover:underline font-mono text-sm"
+                    title={`Call ${phoneStr}`}
+                >
+                    {phoneStr}
+                </a>
+            );
+        };
+    }
+
+    if (dataType === 'number') {
+        return ({ getValue }) => {
+            const value = getValue();
+            if (value === null || value === undefined) {
+                return <span className="text-muted-foreground">-</span>;
+            }
+            return <span className="text-foreground font-mono text-sm">{value}</span>;
+        };
+    }
+
+    if (dataType === 'text') {
+        return ({ getValue }) => <ExpandableTextCell value={getValue()} />;
+    }
+
+    return undefined;
+}
+
 function generateColumnDefinitions(columnAnalysis, hasNestedData) {
     const columns = [];
 
@@ -280,6 +381,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
         if (analysis.isNested) return;
 
         const column = {
+            id: key,  // Explicit ID to match accessorKey
             accessorKey: key,
             header: formatHeaderName(key),
             filterFn: "advanced",
@@ -287,6 +389,8 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
             meta: {
                 dataType: mapDataType(analysis.dataType),
                 headerText: formatHeaderName(key),
+                uniqueValues: analysis.uniqueValues,
+                isEnum: analysis.isEnum,
             },
             enableColumnFilter: true,
             enableGrouping: analysis.isEnum,
@@ -419,26 +523,19 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
 }
 
 function formatHeaderName(key) {
+    if (!key) return '';
     return key
         .replace(/_/g, ' ')
-        .replace(/([A-Z])/g, ' $1')
-        .split(' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .trim()
+        .split(/\s+/)
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ')
-        .trim();
+        .join(' ');
 }
 
 function mapDataType(dataType) {
-    switch (dataType) {
-        case 'currency':
-        case 'percentage':
-        case 'number':
-            return 'number';
-        case 'date':
-            return 'date';
-        default:
-            return 'text';
-    }
+    const validTypes = ['text', 'number', 'currency', 'percentage', 'date', 'boolean', 'phone', 'email', 'url', 'nested'];
+    return validTypes.includes(dataType) ? dataType : 'text';
 }
 
 function calculateColumnWidth(analysis, columnName) {
@@ -477,7 +574,7 @@ function calculateColumnWidth(analysis, columnName) {
     return Math.min(Math.max(finalWidth, MIN_WIDTH), MAX_WIDTH);
 }
 
-function getEnumColor(value, allValues) {
+export function getEnumColor(value, allValues) {
     const normalizedValue = typeof value === 'boolean' ? String(value) : String(value);
     const index = allValues.indexOf(normalizedValue);
     const colors = [
