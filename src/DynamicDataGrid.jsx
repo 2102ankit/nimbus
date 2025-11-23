@@ -35,6 +35,8 @@ import StatusBarModal from "../components/Datagrid/StatusBarModal";
 import { analyzeData } from "./dataAnalyzer";
 import { FileUploadHandler } from "./FileUploadHandler";
 import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
+import { applyColumnConfigs } from "./columnConfigSystem";
+import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
 
 const DynamicDataGrid = () => {
     const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -70,6 +72,7 @@ const DynamicDataGrid = () => {
     const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
     const [groupMenuOpen, setGroupMenuOpen] = useState(false);
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
+    const [configReloadTrigger, setConfigReloadTrigger] = useState(0);
 
     // Load sample data on mount
     useEffect(() => {
@@ -136,9 +139,19 @@ const DynamicDataGrid = () => {
         requestAnimationFrame(() => {
             setTimeout(() => {
                 const analyzed = analyzeData(rawData);
-                setData(analyzed.data);
-                setColumns(analyzed.columns);
-                setMetadata(analyzed.metadata);
+
+                // Apply column configurations (user overrides)
+                const configuredColumns = applyColumnConfigs(analyzed.columns);
+
+                // Regenerate column definitions with applied configs
+                const updatedAnalyzed = {
+                    ...analyzed,
+                    columns: Object.values(configuredColumns),
+                };
+
+                setData(updatedAnalyzed.data);
+                setColumns(updatedAnalyzed.columns);
+                setMetadata(updatedAnalyzed.metadata);
                 setLoading(false);
             }, 300);
         });
@@ -573,20 +586,26 @@ const DynamicDataGrid = () => {
                                 exportMenuOpen={exportMenuOpen}
                                 setExportMenuOpen={setExportMenuOpen}
                                 extraButtons={
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setIsFullscreen(!isFullscreen)}
-                                        title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                                        className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
-                                        style={{ color: "var(--color-muted-foreground)" }}
-                                    >
-                                        {isFullscreen ? (
-                                            <Minimize2 className="h-4 w-4" />
-                                        ) : (
-                                            <Maximize2 className="h-4 w-4" />
-                                        )}
-                                    </Button>
+                                    <>
+                                        <ColumnConfigurationMenu
+                                            columns={columnsWithHeaders}
+                                            onConfigChange={() => setConfigReloadTrigger(t => t + 1)}
+                                        />
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setIsFullscreen(!isFullscreen)}
+                                            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                                            className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
+                                            style={{ color: "var(--color-muted-foreground)" }}
+                                        >
+                                            {isFullscreen ? (
+                                                <Minimize2 className="h-4 w-4" />
+                                            ) : (
+                                                <Maximize2 className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </>
                                 }
                             />
 

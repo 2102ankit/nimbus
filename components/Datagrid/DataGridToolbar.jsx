@@ -23,6 +23,7 @@ import {
   FileSpreadsheet,
   Grid3x3,
   Layers,
+  Layout,
   Maximize,
   Minimize,
   Moon,
@@ -225,7 +226,7 @@ export function DataGridToolbar({
                   className="h-11 border-2 shadow-sm bg-background"
                   style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
-                  <Settings className="h-4 w-4 mr-2" />
+                  <Layout className="h-4 w-4 mr-2" />
                   <HotkeyLabel hotkey={"V"}>View</HotkeyLabel>
                 </Button>
               </DropdownMenuTrigger>

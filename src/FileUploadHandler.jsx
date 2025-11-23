@@ -62,11 +62,28 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
 
                     if (!sheet) throw new Error("Empty workbook");
 
+                    // Convert to JSON with raw formatting to preserve large numbers
                     const json = XLSX.utils.sheet_to_json(sheet, {
-                        raw: false,
+                        raw: true,  // Keep raw values
                         defval: null,
                     });
-                    resolve(json);
+
+                    // Post-process to handle large numbers that get corrupted
+                    const processedJson = json.map(row => {
+                        const processed = {};
+                        Object.entries(row).forEach(([key, value]) => {
+                            // If it looks like corrupted scientific notation, try to get original
+                            if (typeof value === 'number' && Math.abs(value) > 1e15) {
+                                // This is likely a large ID that should be text
+                                processed[key] = String(value);
+                            } else {
+                                processed[key] = value;
+                            }
+                        });
+                        return processed;
+                    });
+
+                    resolve(processedJson);
                 } catch (error) {
                     reject(error);
                 }

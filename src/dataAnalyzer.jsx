@@ -1,26 +1,43 @@
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 
-/**
- * Analyzes uploaded data and generates intelligent column definitions
- */
+function ExpandableTextCell({ value }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    if (value === null || value === undefined) {
+        return <span className="text-muted-foreground">-</span>;
+    }
+
+    const stringValue = String(value);
+
+    return (
+        <div
+            className="text-sm cursor-pointer"
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+                wordBreak: isExpanded ? 'break-word' : 'normal',
+                overflowWrap: isExpanded ? 'break-word' : 'normal',
+                whiteSpace: isExpanded ? 'normal' : 'nowrap',
+                overflow: isExpanded ? 'visible' : 'hidden',
+                textOverflow: isExpanded ? 'clip' : 'ellipsis',
+                maxWidth: '100%',
+            }}
+            title={isExpanded ? undefined : stringValue}
+        >
+            {stringValue}
+        </div>
+    );
+}
+
 export function analyzeData(rawData) {
     if (!rawData || rawData.length === 0) {
         return { columns: [], data: [], metadata: {} };
     }
 
-    // Clean and prepare data
     const cleanedData = cleanData(rawData);
-
-    // Detect nested data
     const hasNestedData = detectNestedData(cleanedData);
-
-    // Analyze each column
     const columnAnalysis = analyzeColumns(cleanedData);
-
-    // Generate column definitions
     const columns = generateColumnDefinitions(columnAnalysis, hasNestedData);
-
-    // Add IDs if not present
     const dataWithIds = addIdsToData(cleanedData);
 
     return {
@@ -35,9 +52,6 @@ export function analyzeData(rawData) {
     };
 }
 
-/**
- * Cleans raw data - removes empty rows, trims strings
- */
 function cleanData(data) {
     return data
         .filter(row => {
@@ -49,7 +63,11 @@ function cleanData(data) {
             const cleaned = {};
             for (const [key, value] of Object.entries(row)) {
                 if (typeof value === 'string') {
-                    cleaned[key] = value.trim();
+                    let cleanedValue = value.trim();
+                    if (cleanedValue.startsWith('="') && cleanedValue.endsWith('"')) {
+                        cleanedValue = cleanedValue.slice(2, -1);
+                    }
+                    cleaned[key] = cleanedValue;
                 } else {
                     cleaned[key] = value;
                 }
@@ -58,9 +76,6 @@ function cleanData(data) {
         });
 }
 
-/**
- * Detects if data has nested objects/arrays
- */
 function detectNestedData(data) {
     return data.some(row =>
         Object.values(row).some(val =>
@@ -69,13 +84,28 @@ function detectNestedData(data) {
     );
 }
 
-/**
- * Analyzes all columns to determine their data types and characteristics
- */
+function shouldForceEnum(columnName) {
+    if (!columnName) return false;
+    const lowerName = columnName.toLowerCase();
+    const enumKeywords = [
+        'status', 'state', 'type', 'category', 'kind',
+        'level', 'priority', 'severity', 'importance',
+        'role', 'permission', 'access', 'mode',
+        'gender', 'sex', 'orientation',
+        'country', 'region', 'city', 'department',
+        'color', 'size', 'shape', 'style',
+        'yes', 'no', 'active', 'inactive',
+        'enabled', 'disabled', 'verified', 'pending',
+        'approved', 'rejected', 'draft', 'published',
+        'membership', 'tier', 'plan', 'subscription',
+        'payment', 'shipping', 'delivery',
+    ];
+    return enumKeywords.some(keyword => lowerName.includes(keyword));
+}
+
 function analyzeColumns(data) {
     const columns = {};
     const sampleSize = Math.min(data.length, 100);
-
     const allKeys = new Set();
     data.slice(0, sampleSize).forEach(row => {
         Object.keys(row).forEach(key => allKeys.add(key));
@@ -87,24 +117,24 @@ function analyzeColumns(data) {
             .filter(val => val !== null && val !== undefined && val !== '');
 
         const isNested = values.some(val => typeof val === 'object' && val !== null);
+        const dataType = isNested ? 'nested' : detectDataType(values);
+        const forceEnum = shouldForceEnum(key);
 
         columns[key] = {
             name: key,
-            dataType: isNested ? 'nested' : detectDataType(values),
-            isEnum: !isNested && isEnumColumn(values),
+            dataType: dataType,
+            isEnum: forceEnum || (!isNested && isEnumColumn(values)),
             uniqueValues: getUniqueValues(values),
             hasNulls: data.some(row => row[key] === null || row[key] === undefined || row[key] === ''),
             maxLength: getMaxLength(values),
             isNested: isNested,
+            forceEnum: forceEnum,
         };
     });
 
     return columns;
 }
 
-/**
- * Detects the data type of a column based on its values
- */
 function detectDataType(values) {
     if (values.length === 0) return 'text';
 
@@ -115,12 +145,20 @@ function detectDataType(values) {
         return 'date';
     }
 
+    const phonePattern = /^[\d\s\-\(\)\+]+$/;
+    const phoneValues = values.filter(val =>
+        typeof val === 'string' && phonePattern.test(val) && val.replace(/\D/g, '').length >= 7
+    );
+    if (phoneValues.length / values.length > 0.8) {
+        return 'phone';
+    }
+
     const numericValues = values.filter(val =>
         typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val))
     );
 
     if (numericValues.length / values.length > 0.8) {
-        const currencyPattern = /^\$|â‚¬|Â£|Â¥/;
+        const currencyPattern = /^\$|€|£|¥/;
         if (values.some(val =>
             typeof val === 'string' && currencyPattern.test(val)
         )) {
@@ -148,31 +186,21 @@ function detectDataType(values) {
     return 'text';
 }
 
-/**
- * Determines if a column should be treated as an enum
- */
 function isEnumColumn(values) {
     if (values.length === 0) return false;
-
-    // Convert all values to strings for comparison, handle booleans explicitly
     const uniqueValues = new Set(
         values.map(v => {
-            if (typeof v === 'boolean') return String(v); // 'true' or 'false'
+            if (typeof v === 'boolean') return String(v);
             return String(v).toLowerCase();
         })
     );
     const uniqueRatio = uniqueValues.size / values.length;
-
     return uniqueValues.size <= 10 || uniqueRatio < 0.2;
 }
 
-/**
- * Gets unique values for enum detection
- */
 function getUniqueValues(values) {
     const unique = new Set(
         values.map(v => {
-            // Handle booleans explicitly
             if (typeof v === 'boolean') return String(v);
             return String(v);
         })
@@ -180,23 +208,13 @@ function getUniqueValues(values) {
     return Array.from(unique).slice(0, 20);
 }
 
-/**
- * Gets max length for text columns
- */
 function getMaxLength(values) {
-    return Math.max(
-        ...values.map(v => String(v).length),
-        0
-    );
+    return Math.max(...values.map(v => String(v).length), 0);
 }
 
-/**
- * Generates column definitions for TanStack Table
- */
 function generateColumnDefinitions(columnAnalysis, hasNestedData) {
     const columns = [];
 
-    // Selection column
     columns.push({
         id: "select",
         header: ({ table }) => (
@@ -224,7 +242,6 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
         enableDrag: false,
     });
 
-    // Expand column if nested data exists
     if (hasNestedData) {
         columns.push({
             id: "expand",
@@ -238,7 +255,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                         color: "var(--color-foreground)",
                     }}
                 >
-                    {row.getIsExpanded() ? 'â–¼' : 'â–¶'}
+                    {row.getIsExpanded() ? '▼' : '▶'}
                 </button>
             ),
             size: 50,
@@ -252,11 +269,8 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
         });
     }
 
-    // Data columns
     Object.entries(columnAnalysis).forEach(([key, analysis]) => {
-        if (analysis.isNested) {
-            return;
-        }
+        if (analysis.isNested) return;
 
         const column = {
             accessorKey: key,
@@ -274,7 +288,6 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
         if (analysis.isEnum) {
             column.cell = ({ getValue }) => {
                 const value = getValue();
-                // Ensure value is converted to string for display
                 const displayValue = typeof value === 'boolean' ? String(value) : value;
                 return (
                     <Badge
@@ -359,15 +372,34 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
             );
         }
 
+        if (analysis.dataType === 'phone') {
+            column.cell = ({ getValue }) => {
+                const value = getValue();
+                if (!value) return <span className="text-muted-foreground">-</span>;
+
+                const phoneStr = String(value);
+                return (
+                    <a
+                        href={`tel:${phoneStr.replace(/\D/g, '')}`}
+                        className="text-primary hover:underline font-mono text-sm"
+                        title={`Call ${phoneStr}`}
+                    >
+                        {phoneStr}
+                    </a>
+                );
+            };
+        }
+
+        if (analysis.dataType === 'text' && !analysis.isEnum) {
+            column.cell = ({ getValue }) => <ExpandableTextCell value={getValue()} />;
+        }
+
         columns.push(column);
     });
 
     return columns;
 }
 
-/**
- * Formats column name for display
- */
 function formatHeaderName(key) {
     return key
         .replace(/_/g, ' ')
@@ -378,9 +410,6 @@ function formatHeaderName(key) {
         .trim();
 }
 
-/**
- * Maps internal data type to table data type
- */
 function mapDataType(dataType) {
     switch (dataType) {
         case 'currency':
@@ -394,37 +423,33 @@ function mapDataType(dataType) {
     }
 }
 
-/**
- * Calculates optimal column width based on content
- * Uses smart estimation including header length
- */
 function calculateColumnWidth(analysis) {
-    const CHAR_WIDTH = 8.5;
-    const PADDING = 32;
-    const MIN_WIDTH = 80;
-    const MAX_WIDTH = 500;
+    const CHAR_WIDTH = 9;
+    const PADDING = 48;
+    const MIN_WIDTH = 100;
+    const MAX_WIDTH = 600;
 
-    // Start with a type-based minimum
     const typeMinWidths = {
-        'date': 120,
-        'number': 110,
-        'currency': 130,
-        'percentage': 140,
+        'date': 140,
+        'number': 120,
+        'currency': 140,
+        'percentage': 150,
         'boolean': 100,
-        'nested': 150,
-        'text': 120,
+        'nested': 180,
+        'text': 150,
+        'phone': 140,
+        'email': 200,
+        'url': 200,
     };
 
-    let baseWidth = typeMinWidths[analysis.dataType] || 120;
+    let baseWidth = typeMinWidths[analysis.dataType] || 150;
 
-    // For enums, consider the unique values
     if (analysis.isEnum) {
         const maxValueLength = Math.max(
             ...analysis.uniqueValues.map(v => String(v).length)
         );
         baseWidth = Math.max(baseWidth, maxValueLength * CHAR_WIDTH + 60);
     } else {
-        // For text, use the actual max length observed
         if (analysis.dataType === 'text' || analysis.dataType === 'nested') {
             baseWidth = Math.max(
                 baseWidth,
@@ -433,14 +458,10 @@ function calculateColumnWidth(analysis) {
         }
     }
 
-    return Math.min(baseWidth, MAX_WIDTH);
+    return Math.min(Math.max(baseWidth, MIN_WIDTH), MAX_WIDTH);
 }
 
-/**
- * Generates color scheme for enum values
- */
 function getEnumColor(value, allValues) {
-    // Normalize value for comparison
     const normalizedValue = typeof value === 'boolean' ? String(value) : String(value);
     const index = allValues.indexOf(normalizedValue);
     const colors = [
@@ -474,9 +495,6 @@ function getEnumColor(value, allValues) {
     return colors[index % colors.length] || colors[colors.length - 1];
 }
 
-/**
- * Adds unique IDs to data rows if not present
- */
 function addIdsToData(data) {
     return data.map((row, index) => {
         if (!row.id) {
