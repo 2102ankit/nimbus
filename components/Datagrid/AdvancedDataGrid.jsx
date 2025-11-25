@@ -91,19 +91,19 @@ const AdvancedDataGrid = () => {
 
   useEffect(() => {
     handleSavePrefs({ sorting });
-  }, [sorting]);
+  }, [sorting, handleSavePrefs]);
   useEffect(() => {
     handleSavePrefs({ columnVisibility });
-  }, [columnVisibility]);
+  }, [columnVisibility, handleSavePrefs]);
   useEffect(() => {
     handleSavePrefs({ columnOrder });
-  }, [columnOrder]);
+  }, [columnOrder, handleSavePrefs]);
   useEffect(() => {
     handleSavePrefs({ columnSizing });
-  }, [columnSizing]);
+  }, [columnSizing, handleSavePrefs]);
   useEffect(() => {
     handleSavePrefs({ columnPinning });
-  }, [columnPinning]);
+  }, [columnPinning, handleSavePrefs]);
 
   // Load data
   const loadData = () => {
@@ -331,7 +331,7 @@ const AdvancedDataGrid = () => {
 
   useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
-  useHotkeys('esc', (e) => {
+  useHotkeys('esc', () => {
     // e.preventDefault();
     if (document.activeElement === searchInputRef.current) {
       searchInputRef.current?.blur();
@@ -455,12 +455,9 @@ const AdvancedDataGrid = () => {
   };
 
   const getHeaderBorderClasses = () => {
-    const borders = ["border-b-2"];
+    const borders = [];
     if (showHeaderLines || showGridLines) borders.push("border-r-2");
-    return (
-      borders.join(" ") +
-      " border-[color-mix(in_oklch,var(--color-border),transparent_50%)]"
-    );
+    return borders.join(" ");
   };
 
   // Position helpers
@@ -508,7 +505,6 @@ const AdvancedDataGrid = () => {
           )}
           {/* Table Card */}
           <motion.div
-            layout="position"
             className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
             style={{
               backgroundColor: "var(--color-card)",
@@ -517,15 +513,11 @@ const AdvancedDataGrid = () => {
               maxHeight: isFullscreen ? "none" : "80vh",
             }}
             animate={{
-              borderRadius: isFullscreen ? "0" : "12px"
+              borderRadius: isFullscreen ? 0 : 12
             }}
             transition={{
-              layout: { duration: 0, stiffness: 0 }, // disable layout animation
-              borderRadius: {
-                type: "spring",
-                stiffness: 300,
-                damping: 30
-              },
+              duration: 0.2,
+              ease: [0.4, 0, 0.2, 1]
             }}
           >
             {/* Toolbar with Fullscreen Toggle */}

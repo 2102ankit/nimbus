@@ -1,4 +1,3 @@
-// DataGridTableHeader.jsx
 import { closestCenter, DndContext, KeyboardSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { flexRender } from "@tanstack/react-table";
@@ -8,7 +7,7 @@ import { NoDragOnResizerSensor } from "./NoDragOnResizerSensor";
 function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPadding, getHeaderBorderClasses, focusedColumnIndex }) {
   const { attributes, listeners, setNodeRef, isDragging } = useSortable({
     id: header.column.id,
-    disabled: !header.column.columnDef.ena || header.column.columnDef.enableReordering === false,
+    disabled: header.column.columnDef.enableReordering === false,
   });
 
   const isFocused = !isPinned && focusedColumnIndex !== null && (() => {
@@ -129,12 +128,13 @@ export function DataGridTableHeader({
   return (
     <thead className="sticky top-0 z-20 border-b-2 border-border" style={{ background: "var(--color-background)" }}>
       {table.getHeaderGroups().map((headerGroup) => (
-        <tr key={headerGroup.id}>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragOver={handleDragOver}
-          >
+        <DndContext
+          key={headerGroup.id}
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragOver={handleDragOver}
+        >
+          <tr key={headerGroup.id}>
             <SortableContext
               items={reorderableIds}
               strategy={horizontalListSortingStrategy}
@@ -155,8 +155,8 @@ export function DataGridTableHeader({
                 />
               })}
             </SortableContext>
-          </DndContext>
-        </tr>
+          </tr>
+        </DndContext>
       ))}
     </thead>
   );

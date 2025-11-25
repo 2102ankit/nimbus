@@ -1,14 +1,38 @@
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, Upload, X } from "lucide-react";
 import { motion } from "motion/react";
-import Papa from "papaparse";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import * as XLSX from "xlsx";
 
 export function FileUploadHandler({ onDataLoaded, onClose }) {
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const workerRef = useRef(null);
+
+    useEffect(() => {
+        workerRef.current = new Worker(new URL("./workers/fileParser.worker.js", import.meta.url), {
+            type: "module",
+        });
+
+        workerRef.current.onmessage = (e) => {
+            const { type, data, fileName, error } = e.data;
+            if (type === "success") {
+                if (onDataLoaded) {
+                    onDataLoaded(data, fileName);
+                }
+                setUploading(false);
+                onClose();
+            } else if (type === "error") {
+                console.error("Worker error:", error);
+                alert("Failed to parse file: " + error);
+                setUploading(false);
+            }
+        };
+
+        return () => {
+            workerRef.current?.terminate();
+        };
+    }, [onDataLoaded, onClose]);
 
     const onDrop = useCallback((acceptedFiles) => {
         const selectedFile = acceptedFiles[0];
@@ -35,188 +59,12 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
 
     const removeFile = () => setFile(null);
 
-    const parseCSV = (file) => {
-        return new Promise((resolve, reject) => {
-            Papa.parse(file, {
-                header: true,
-                dynamicTyping: false, // Keep as strings to prevent number conversion issues
-                skipEmptyLines: true,
-                transformHeader: (h) => h.trim(),
-                complete: (results) => {
-                    // Post-process to handle numbers correctly
-                    const processed = results.data.map(row => {
-                        const newRow = {};
-                        for (const [key, value] of Object.entries(row)) {
-                            if (typeof value === 'string') {
-                                // Try to detect if it's a large number that should stay as string
-                                const trimmed = value.trim();
-                                // Check if it's a phone number pattern (starts with country code or has specific format)
-                                if (/^(\+?\d{1,3}[\s-]?)?\d{10,}$/.test(trimmed)) {
-                                    newRow[key] = trimmed; // Keep as string
-                                }
-                                // Check if it's a very large integer (more than 15 digits)
-                                else if (/^\d{16,}$/.test(trimmed)) {
-                                    newRow[key] = trimmed; // Keep as string
-                                }
-                                // Try to parse as number if it looks like one
-                                else if (/^-?\d+\.?\d*$/.test(trimmed) && trimmed.length < 16) {
-                                    const num = parseFloat(trimmed);
-                                    newRow[key] = isNaN(num) ? value : num;
-                                } else {
-                                    newRow[key] = value;
-                                }
-                            } else {
-                                newRow[key] = value;
-                            }
-                        }
-                        return newRow;
-                    });
-                    resolve(processed);
-                },
-                error: (err) => reject(err),
-            });
-        });
-    };
-
-    const parseExcel = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const result = e.target?.result;
-                    if (!result) throw new Error("No data");
-
-                    const data = new Uint8Array(result);
-                    const workbook = XLSX.read(data, {
-                        type: "array",
-                        cellText: false, // Use actual cell values
-                        cellDates: false, // Don't convert dates
-                        raw: false, // Format cells
-                    });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-                    if (!sheet) throw new Error("Empty workbook");
-
-                    // Get the range
-                    const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
-
-                    // Extract headers
-                    const headers = [];
-                    for (let C = range.s.c; C <= range.e.c; ++C) {
-                        const address = XLSX.utils.encode_cell({ r: range.s.r, c: C });
-                        const cell = sheet[address];
-                        headers[C] = cell ? String(cell.v) : `Column${C}`;
-                    }
-
-                    // Extract rows
-                    const rows = [];
-                    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-                        const row = {};
-                        for (let C = range.s.c; C <= range.e.c; ++C) {
-                            const address = XLSX.utils.encode_cell({ r: R, c: C });
-                            const cell = sheet[address];
-                            const header = headers[C];
-
-                            if (!cell) {
-                                row[header] = null;
-                                continue;
-                            }
-
-                            // Handle different cell types
-                            if (cell.t === 'n') { // Number
-                                // Check if it's a very large number (likely an ID or phone)
-                                if (Math.abs(cell.v) >= 1e15) {
-                                    // Keep as string to preserve all digits
-                                    row[header] = cell.w || String(Math.round(cell.v));
-                                } else {
-                                    row[header] = cell.v;
-                                }
-                            } else if (cell.t === 's') { // String
-                                const strVal = String(cell.v).trim();
-                                // Check if it looks like a phone number
-                                if (/^(\+?\d{1,3}[\s-]?)?\d{10,}$/.test(strVal)) {
-                                    row[header] = strVal; // Keep as string
-                                } else {
-                                    row[header] = cell.v;
-                                }
-                            } else if (cell.t === 'b') { // Boolean
-                                row[header] = cell.v;
-                            } else if (cell.t === 'd') { // Date
-                                row[header] = cell.w || cell.v;
-                            } else {
-                                row[header] = cell.w || cell.v;
-                            }
-                        }
-                        // Only add non-empty rows
-                        if (Object.values(row).some(v => v !== null && v !== undefined && v !== '')) {
-                            rows.push(row);
-                        }
-                    }
-
-                    resolve(rows);
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            reader.onerror = () => reject(new Error("File reading failed"));
-            reader.readAsArrayBuffer(file);
-        });
-    };
-
-    const parseJSON = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const result = e.target?.result;
-                    if (!result) throw new Error("No data");
-
-                    const parsed = JSON.parse(result);
-
-                    if (Array.isArray(parsed)) {
-                        resolve(parsed);
-                    } else if (parsed.data && Array.isArray(parsed.data)) {
-                        resolve(parsed.data);
-                    } else if (typeof parsed === 'object') {
-                        resolve([parsed]);
-                    } else {
-                        throw new Error("JSON must be an array of objects or contain a 'data' array");
-                    }
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            reader.onerror = () => reject(new Error("File reading failed"));
-            reader.readAsText(file);
-        });
-    };
-
-    const handleUpload = async () => {
-        if (!file) return;
+    const handleUpload = () => {
+        if (!file || !workerRef.current) return;
 
         setUploading(true);
-        try {
-            const ext = file.name.split(".").pop()?.toLowerCase();
-            let data;
-
-            if (ext === "csv") {
-                data = await parseCSV(file);
-            } else if (ext === "json") {
-                data = await parseJSON(file);
-            } else {
-                data = await parseExcel(file);
-            }
-
-            if (onDataLoaded) {
-                onDataLoaded(data, file.name);
-            }
-            onClose();
-        } catch (error) {
-            console.error("Parse error:", error);
-            alert("Failed to parse file. Please ensure it's a valid CSV/Excel/JSON file.");
-        } finally {
-            setUploading(false);
-        }
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        workerRef.current.postMessage({ file, type: ext });
     };
 
     return (
@@ -236,7 +84,7 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-Bold text-foreground">Upload Data File</h2>
+                    <h2 className="text-2xl font-bold text-foreground">Upload Data File</h2>
                     <Button variant="ghost" size="icon" onClick={onClose}>
                         <X className="h-4 w-4" />
                     </Button>
