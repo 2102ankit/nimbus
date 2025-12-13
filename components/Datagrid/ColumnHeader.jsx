@@ -82,17 +82,17 @@ export function ColumnHeader({
   return (
     <div
       className="flex items-center justify-between w-full gap-1 group relative"
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        cursor: isDragging ? "grabbing" : "default",
+        ...dndStyle,
+      }}
     >
       {/* Column Title & Sort */}
       <div className="flex items-center flex-1 min-w-0"
-        ref={setNodeRef}
-        {...attributes}
-        {...listeners}
-        style={{
-          opacity: isDragging ? 0.5 : 1,
-          cursor: isDragging ? "grabbing" : "default",
-          ...dndStyle,
-        }}
       >
         {/* Drag Handle */}
         {enableDrag && (

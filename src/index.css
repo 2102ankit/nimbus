@@ -170,14 +170,11 @@
 
 body {
   letter-spacing: var(--tracking-normal);
-}
-
-body {
-  letter-spacing: var(--tracking-normal);
   min-height: 100vh;
   min-height: 100dvh;
   /* better on mobile */
   overflow: visible !important;
+  overscroll-behavior-x: nonew
 }
 
 html {
