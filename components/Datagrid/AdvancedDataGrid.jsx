@@ -31,11 +31,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Info, Maximize2, Minimize2 } from "lucide-react";
+import { animate } from "motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "./StatusBarModal";
-import { animate } from "motion";
 
 const AdvancedDataGrid = () => {
   const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -78,7 +78,6 @@ const AdvancedDataGrid = () => {
   const viewButtonRef = useRef(null);
   const columnsButtonRef = useRef(null);
   const groupButtonRef = useRef(null);
-  const rowsButtonRef = useRef(null);
   const exportButtonRef = useRef(null);
 
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
@@ -269,6 +268,13 @@ const AdvancedDataGrid = () => {
     }, 0);
   };
 
+  const clearAllFilters = () => {
+    table.resetColumnFilters();
+    table.resetSorting();
+    table.setGrouping([]);
+    updateGlobalFilter("");
+  };
+
   // Keyboard shortcuts using react-hotkeys-hook (after table initialization)
   useHotkeys('slash', (e) => {
     e.preventDefault();
@@ -277,13 +283,9 @@ const AdvancedDataGrid = () => {
 
   useHotkeys('shift+r, R', (e) => {
     e.preventDefault();
-    loadData();
+    clearAllFilters();
   }, { enableOnFormTags: false });
 
-  useHotkeys('r', (e) => {
-    e.preventDefault();
-    rowsButtonRef.current?.click();
-  }, { enableOnFormTags: false });
 
   useHotkeys('v', (e) => {
     e.preventDefault();
@@ -576,6 +578,7 @@ const AdvancedDataGrid = () => {
               setGroupMenuOpen={setGroupMenuOpen}
               exportMenuOpen={exportMenuOpen}
               setExportMenuOpen={setExportMenuOpen}
+              clearAllFilters={clearAllFilters}
               extraButtons={
                 <Button
                   variant="ghost"

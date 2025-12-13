@@ -42,6 +42,7 @@ export function DataGridToolbar({
   onExport,
   onResetPreferences,
   onRefresh,
+  clearAllFilters,
   globalFilter,
   onGlobalFilterChange,
   searchInputRef,
@@ -75,12 +76,6 @@ export function DataGridToolbar({
     onGlobalFilterChange(value);       // This will be debounced in parent
   };
 
-  const clearAllFilters = () => {
-    table.resetColumnFilters();
-    table.resetSorting();
-    table.setGrouping([]);
-    onGlobalFilterChange("");
-  };
 
   const hasFilters =
     table.getState().columnFilters.length > 0 ||
@@ -140,7 +135,7 @@ export function DataGridToolbar({
 
           <div className="flex gap-3">
             {/* Refresh */}
-            {onRefresh && (
+            {/* {onRefresh && (
               <Button
                 onClick={onRefresh}
                 variant="outline"
@@ -151,7 +146,7 @@ export function DataGridToolbar({
                 <RotateCcw className="h-4 w-4 mr-2" />
                 <HotkeyLabel hotkey={"R"}>Refresh</HotkeyLabel>
               </Button>
-            )}
+            )} */}
 
             {/* Reset All */}
             {hasFilters && (
@@ -163,7 +158,7 @@ export function DataGridToolbar({
                 style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Reset All
+                <HotkeyLabel hotkey={"R"}>Reset All</HotkeyLabel>
               </Button>
             )}
 
