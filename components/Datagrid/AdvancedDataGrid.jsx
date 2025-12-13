@@ -44,6 +44,13 @@ const AdvancedDataGrid = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [searchInputValue, setSearchInputValue] = useState("");
+  const debounceTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    setSearchInputValue(globalFilter);
+  }, [globalFilter]);
+
   const [rowSelection, setRowSelection] = useState({});
   const [expanded, setExpanded] = useState({});
   const [grouping, setGrouping] = useState([]);
@@ -78,6 +85,23 @@ const AdvancedDataGrid = () => {
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
   const [groupMenuOpen, setGroupMenuOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  const updateGlobalFilter = useCallback((value) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = setTimeout(() => {
+      setGlobalFilter(value);
+    }, 300);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Save preferences automatically
   const handleSavePrefs = useCallback(
@@ -536,7 +560,9 @@ const AdvancedDataGrid = () => {
               onResetPreferences={handleResetPreferences}
               onRefresh={loadData}
               globalFilter={globalFilter}
-              onGlobalFilterChange={setGlobalFilter}
+              onGlobalFilterChange={updateGlobalFilter}
+              searchInputValue={searchInputValue}
+              onSearchInputChange={setSearchInputValue}
               searchInputRef={searchInputRef}
               viewButtonRef={viewButtonRef}
               columnsButtonRef={columnsButtonRef}

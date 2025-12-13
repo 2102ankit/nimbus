@@ -33,7 +33,6 @@ import {
   Settings,
   Sun
 } from "lucide-react";
-import { useState } from "react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
 import { HotkeyLabel } from "./HotkeyLabel";
 
@@ -54,7 +53,9 @@ export function DataGridToolbar({
   setGroupMenuOpen,
   exportMenuOpen,
   setExportMenuOpen,
-  extraButtons
+  extraButtons,
+  searchInputValue,
+  onSearchInputChange,
 }) {
   const {
     density,
@@ -67,14 +68,11 @@ export function DataGridToolbar({
     showRowLines,
     toggleRowLines,
   } = useTheme();
-  const [searchDebounce, setSearchDebounce] = useState(null);
 
-  const handleGlobalSearch = (value) => {
-    if (searchDebounce) clearTimeout(searchDebounce);
-    const timeout = setTimeout(() => {
-      onGlobalFilterChange(value);
-    }, 300);
-    setSearchDebounce(timeout);
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    onSearchInputChange(value);        // Update live input instantly
+    onGlobalFilterChange(value);       // This will be debounced in parent
   };
 
   const clearAllFilters = () => {
@@ -128,8 +126,8 @@ export function DataGridToolbar({
             <Input
               ref={searchInputRef}
               placeholder="(/) Search all columns..."
-              value={globalFilter ?? ""}
-              onChange={(e) => handleGlobalSearch(e.target.value)}
+              value={searchInputValue}           // Live value (instant)
+              onChange={handleInputChange}
               className="pl-10 h-11 border-2 shadow-sm focus:ring-2"
               style={{
                 backgroundColor: "var(--color-card)",
