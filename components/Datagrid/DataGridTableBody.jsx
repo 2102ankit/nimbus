@@ -187,11 +187,11 @@ export function DataRow({
   return (
     <React.Fragment key={row.id}>
       <motion.tr
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.15, delay: idx * 0.01 }}
-        className="transition-all"
+        // initial={{ opacity: 0, y: -10 }}
+        // animate={{ opacity: 1, y: 0 }}
+        // exit={{ opacity: 0, y: -10 }}
+        // transition={{ duration: 0.15, delay: idx * 0.01 }}
+        // className="transition-all"
         style={{
           backgroundColor: row.getIsSelected()
             ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
