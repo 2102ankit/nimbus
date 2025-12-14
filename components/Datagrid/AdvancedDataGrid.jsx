@@ -36,6 +36,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "./StatusBarModal";
+import { Link } from "react-router-dom";
 
 const AdvancedDataGrid = () => {
   const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -640,7 +641,8 @@ const AdvancedDataGrid = () => {
             <div className="text-center mt-6 text-sm text-muted-foreground">
               Built with ❤️ by {" "}
               <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
-              • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
+              • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts • {" "}
+              <Link to="/beta">Dynamic Grid (beta)</Link>
             </div>
           )}
         </div>

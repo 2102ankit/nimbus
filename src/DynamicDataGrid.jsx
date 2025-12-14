@@ -32,8 +32,9 @@ import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
 import { applyColumnConfigs } from "./columnConfigSystem";
 import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
 import { useDataWorker } from "./useDataWorker";
+import { Link } from "react-router-dom";
 
-const OptimizedDynamicDataGrid = () => {
+const DynamicDataGrid = () => {
     const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
     const { isReady: workerReady, processData } = useDataWorker();
 
@@ -838,7 +839,8 @@ const OptimizedDynamicDataGrid = () => {
                         <div className="text-center mt-6 text-sm text-muted-foreground">
                             Built with ❤️ by {" "}
                             <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
-                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
+                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts • {" "}
+                            <Link to="/">Regular Grid</Link>
                         </div>
                     )}
                 </div>
@@ -850,4 +852,4 @@ const OptimizedDynamicDataGrid = () => {
     );
 };
 
-export default OptimizedDynamicDataGrid;
+export default DynamicDataGrid;
