@@ -200,7 +200,8 @@ const DynamicDataGrid = () => {
         },
         globalFilterFn: "includesString",
         defaultColumn: {
-            minSize: 100,
+            size:200,
+            minSize: 50,
             maxSize: 600,
         },
         initialState: {

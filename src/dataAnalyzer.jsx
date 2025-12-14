@@ -356,7 +356,7 @@ function generateColumnDefinitions(columnAnalysis, hasNestedData) {
                 className="mx-auto"
             />
         ),
-        size: 50,
+        maxSize: 50,
         enableSorting: false,
         enableHiding: false,
         enableResizing: false,
