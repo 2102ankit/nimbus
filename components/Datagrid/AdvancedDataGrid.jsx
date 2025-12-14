@@ -114,19 +114,19 @@ const AdvancedDataGrid = () => {
 
   useEffect(() => {
     handleSavePrefs({ sorting });
-  }, [sorting, handleSavePrefs]);
+  }, [sorting]);
   useEffect(() => {
     handleSavePrefs({ columnVisibility });
-  }, [columnVisibility, handleSavePrefs]);
+  }, [columnVisibility]);
   useEffect(() => {
     handleSavePrefs({ columnOrder });
-  }, [columnOrder, handleSavePrefs]);
+  }, [columnOrder]);
   useEffect(() => {
     handleSavePrefs({ columnSizing });
-  }, [columnSizing, handleSavePrefs]);
+  }, [columnSizing]);
   useEffect(() => {
     handleSavePrefs({ columnPinning });
-  }, [columnPinning, handleSavePrefs]);
+  }, [columnPinning]);
 
   // Load data
   const loadData = () => {
