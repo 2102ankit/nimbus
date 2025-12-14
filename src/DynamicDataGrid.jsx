@@ -612,11 +612,11 @@ const DynamicDataGrid = () => {
     const getDensityPadding = useCallback(() => {
         switch (density) {
             case "compact":
-                return "py-1 px-3";        // reduced vertical
+                return "py-1 pl-2";
             case "comfortable":
-                return "py-3 px-4";        // slightly reduced from py-4
+                return "py-4 pl-4";
             default:
-                return "py-2 px-4";
+                return "py-2 pl-4";
         }
     }, [density]);
 
