@@ -85,14 +85,10 @@ export function EmptyState() {
 // Group Row Component
 export function GroupRow({ row, getDensityPadding, table }) {
   const depth = row.depth || 0;
-  const indentPx = depth * 32 *0;
+  const indentPx = depth * 32 * 0;
 
   return (
-    <motion.tr
-      key={row.id}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <tr
       className="font-semibold border-b-2 transition-all"
       style={{
         background: `linear-gradient(to right, 
@@ -100,24 +96,11 @@ export function GroupRow({ row, getDensityPadding, table }) {
           color-mix(in oklch, var(--color-muted), transparent 95%))`,
         borderBottomColor: "var(--color-border)",
       }}
-      onMouseEnter={(e) =>
-      (e.currentTarget.style.background = `linear-gradient(to right, 
-          color-mix(in oklch, var(--color-muted), transparent 80%), 
-          color-mix(in oklch, var(--color-muted), transparent 85%))`)
-      }
-      onMouseLeave={(e) =>
-      (e.currentTarget.style.background = `linear-gradient(to right, 
-          color-mix(in oklch, var(--color-muted), transparent 90%), 
-          color-mix(in oklch, var(--color-muted), transparent 95%))`)
-      }
     >
-      {/* Render each cell in the group row */}
       {row.getVisibleCells().map((cell) => {
         const isPinned = cell.column.getIsPinned();
         const leftPos = isPinned === "left" ? getLeftPosition(cell.column, table) : undefined;
         const rightPos = isPinned === "right" ? getRightPosition(cell.column, table) : undefined;
-
-        // Check if this is the grouped column
         const isGroupedCell = cell.getIsGrouped();
 
         return (
@@ -133,7 +116,6 @@ export function GroupRow({ row, getDensityPadding, table }) {
             }}
           >
             {isGroupedCell ? (
-              // This is the grouped column - show the group toggle and info
               <div className="flex items-center gap-3" style={{ paddingLeft: `${indentPx}px` }}>
                 <button
                   onClick={() => row.toggleExpanded()}
@@ -141,13 +123,6 @@ export function GroupRow({ row, getDensityPadding, table }) {
                   style={{
                     backgroundColor: "transparent",
                   }}
-                  onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    "color-mix(in oklch, var(--color-muted), transparent 70%)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "transparent")
-                  }
                 >
                   {row.getIsExpanded() ? (
                     <ChevronDown
@@ -182,24 +157,19 @@ export function GroupRow({ row, getDensityPadding, table }) {
                 </span>
               </div>
             ) : cell.getIsAggregated() ? (
-              // This cell has an aggregated value
               <div>
                 {flexRender(
                   cell.column.columnDef.aggregatedCell ?? cell.column.columnDef.cell,
                   cell.getContext()
                 )}
               </div>
-            ) : cell.getIsPlaceholder() ? (
-              // Empty placeholder cell
-              null
-            ) : (
-              // Regular cell (shouldn't happen in group rows but just in case)
+            ) : cell.getIsPlaceholder() ? null : (
               flexRender(cell.column.columnDef.cell, cell.getContext())
             )}
           </td>
         );
       })}
-    </motion.tr>
+    </tr>
   );
 }
 
@@ -247,13 +217,8 @@ export function DataRow({
   }
 
   return (
-    <React.Fragment key={row.id}>
-      <motion.tr
-        // initial={{ opacity: 0, y: -10 }}
-        // animate={{ opacity: 1, y: 0 }}
-        // exit={{ opacity: 0, y: -10 }}
-        // transition={{ duration: 0.15, delay: idx * 0.01 }}
-        // className="transition-all"
+    <React.Fragment>
+      <tr
         style={{
           backgroundColor: row.getIsSelected()
             ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
@@ -262,15 +227,6 @@ export function DataRow({
             ? `4px solid var(--color-primary)`
             : "none",
         }}
-        onMouseEnter={(e) =>
-          !row.getIsSelected() &&
-          (e.currentTarget.style.backgroundColor =
-            "color-mix(in oklch, var(--color-muted), transparent 95%)")
-        }
-        onMouseLeave={(e) =>
-          !row.getIsSelected() &&
-          (e.currentTarget.style.backgroundColor = "transparent")
-        }
       >
         {row.getVisibleCells().map((cell) => {
           const isPinned = cell.column.getIsPinned();
@@ -352,16 +308,10 @@ export function DataRow({
             </motion.td>
           );
         })}
-      </motion.tr>
+      </tr>
 
-      {/* Expanded Row Details */}
       {row.getIsExpanded() && !isGrouped && (
-        <motion.tr
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-        >
+        <tr>
           <td colSpan={row.getVisibleCells().length} className="p-0">
             <div
               className="border-y-2 p-6"
@@ -455,7 +405,7 @@ export function DataRow({
               </div>
             </div>
           </td>
-        </motion.tr>
+        </tr>
       )}
     </React.Fragment>
   );

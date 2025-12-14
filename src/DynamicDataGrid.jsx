@@ -29,7 +29,7 @@ import {
 import { Info, Maximize2, Minimize2, Upload } from "lucide-react";
 import { animate } from "motion";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "../components/Datagrid/StatusBarModal";
 import { analyzeData } from "./dataAnalyzer";
@@ -47,7 +47,12 @@ const DynamicDataGrid = () => {
     const [loading, setLoading] = useState(true);
     const [showUpload, setShowUpload] = useState(false);
     const [filename, setFilename] = useState("");
+
+    // Separate state for immediate UI update and debounced filter
+    const [searchInputValue, setSearchInputValue] = useState("");
     const [globalFilter, setGlobalFilter] = useState("");
+    const debounceTimeoutRef = useRef(null);
+
     const [rowSelection, setRowSelection] = useState({});
     const [expanded, setExpanded] = useState({});
     const [grouping, setGrouping] = useState([]);
@@ -76,6 +81,22 @@ const DynamicDataGrid = () => {
         setConfigReloadTrigger(t => t + 1);
     }, []);
 
+    // Debounced global filter update
+    useEffect(() => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+        debounceTimeoutRef.current = setTimeout(() => {
+            setGlobalFilter(searchInputValue);
+        }, 300);
+
+        return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, [searchInputValue]);
+
     useEffect(() => {
         setLoading(true);
         setTimeout(() => {
@@ -94,40 +115,31 @@ const DynamicDataGrid = () => {
         setPrefs(merged);
     }, [prefs]);
 
+    // Batch preference saves
     useEffect(() => {
-        const timer = setTimeout(() => handleSavePrefs({ sorting }), 300);
+        const timer = setTimeout(() => {
+            handleSavePrefs({
+                sorting,
+                columnVisibility,
+                columnOrder,
+                columnSizing,
+                columnPinning
+            });
+        }, 500);
         return () => clearTimeout(timer);
-    }, [sorting, handleSavePrefs]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => handleSavePrefs({ columnVisibility }), 300);
-        return () => clearTimeout(timer);
-    }, [columnVisibility, handleSavePrefs]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => handleSavePrefs({ columnOrder }), 300);
-        return () => clearTimeout(timer);
-    }, [columnOrder, handleSavePrefs]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => handleSavePrefs({ columnSizing }), 300);
-        return () => clearTimeout(timer);
-    }, [columnSizing, handleSavePrefs]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => handleSavePrefs({ columnPinning }), 300);
-        return () => clearTimeout(timer);
-    }, [columnPinning, handleSavePrefs]);
+    }, [sorting, columnVisibility, columnOrder, columnSizing, columnPinning, handleSavePrefs]);
 
     const handleDataLoaded = useCallback((rawData, name = "Uploaded File") => {
         setLoading(true);
         setShowUpload(false);
         setFilename(name);
 
+        // Reset all state
         setSorting([]);
         setColumnFilters([]);
         setColumnVisibility({});
         setRowSelection({});
+        setSearchInputValue("");
         setGlobalFilter("");
         setColumnOrder([]);
         setColumnSizing({});
@@ -146,6 +158,7 @@ const DynamicDataGrid = () => {
         });
     }, []);
 
+    // Memoize columns processing
     const columnsWithHeadersAndConfigs = useMemo(() => {
         if (columns.length === 0) return [];
         const configuredColumns = applyColumnConfigs(columns);
@@ -200,7 +213,7 @@ const DynamicDataGrid = () => {
         },
         globalFilterFn: "includesString",
         defaultColumn: {
-            size:200,
+            size: 200,
             minSize: 50,
             maxSize: 600,
         },
@@ -265,6 +278,7 @@ const DynamicDataGrid = () => {
         });
     }, [table]);
 
+    // Keyboard shortcuts
     useHotkeys('slash', (e) => {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -494,7 +508,6 @@ const DynamicDataGrid = () => {
                 }}
             >
                 <div className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}>
-                    {/* Header - Hidden in fullscreen */}
                     <AnimatePresence>
                         {!isFullscreen && (
                             <motion.div
@@ -567,6 +580,8 @@ const DynamicDataGrid = () => {
                                 }}
                                 globalFilter={globalFilter}
                                 onGlobalFilterChange={setGlobalFilter}
+                                searchInputValue={searchInputValue}
+                                onSearchInputChange={(e) => setSearchInputValue(e.target.value)}
                                 searchInputRef={searchInputRef}
                                 viewMenuOpen={viewMenuOpen}
                                 setViewMenuOpen={setViewMenuOpen}

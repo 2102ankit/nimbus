@@ -1,26 +1,7 @@
-import { Badge } from "@/components/ui/badge";
-import { getEnumColor, ExpandableTextCell, getCellRenderer } from "./dataAnalyzer";
+import { getCellRenderer } from "./dataAnalyzer";
 
-const STORAGE_KEY = 'nimbus_column_config_v1';
-
-// Initialize from localStorage if available
+// In-memory storage only - no localStorage blocking
 let globalColumnConfig = {};
-try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-        globalColumnConfig = JSON.parse(saved);
-    }
-} catch (e) {
-    console.error('Failed to load column config:', e);
-}
-
-function saveToStorage() {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(globalColumnConfig));
-    } catch (e) {
-        console.error('Failed to save column config:', e);
-    }
-}
 
 export function getColumnConfig(columnId) {
     return globalColumnConfig[columnId];
@@ -31,7 +12,6 @@ export function setColumnConfig(columnId, config) {
         ...globalColumnConfig[columnId],
         ...config
     };
-    saveToStorage();
 }
 
 export function setColumnsConfig(configs) {
@@ -41,18 +21,14 @@ export function setColumnsConfig(configs) {
             ...config
         };
     });
-    saveToStorage();
 }
 
 export function clearColumnConfigs() {
     globalColumnConfig = {};
-    saveToStorage();
 }
 
 export function applyColumnConfigs(columns) {
     return columns.map(column => {
-        // CRITICAL FIX: Use same ID logic as ColumnConfigurationMenu
-        // Configs are saved with (col.id || col.accessorKey), so we must look them up the same way
         const columnId = column.id || column.accessorKey;
         const config = globalColumnConfig[columnId];
 
@@ -62,12 +38,10 @@ export function applyColumnConfigs(columns) {
 
         const updatedColumn = { ...column };
 
-        // Determine effective properties
         const effectiveDataType = config.dataType || updatedColumn.meta?.dataType || 'text';
         const effectiveIsEnum = config.forceEnum !== undefined ? config.forceEnum : updatedColumn.meta?.isEnum;
         const uniqueValues = updatedColumn.meta?.uniqueValues || [];
 
-        // Apply forceEnum metadata
         if (config.forceEnum !== undefined) {
             updatedColumn.meta = {
                 ...updatedColumn.meta,
@@ -77,7 +51,6 @@ export function applyColumnConfigs(columns) {
             updatedColumn.enableGrouping = config.forceEnum;
         }
 
-        // Apply dataType metadata
         if (config.dataType) {
             updatedColumn.meta = {
                 ...updatedColumn.meta,
@@ -85,18 +58,15 @@ export function applyColumnConfigs(columns) {
             };
         }
 
-        // Apply new cell renderer based on effective configuration
         const newRenderer = getCellRenderer(effectiveDataType, effectiveIsEnum, uniqueValues);
         if (newRenderer) {
             updatedColumn.cell = newRenderer;
         }
 
-        // Apply header text if configured and valid
         if (config.headerText && typeof config.headerText === 'string' && config.headerText !== '[object Object]') {
             updatedColumn.header = config.headerText;
         }
 
-        // Update aggregation function if type changed
         if (effectiveIsEnum) {
             updatedColumn.aggregationFn = "count";
             updatedColumn.aggregatedCell = ({ getValue }) => (
@@ -122,12 +92,10 @@ export function applyColumnConfigs(columns) {
                 </span>
             );
         } else {
-            // Reset aggregation for other types
             updatedColumn.aggregationFn = undefined;
             updatedColumn.aggregatedCell = undefined;
         }
 
-        // Apply hideInGrid
         if (config.hideInGrid !== undefined) {
             updatedColumn.enableHiding = !config.hideInGrid;
             if (config.hideInGrid) {
@@ -135,17 +103,14 @@ export function applyColumnConfigs(columns) {
             }
         }
 
-        // Apply sortable
         if (config.sortable !== undefined) {
             updatedColumn.enableSorting = config.sortable;
         }
 
-        // Apply filterable
         if (config.filterable !== undefined) {
             updatedColumn.enableColumnFilter = config.filterable;
         }
 
-        // Apply resizable
         if (config.resizable !== undefined) {
             updatedColumn.enableResizing = config.resizable;
         }
@@ -154,9 +119,6 @@ export function applyColumnConfigs(columns) {
     });
 }
 
-/**
- * Configuration templates for common use cases
- */
 export const COLUMN_CONFIG_TEMPLATES = {
     STATUS: { forceEnum: true, dataType: 'text' },
     STATE: { forceEnum: true, dataType: 'text' },
@@ -180,20 +142,13 @@ export const COLUMN_CONFIG_TEMPLATES = {
     GENDER: { forceEnum: true },
 };
 
-/**
- * Export config as JSON
- */
 export function exportConfig() {
     return JSON.stringify(globalColumnConfig, null, 2);
 }
 
-/**
- * Import config from JSON
- */
 export function importConfig(jsonString) {
     try {
         globalColumnConfig = JSON.parse(jsonString);
-        saveToStorage();
         return true;
     } catch (error) {
         console.error('Failed to import config:', error);
@@ -201,9 +156,6 @@ export function importConfig(jsonString) {
     }
 }
 
-/**
- * Preset configurations for common scenarios
- */
 export const PRESET_CONFIGS = {
     ECOMMERCE: {
         'product_id': { forceEnum: false },
@@ -245,9 +197,6 @@ export const PRESET_CONFIGS = {
     },
 };
 
-/**
- * Apply preset configuration
- */
 export function applyPreset(presetName) {
     const preset = PRESET_CONFIGS[presetName.toUpperCase()];
     if (preset) {

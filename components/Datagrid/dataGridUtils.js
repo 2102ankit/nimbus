@@ -64,22 +64,28 @@ export const exportToExcel = (data, columns) => {
   URL.revokeObjectURL(url);
 };
 
-// ============ PREFERENCES MANAGEMENT ============
+// ============ PREFERENCES MANAGEMENT (Async) ============
+// Use in-memory cache with async localStorage operations
+let prefsCache = null;
+let saveTimeout = null;
+
 export const loadPreferences = () => {
+  if (prefsCache) return prefsCache;
+
   try {
     const stored = localStorage.getItem("datagrid-prefs-v3");
-    return stored
+    prefsCache = stored
       ? JSON.parse(stored)
       : {
-          columnVisibility: {},
-          columnOrder: [],
-          columnSizing: {},
-          columnPinning: { left: [], right: [] },
-          sorting: [],
-          pageSize: 20,
-        };
+        columnVisibility: {},
+        columnOrder: [],
+        columnSizing: {},
+        columnPinning: { left: [], right: [] },
+        sorting: [],
+        pageSize: 20,
+      };
   } catch {
-    return {
+    prefsCache = {
       columnVisibility: {},
       columnOrder: [],
       columnSizing: {},
@@ -88,17 +94,30 @@ export const loadPreferences = () => {
       pageSize: 20,
     };
   }
+  return prefsCache;
 };
 
+// Debounced async save to avoid blocking
 export const savePreferences = (prefs) => {
-  try {
-    localStorage.setItem("datagrid-prefs-v3", JSON.stringify(prefs));
-  } catch (error) {
-    console.error("Failed to save preferences:", error);
+  prefsCache = prefs;
+
+  // Clear existing timeout
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
   }
+
+  // Debounce save operation
+  saveTimeout = setTimeout(() => {
+    try {
+      localStorage.setItem("datagrid-prefs-v3", JSON.stringify(prefs));
+    } catch (error) {
+      console.error("Failed to save preferences:", error);
+    }
+  }, 500); // Save after 500ms of inactivity
 };
 
 export const resetPreferences = () => {
+  prefsCache = null;
   try {
     localStorage.removeItem("datagrid-prefs-v3");
   } catch (error) {
@@ -106,7 +125,7 @@ export const resetPreferences = () => {
   }
 };
 
-// ============ COLUMN POSITION CALCULATIONS ============
+// ============ COLUMN POSITION CALCULATIONS (Memoizable) ============
 export const getLeftPosition = (column, table) => {
   const leftPinnedColumns = table.getState().columnPinning.left || [];
   const index = leftPinnedColumns.indexOf(column.id);
@@ -149,7 +168,6 @@ export const advancedFilterFn = (row, columnId, filterValue) => {
   const cellValue = row.getValue(columnId);
   const { operator, value, dataType } = filterValue;
 
-  // Import filter functions from AdvancedColumnFilter
   const filterFunctions = {
     text: {
       contains: (v, fv) => {
