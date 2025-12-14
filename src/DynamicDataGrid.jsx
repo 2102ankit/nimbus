@@ -402,63 +402,57 @@ const DynamicDataGrid = () => {
     const scrollColumnIntoView = (column, direction, isWrapping = false) => {
         if (!column) return;
 
+        setTimeout(() => {
+            const tableContainer = document.querySelector('.overflow-auto');
+            if (!tableContainer) return;
 
-        const tableContainer = document.querySelector('.overflow-auto');
-        if (!tableContainer) return;
+            const columnId = column.id;
+            const headerCell = document.querySelector(`[data-column-id="${columnId}"]`);
+            if (!headerCell) return;
 
-        const columnId = column.id;
-        const headerCell = document.querySelector(`[data-column-id="${columnId}"]`);
-        if (!headerCell) return;
-
-        // Calculate total width of left pinned columns
-        const leftPinnedColumns = table.getState().columnPinning.left || [];
-        let leftPinnedWidth = 0;
-        leftPinnedColumns.forEach(colId => {
-            const col = table.getAllLeafColumns().find(c => c.id === colId);
-            if (col) leftPinnedWidth += col.getSize();
-        });
-
-        // Calculate right pinned columns width
-        const rightPinnedColumns = table.getState().columnPinning.right || [];
-        let rightPinnedWidth = 0;
-        rightPinnedColumns.forEach(colId => {
-            const col = table.getAllLeafColumns().find(c => c.id === colId);
-            if (col) rightPinnedWidth += col.getSize();
-        });
-
-        const containerRect = tableContainer.getBoundingClientRect();
-        const cellRect = headerCell.getBoundingClientRect();
-
-        // Get current scroll position
-        const currentScroll = tableContainer.scrollLeft;
-
-        const borderWidth = 2;
-        let targetScrollLeft;
-
-        if (direction === 'right') {
-            // Moving right: align left border of cell to right border of left-pinned columns
-            const cellLeftRelativeToScroll = cellRect.left - containerRect.left + currentScroll;
-            targetScrollLeft = cellLeftRelativeToScroll - leftPinnedWidth;
-        } else if (direction === 'left') {
-            // Moving left: align right border of cell to left border of right-pinned columns
-            const cellRightRelativeToScroll = cellRect.right - containerRect.left + currentScroll;
-            const visibleAreaEnd = containerRect.width - rightPinnedWidth;
-            targetScrollLeft = cellRightRelativeToScroll + borderWidth - visibleAreaEnd;
-        }
-
-        // If wrapping around, use instant scroll; otherwise animate smoothly
-        if (isWrapping) {
-            tableContainer.scrollLeft = targetScrollLeft;
-        } else {
-            // Animate the scroll with framer motion
-            animate(currentScroll, targetScrollLeft, {
-                duration: 0.15,  // Longer duration for normal moves, instant for wrap
-                ease: [0.25, 1, 0.5, 1],     // Smoother cubic-bezier (similar to material ease-out)
-                onUpdate: (latest) => {
-                    tableContainer.scrollLeft = latest;
-                },
+            // Calculate total width of left pinned columns
+            const leftPinnedColumns = table.getState().columnPinning.left || [];
+            let leftPinnedWidth = 0;
+            leftPinnedColumns.forEach(colId => {
+                const col = table.getAllLeafColumns().find(c => c.id === colId);
+                if (col) leftPinnedWidth += col.getSize();
             });
-        }
+
+            // Calculate right pinned columns width
+            const rightPinnedColumns = table.getState().columnPinning.right || [];
+            let rightPinnedWidth = 0;
+            rightPinnedColumns.forEach(colId => {
+                const col = table.getAllLeafColumns().find(c => c.id === colId);
+                if (col) rightPinnedWidth += col.getSize();
+            });
+
+            const containerRect = tableContainer.getBoundingClientRect();
+            const cellRect = headerCell.getBoundingClientRect();
+
+            // Get current scroll position
+            const currentScroll = tableContainer.scrollLeft;
+
+            const borderWidth = 2;
+            let targetScrollLeft;
+
+            if (direction === 'right') {
+                // Moving right: align left edge of cell just after left-pinned area
+                const cellLeftRelativeToScroll = cellRect.left - containerRect.left + currentScroll;
+                targetScrollLeft = cellLeftRelativeToScroll - leftPinnedWidth;
+            } else if (direction === 'left') {
+                // Moving left: align right edge of cell just before right-pinned area
+                const cellRightRelativeToScroll = cellRect.right - containerRect.left + currentScroll;
+                const visibleAreaEnd = containerRect.width - rightPinnedWidth;
+                targetScrollLeft = cellRightRelativeToScroll + borderWidth - visibleAreaEnd;
+            } else {
+                return;
+            }
+
+            tableContainer.scroll({
+                left: targetScrollLeft,
+                behavior: isWrapping ? 'instant' : 'smooth'
+            });
+        }, 0);
     };
 
     const clearAllFilters = () => {
