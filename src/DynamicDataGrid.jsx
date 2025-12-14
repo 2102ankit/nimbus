@@ -611,11 +611,11 @@ const OptimizedDynamicDataGrid = () => {
     const getDensityPadding = useCallback(() => {
         switch (density) {
             case "compact":
-                return "py-1 pl-2";
+                return "py-1 px-3";        // reduced vertical
             case "comfortable":
-                return "py-4 pl-4";
+                return "py-3 px-4";        // slightly reduced from py-4
             default:
-                return "py-2 pl-4";
+                return "py-2 px-4";
         }
     }, [density]);
 
@@ -645,7 +645,9 @@ const OptimizedDynamicDataGrid = () => {
             className="w-full min-h-screen transition-colors relative scrollbar-hide"
             style={{
                 backgroundColor: "var(--color-background)",
-                willChange: isFullscreen ? 'padding, margin' : 'auto'
+                willChange: isFullscreen ? 'padding, margin' : 'auto',
+                textSizeAdjust: 'none',           // Add this
+                WebkitTextSizeAdjust: 'none',     // Add this (for Safari)
             }}
         >
             <AnimatePresence>
@@ -658,7 +660,7 @@ const OptimizedDynamicDataGrid = () => {
             </AnimatePresence>
 
             <motion.div
-                layout
+                layout="position"
                 className="w-full relative z-10"
                 animate={{
                     padding: isFullscreen ? "0" : "0.5rem 2rem",
@@ -674,16 +676,20 @@ const OptimizedDynamicDataGrid = () => {
                     <AnimatePresence>
                         {!isFullscreen && (
                             <motion.div
-                                initial={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -50 }}
-                                transition={{ duration: 0.3 }}
+                                initial={{ opacity: 0, y: -50 }}   // Start from hidden and above
+                                animate={{ opacity: 1, y: 0 }}     // Animate to visible and in position
+                                exit={{ opacity: 0, y: -50 }}      // Exit by fading and sliding up
+                                transition={{
+                                    duration: 0.3,
+                                    ease: [0.25, 1, 0.5, 1]        // Matches your other smooth easings
+                                }}
                                 className="mb-4 w-full text-center"
                             >
                                 <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
-                                    Nimbus☁️ - Optimized DataGrid
+                                    Nimbus<span className="text-white!">☁️</span>- Enterprise DataGrid
                                 </h1>
                                 <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
-                                    High-performance table with Web Worker processing
+                                    Complete table with Advanced Filters, Multi-Column Sort, Column Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
                                 </p>
                             </motion.div>
                         )}
@@ -788,11 +794,14 @@ const OptimizedDynamicDataGrid = () => {
                                 role="grid"
                             >
                                 <table
-                                    className="w-full text-sm border-collapse"
+                                    className="w-full text-sm border-collapse font-medium"  // add font-medium
                                     style={{
                                         width: 'max-content',
                                         minWidth: '100%',
                                         contain: 'layout style paint',
+                                        fontSize: '0.875rem',
+                                        lineHeight: '1.25rem',
+                                        textRendering: 'optimizeLegibility',
                                     }}
                                 >
                                     <DataGridTableHeader
