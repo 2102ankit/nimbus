@@ -78,6 +78,24 @@ const DynamicDataGrid = () => {
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
     const [configReloadTrigger, setConfigReloadTrigger] = useState(0);
 
+
+    const updateGlobalFilter = useCallback((value) => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+        debounceTimeoutRef.current = setTimeout(() => {
+            setGlobalFilter(value);
+        }, 300);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, []);
+
     const handleConfigChange = useCallback(() => {
         setConfigReloadTrigger(t => t + 1);
     }, []);
@@ -435,6 +453,14 @@ const DynamicDataGrid = () => {
         });
     }, [table]);
 
+    const clearAllFilters = () => {
+        table.resetColumnFilters();
+        table.resetSorting();
+        table.setGrouping([]);
+        updateGlobalFilter("");
+    };
+  
+
     // Keyboard shortcuts
     useHotkeys('slash', (e) => {
         e.preventDefault();
@@ -450,6 +476,12 @@ const DynamicDataGrid = () => {
     useHotkeys('i', () => setShowShortcutsModal((v) => !v), { enableOnFormTags: false });
     useHotkeys('f', () => setIsFullscreen((v) => !v), { enableOnFormTags: false });
     useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
+
+
+    useHotkeys('r', (e) => {
+        e.preventDefault();
+        clearAllFilters();
+    }, { enableOnFormTags: false });
 
     useHotkeys('c', (e) => {
         e.preventDefault();
@@ -749,7 +781,7 @@ const DynamicDataGrid = () => {
                                     }, 500);
                                 }}
                                 globalFilter={globalFilter}
-                                onGlobalFilterChange={setGlobalFilter}
+                                onGlobalFilterChange={updateGlobalFilter}
                                 searchInputValue={searchInputValue}
                                 onSearchInputChange={(e) => setSearchInputValue(e.target.value)}
                                 searchInputRef={searchInputRef}
@@ -761,6 +793,7 @@ const DynamicDataGrid = () => {
                                 setGroupMenuOpen={setGroupMenuOpen}
                                 exportMenuOpen={exportMenuOpen}
                                 setExportMenuOpen={setExportMenuOpen}
+                                clearAllFilters={clearAllFilters}
                                 extraButtons={
                                     <>
                                         <ColumnConfigurationMenu

@@ -287,6 +287,10 @@ const AdvancedDataGrid = () => {
     clearAllFilters();
   }, { enableOnFormTags: false });
 
+  useHotkeys('r', (e) => {
+    e.preventDefault();
+    clearAllFilters();
+  }, { enableOnFormTags: false });
 
   useHotkeys('v', (e) => {
     e.preventDefault();

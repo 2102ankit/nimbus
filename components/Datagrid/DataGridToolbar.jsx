@@ -323,7 +323,7 @@ export function DataGridToolbar({
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => { clearAllFilters(); onResetPreferences() }}
+                  onClick={onResetPreferences}
                   className="cursor-pointer font-medium"
                   style={{ color: "var(--color-destructive)" }}
                 >
