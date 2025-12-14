@@ -4,10 +4,7 @@ import { DataGridTableBody } from "@/components/Datagrid/DataGridTableBody";
 import { DataGridTableHeader } from "@/components/Datagrid/DataGridTableHeader";
 import { DataGridToolbar } from "@/components/Datagrid/DataGridToolbar";
 import {
-    advancedFilterFn,
-    exportToCSV,
     exportToExcel,
-    exportToJSON,
     getLeftPosition,
     getRightPosition,
     loadPreferences,
@@ -20,16 +17,13 @@ import { Button } from "@/components/ui/button";
 import {
     getCoreRowModel,
     getExpandedRowModel,
-    getFilteredRowModel,
     getGroupedRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table";
 import { Info, Maximize2, Minimize2, Upload } from "lucide-react";
 import { animate } from "motion";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "../components/Datagrid/StatusBarModal";
 import { analyzeData } from "./dataAnalyzer";
@@ -37,18 +31,22 @@ import { FileUploadHandler } from "./FileUploadHandler";
 import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
 import { applyColumnConfigs } from "./columnConfigSystem";
 import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
+import { useDataWorker } from "./useDataWorker";
 
-const DynamicDataGrid = () => {
+const OptimizedDynamicDataGrid = () => {
     const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
+    const { isReady: workerReady, processData } = useDataWorker();
 
-    const [data, setData] = useState([]);
+    const [rawData, setRawData] = useState([]);
+    const [displayData, setDisplayData] = useState([]);
+    const [filteredCount, setFilteredCount] = useState(0);
     const [columns, setColumns] = useState([]);
     const [metadata, setMetadata] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState(false);
     const [showUpload, setShowUpload] = useState(false);
     const [filename, setFilename] = useState("");
 
-    // Separate state for immediate UI update and debounced filter
     const [searchInputValue, setSearchInputValue] = useState("");
     const [globalFilter, setGlobalFilter] = useState("");
     const debounceTimeoutRef = useRef(null);
@@ -69,6 +67,8 @@ const DynamicDataGrid = () => {
     const [focusedColumnIndex, setFocusedColumnIndex] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
+    const [pageIndex, setPageIndex] = useState(0);
+    const [pageSize, setPageSize] = useState(prefs.pageSize || 20);
 
     const searchInputRef = useRef(null);
     const [viewMenuOpen, setViewMenuOpen] = useState(false);
@@ -81,6 +81,145 @@ const DynamicDataGrid = () => {
         setConfigReloadTrigger(t => t + 1);
     }, []);
 
+    // Process data with worker
+    const processDataWithWorker = useCallback(async () => {
+        if (!workerReady || rawData.length === 0) return;
+
+        setProcessing(true);
+        try {
+            // Log what we're sending to worker
+            console.log('Processing with worker:', {
+                dataCount: rawData.length,
+                sorting,
+                filters: columnFilters,
+                globalFilter
+            });
+
+            const result = await processData('FULL_PROCESS', rawData, {
+                filters: columnFilters,
+                globalFilter: globalFilter,
+                sorting: sorting,
+                pageIndex: pageIndex,
+                pageSize: pageSize
+            });
+
+            console.log('Worker result:', {
+                filteredCount: result.totalRows,
+                paginatedCount: result.paginated.length
+            });
+
+            setDisplayData(result.paginated);
+            setFilteredCount(result.totalRows);
+        } catch (error) {
+            console.error('Worker processing error:', error);
+            // Fallback to client-side processing
+            let processed = [...rawData];
+
+            // Apply global filter
+            if (globalFilter) {
+                const searchLower = globalFilter.toLowerCase();
+                processed = processed.filter(row => {
+                    return Object.values(row).some(value => {
+                        if (value == null) return false;
+                        return String(value).toLowerCase().includes(searchLower);
+                    });
+                });
+            }
+
+            // Apply column filters
+            if (columnFilters.length > 0) {
+                processed = processed.filter(row => {
+                    return columnFilters.every(filter => {
+                        const { id, value } = filter;
+                        let cellValue = row[id];
+
+                        // Handle sanitized keys
+                        if (cellValue === undefined) {
+                            const keys = Object.keys(row);
+                            const matchingKey = keys.find(k => k.replace(/[^a-zA-Z0-9_]/g, '_') === id);
+                            if (matchingKey) cellValue = row[matchingKey];
+                        }
+
+                        if (!value) return true;
+
+                        const { operator, value: filterValue } = value;
+
+                        if (operator === 'isEmpty') {
+                            return cellValue == null || String(cellValue).trim() === '';
+                        }
+                        if (operator === 'isNotEmpty') {
+                            return cellValue != null && String(cellValue).trim() !== '';
+                        }
+
+                        const strValue = String(cellValue || '').toLowerCase();
+                        const strFilter = String(filterValue).toLowerCase();
+
+                        switch (operator) {
+                            case 'contains': return strValue.includes(strFilter);
+                            case 'notContains': return !strValue.includes(strFilter);
+                            case 'equals': return strValue === strFilter;
+                            case 'notEquals': return strValue !== strFilter;
+                            case 'startsWith': return strValue.startsWith(strFilter);
+                            case 'endsWith': return strValue.endsWith(strFilter);
+                            default: return true;
+                        }
+                    });
+                });
+            }
+
+            // Apply sorting
+            if (sorting.length > 0) {
+                processed.sort((a, b) => {
+                    for (const sort of sorting) {
+                        const { id, desc } = sort;
+                        let aVal = a[id];
+                        let bVal = b[id];
+
+                        // Handle sanitized keys
+                        if (aVal === undefined) {
+                            const keys = Object.keys(a);
+                            const matchingKey = keys.find(k => k.replace(/[^a-zA-Z0-9_]/g, '_') === id);
+                            if (matchingKey) aVal = a[matchingKey];
+                        }
+                        if (bVal === undefined) {
+                            const keys = Object.keys(b);
+                            const matchingKey = keys.find(k => k.replace(/[^a-zA-Z0-9_]/g, '_') === id);
+                            if (matchingKey) bVal = b[matchingKey];
+                        }
+
+                        if (aVal === bVal) continue;
+
+                        if (aVal == null) return desc ? 1 : -1;
+                        if (bVal == null) return desc ? -1 : 1;
+
+                        // Try numeric comparison
+                        const aNum = parseFloat(aVal);
+                        const bNum = parseFloat(bVal);
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            const comparison = aNum - bNum;
+                            return desc ? -comparison : comparison;
+                        }
+
+                        // String comparison
+                        if (typeof aVal === 'string' && typeof bVal === 'string') {
+                            const comparison = aVal.localeCompare(bVal, undefined, { numeric: true });
+                            return desc ? -comparison : comparison;
+                        }
+
+                        const comparison = aVal < bVal ? -1 : 1;
+                        return desc ? -comparison : comparison;
+                    }
+                    return 0;
+                });
+            }
+
+            setFilteredCount(processed.length);
+            setDisplayData(processed.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize));
+        } finally {
+            setProcessing(false);
+        }
+    }, [workerReady, rawData, columnFilters, globalFilter, sorting, pageIndex, pageSize, processData]);
+
     // Debounced global filter update
     useEffect(() => {
         if (debounceTimeoutRef.current) {
@@ -88,7 +227,7 @@ const DynamicDataGrid = () => {
         }
         debounceTimeoutRef.current = setTimeout(() => {
             setGlobalFilter(searchInputValue);
-        }, 300);
+        }, 150);
 
         return () => {
             if (debounceTimeoutRef.current) {
@@ -97,12 +236,24 @@ const DynamicDataGrid = () => {
         };
     }, [searchInputValue]);
 
+    // Trigger data processing when dependencies change
+    useEffect(() => {
+        if (rawData.length > 0) {
+            processDataWithWorker();
+        }
+    }, [processDataWithWorker, rawData.length]);
+
+    // Reset page index when filters change
+    useEffect(() => {
+        setPageIndex(0);
+    }, [columnFilters, globalFilter, sorting]);
+
     useEffect(() => {
         setLoading(true);
         setTimeout(() => {
             const sampleData = generateSampleData(250);
             const analyzed = analyzeData(sampleData);
-            setData(analyzed.data);
+            setRawData(analyzed.data);
             setColumns(analyzed.columns);
             setMetadata(analyzed.metadata);
             setLoading(false);
@@ -115,7 +266,6 @@ const DynamicDataGrid = () => {
         setPrefs(merged);
     }, [prefs]);
 
-    // Batch preference saves
     useEffect(() => {
         const timer = setTimeout(() => {
             handleSavePrefs({
@@ -123,18 +273,18 @@ const DynamicDataGrid = () => {
                 columnVisibility,
                 columnOrder,
                 columnSizing,
-                columnPinning
+                columnPinning,
+                pageSize
             });
         }, 500);
         return () => clearTimeout(timer);
-    }, [sorting, columnVisibility, columnOrder, columnSizing, columnPinning, handleSavePrefs]);
+    }, [sorting, columnVisibility, columnOrder, columnSizing, columnPinning, pageSize, handleSavePrefs]);
 
     const handleDataLoaded = useCallback((rawData, name = "Uploaded File") => {
         setLoading(true);
         setShowUpload(false);
         setFilename(name);
 
-        // Reset all state
         setSorting([]);
         setColumnFilters([]);
         setColumnVisibility({});
@@ -146,11 +296,12 @@ const DynamicDataGrid = () => {
         setColumnPinning({ left: [], right: [] });
         setExpanded({});
         setGrouping([]);
+        setPageIndex(0);
 
         requestAnimationFrame(() => {
             setTimeout(() => {
                 const analyzed = analyzeData(rawData);
-                setData(analyzed.data);
+                setRawData(analyzed.data);
                 setColumns(analyzed.columns);
                 setMetadata(analyzed.metadata);
                 setLoading(false);
@@ -158,7 +309,6 @@ const DynamicDataGrid = () => {
         });
     }, []);
 
-    // Memoize columns processing
     const columnsWithHeadersAndConfigs = useMemo(() => {
         if (columns.length === 0) return [];
         const configuredColumns = applyColumnConfigs(columns);
@@ -166,9 +316,16 @@ const DynamicDataGrid = () => {
         return withHeaders;
     }, [columns, configReloadTrigger]);
 
+    // Create a manual pagination model for the table
+    const paginationState = useMemo(() => ({
+        pageIndex,
+        pageSize
+    }), [pageIndex, pageSize]);
+
     const table = useReactTable({
-        data,
+        data: displayData,
         columns: columnsWithHeadersAndConfigs,
+        pageCount: Math.ceil(filteredCount / pageSize),
         state: {
             sorting,
             columnFilters,
@@ -180,6 +337,7 @@ const DynamicDataGrid = () => {
             columnPinning,
             expanded,
             grouping,
+            pagination: paginationState
         },
         enableRowSelection: true,
         enableMultiRowSelection: true,
@@ -192,6 +350,9 @@ const DynamicDataGrid = () => {
         enablePinning: true,
         enableExpanding: metadata?.hasNestedData || false,
         enableGrouping: true,
+        manualPagination: true,
+        manualFiltering: true,
+        manualSorting: true,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
@@ -202,25 +363,20 @@ const DynamicDataGrid = () => {
         onColumnPinningChange: setColumnPinning,
         onExpandedChange: setExpanded,
         onGroupingChange: setGrouping,
+        onPaginationChange: (updater) => {
+            const newState = typeof updater === 'function'
+                ? updater(paginationState)
+                : updater;
+            setPageIndex(newState.pageIndex);
+            setPageSize(newState.pageSize);
+        },
         getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
         getExpandedRowModel: getExpandedRowModel(),
         getGroupedRowModel: getGroupedRowModel(),
-        filterFns: {
-            advanced: advancedFilterFn,
-        },
-        globalFilterFn: "includesString",
         defaultColumn: {
             size: 200,
             minSize: 50,
             maxSize: 600,
-        },
-        initialState: {
-            pagination: {
-                pageSize: prefs.pageSize || 20,
-            },
         },
     });
 
@@ -298,11 +454,7 @@ const DynamicDataGrid = () => {
         e.preventDefault();
         if (!exportMenuOpen) {
             if (exportMode === 'export') {
-                const rows = table.getFilteredRowModel().rows.map(r => r.original);
-                const cols = table.getVisibleLeafColumns()
-                    .filter(col => col.id !== 'select' && col.id !== 'expand')
-                    .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
-                exportToCSV(rows, cols);
+                handleExport('csv');
                 setExportMode(null);
             } else {
                 setColumnsMenuOpen((v) => !v);
@@ -315,11 +467,7 @@ const DynamicDataGrid = () => {
             setExportMenuOpen(false);
             setExportMode(null);
         } else if (exportMode === 'export') {
-            const rows = table.getFilteredRowModel().rows.map(r => r.original);
-            const cols = table.getVisibleLeafColumns()
-                .filter(col => col.id !== 'select' && col.id !== 'expand')
-                .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
-            exportToExcel(rows, cols);
+            handleExport('excel');
             setExportMode(null);
         } else {
             setExportMenuOpen(true);
@@ -334,11 +482,7 @@ const DynamicDataGrid = () => {
 
     useHotkeys('j', () => {
         if (exportMode === 'export' && !exportMenuOpen) {
-            const rows = table.getFilteredRowModel().rows.map(r => r.original);
-            const cols = table.getVisibleLeafColumns()
-                .filter(col => col.id !== 'select' && col.id !== 'expand')
-                .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
-            exportToJSON(rows, cols);
+            handleExport('json');
             setExportMode(null);
         }
     }, { enableOnFormTags: false });
@@ -414,19 +558,37 @@ const DynamicDataGrid = () => {
         });
     }, { enableOnFormTags: false });
 
-    const handleExport = useCallback((format, rows, cols) => {
-        switch (format) {
-            case "csv":
-                exportToCSV(rows, cols);
-                break;
-            case "excel":
-                exportToExcel(rows, cols);
-                break;
-            case "json":
-                exportToJSON(rows, cols);
-                break;
+    const handleExport = useCallback(async (format) => {
+        const cols = table.getVisibleLeafColumns()
+            .filter(col => col.id !== 'select' && col.id !== 'expand')
+            .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
+
+        try {
+            if (format === 'csv') {
+                const csvData = await processData('EXPORT_CSV', rawData, { columns: cols });
+                const blob = new Blob([csvData], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'export.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            } else if (format === 'json') {
+                const jsonData = await processData('EXPORT_JSON', rawData, { columns: cols });
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'export.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            } else if (format === 'excel') {
+                exportToExcel(rawData, cols);
+            }
+        } catch (error) {
+            console.error('Export error:', error);
         }
-    }, []);
+    }, [rawData, table, processData]);
 
     const handleResetPreferences = useCallback(() => {
         resetPreferences();
@@ -438,11 +600,12 @@ const DynamicDataGrid = () => {
         setColumnFilters([]);
         setGlobalFilter("");
         setGrouping([]);
+        setPageIndex(0);
+        setPageSize(20);
         table.resetColumnVisibility();
         table.resetColumnOrder();
         table.resetColumnSizing();
         table.resetSorting();
-        table.setPageSize(20);
     }, [table]);
 
     const getDensityPadding = useCallback(() => {
@@ -456,7 +619,7 @@ const DynamicDataGrid = () => {
         }
     }, [density]);
 
-    const isEmpty = table.getFilteredRowModel().rows.length === 0;
+    const isEmpty = displayData.length === 0 && !loading;
 
     const getCellBorderClasses = useCallback(() => {
         const borders = [];
@@ -517,10 +680,10 @@ const DynamicDataGrid = () => {
                                 className="mb-4 w-full text-center"
                             >
                                 <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
-                                    Nimbus<span className="text-white!">☁️</span>- Enterprise DataGrid
+                                    Nimbus☁️ - Optimized DataGrid
                                 </h1>
                                 <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
-                                    Complete table with Advanced Filters, Multi-Column Sort, Column Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
+                                    High-performance table with Web Worker processing
                                 </p>
                             </motion.div>
                         )}
@@ -529,7 +692,7 @@ const DynamicDataGrid = () => {
                         <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
                     )}
 
-                    {data.length > 0 && !isFullscreen && (
+                    {rawData.length > 0 && !isFullscreen && (
                         <Button
                             onClick={() => setShowUpload(true)}
                             variant="outline"
@@ -540,7 +703,7 @@ const DynamicDataGrid = () => {
                         </Button>
                     )}
 
-                    {data.length > 0 && (
+                    {rawData.length > 0 && (
                         <motion.div
                             layout="position"
                             className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
@@ -564,7 +727,7 @@ const DynamicDataGrid = () => {
                         >
                             <DataGridToolbar
                                 table={table}
-                                columns={columns}
+                                columns={columnsWithHeadersAndConfigs}
                                 onExport={handleExport}
                                 onResetPreferences={handleResetPreferences}
                                 onRefresh={() => {
@@ -572,7 +735,7 @@ const DynamicDataGrid = () => {
                                     setTimeout(() => {
                                         const sampleData = generateSampleData(250);
                                         const analyzed = analyzeData(sampleData);
-                                        setData(analyzed.data);
+                                        setRawData(analyzed.data);
                                         setColumns(analyzed.columns);
                                         setMetadata(analyzed.metadata);
                                         setLoading(false);
@@ -642,7 +805,7 @@ const DynamicDataGrid = () => {
                                     />
                                     <DataGridTableBody
                                         table={table}
-                                        loading={loading}
+                                        loading={loading || processing}
                                         isEmpty={isEmpty}
                                         getDensityPadding={getDensityPadding}
                                         getCellBorderClasses={getCellBorderClasses}
@@ -678,4 +841,4 @@ const DynamicDataGrid = () => {
     );
 };
 
-export default DynamicDataGrid;
+export default OptimizedDynamicDataGrid;
