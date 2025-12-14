@@ -114,97 +114,97 @@ export function KeyboardShortcutsModal({ open, onOpenChange }) {
                         </div>
                         <div className="space-y-2 ml-6 text-sm">
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     PageUp/Dn
                                 </kbd>
                                 <span>Navigate pages</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     /
                                 </kbd>
                                 <span>Focus global search</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     R
                                 </kbd>
                                 <span>Refresh data</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     V
                                 </kbd>
                                 <span>Open view menu</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     C
                                 </kbd>
                                 <span>Open columns menu</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     G
                                 </kbd>
                                 <span>Open groups menu</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     r
                                 </kbd>
                                 <span>Rows per page</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     E
                                 </kbd>
                                 <span>Export menu</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     c/e/j
                                 </kbd>
                                 <span className="text-xs text-muted-foreground">Then CSV/Excel/JSON</span>
                             </div>
                             {/* <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     ?
                                 </kbd>
                                 <span>Show this dialog</span>
                             </div> */}
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     F
                                 </kbd>
                                 <span>Toggle fullscreen</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     S
                                 </kbd>
                                 <span>Toggle status bar</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     I
                                 </kbd>
                                 <span>Toggle shortcuts modal</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     Esc
                                 </kbd>
                                 <span>Exit fullscreen</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     Shift+Click
                                 </kbd>
                                 <span>Multi-column sort</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-[80px] text-center">
+                                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm min-w-20 text-center">
                                     Drag
                                 </kbd>
                                 <span>Reorder columns</span>
