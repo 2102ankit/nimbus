@@ -184,53 +184,6 @@ export function DataGridToolbar({
               </Button>
             )}
 
-            {/* Export Menu */}
-            <DropdownMenu open={exportMenuOpen} onOpenChange={setExportMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-11 border-2 shadow-sm bg-background"
-                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  <HotkeyLabel hotkey={"E"}>Export</HotkeyLabel>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 shadow-lg">
-                <DropdownMenuItem
-                  onClick={() => exportData("csv")}
-                  className="cursor-pointer"
-                >
-                  <FileSpreadsheet
-                    className="h-4 w-4 mr-2"
-                    style={{ color: "var(--color-chart-2)" }}
-                  />
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => exportData("excel")}
-                  className="cursor-pointer"
-                >
-                  <FileDown
-                    className="h-4 w-4 mr-2"
-                    style={{ color: "var(--color-primary)" }}
-                  />
-                  Export as Excel
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => exportData("json")}
-                  className="cursor-pointer"
-                >
-                  <FileJson
-                    className="h-4 w-4 mr-2"
-                    style={{ color: "var(--color-chart-5)" }}
-                  />
-                  Export as JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             {/* View Settings */}
             <DropdownMenu open={viewMenuOpen} onOpenChange={setViewMenuOpen}>
               <DropdownMenuTrigger asChild>
@@ -370,7 +323,7 @@ export function DataGridToolbar({
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={onResetPreferences}
+                  onClick={() => { clearAllFilters(); onResetPreferences() }}
                   className="cursor-pointer font-medium"
                   style={{ color: "var(--color-destructive)" }}
                 >
@@ -484,6 +437,55 @@ export function DataGridToolbar({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+
+
+            {/* Export Menu */}
+            <DropdownMenu open={exportMenuOpen} onOpenChange={setExportMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-11 border-2 shadow-sm bg-background"
+                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  <HotkeyLabel hotkey={"E"}>Export</HotkeyLabel>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 shadow-lg">
+                <DropdownMenuItem
+                  onClick={() => exportData("csv")}
+                  className="cursor-pointer"
+                >
+                  <FileSpreadsheet
+                    className="h-4 w-4 mr-2"
+                    style={{ color: "var(--color-chart-2)" }}
+                  />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => exportData("excel")}
+                  className="cursor-pointer"
+                >
+                  <FileDown
+                    className="h-4 w-4 mr-2"
+                    style={{ color: "var(--color-primary)" }}
+                  />
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => exportData("json")}
+                  className="cursor-pointer"
+                >
+                  <FileJson
+                    className="h-4 w-4 mr-2"
+                    style={{ color: "var(--color-chart-5)" }}
+                  />
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
 
             {/* Theme Toggle */}
             <Button
