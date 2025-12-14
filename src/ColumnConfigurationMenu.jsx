@@ -177,6 +177,9 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                 onClick={() => setIsOpen(true)}
                 title="Configure columns"
                 className="h-11 border-2 shadow-sm bg-background text-foreground hover:bg-muted"
+                style={{
+                    borderColor: "var(--color-border)",
+                }}
             >
                 <Settings className="h-4 w-4" />
             </Button>
