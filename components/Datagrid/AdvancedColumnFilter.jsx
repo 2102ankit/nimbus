@@ -258,9 +258,10 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
   const hasFilter = column.getFilterValue() !== undefined;
   const needsSecondInput = operator === "between";
   const needsNoInput = operator === "isEmpty" || operator === "isNotEmpty";
+  const [open, setOpen] = useState(false);
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant={hasFilter ? "default" : "ghost"}
@@ -300,7 +301,10 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
 
           {!needsNoInput && (
             <div>
-              <label className="text-xs font-semibold text-(--color-foreground) mb-1 block">
+              <label
+                className="text-xs font-semibold mb-1 block"
+                style={{ color: "var(--color-foreground)" }}
+              >
                 {needsSecondInput
                   ? dataType === "date"
                     ? "From"
@@ -318,9 +322,10 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 placeholder={`Enter ${dataType}...`}
-                className="mt-1 border-(--color-border) focus:ring-(--color-ring)"
+                className="mt-1"
                 style={{
                   backgroundColor: "var(--color-card)",
+                  borderColor: "var(--color-border)",
                   color: "var(--color-foreground)",
                 }}
               />
@@ -329,7 +334,10 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
 
           {needsSecondInput && (
             <div>
-              <label className="text-xs font-semibold text-(--color-foreground) mb-1 block">
+              <label
+                className="text-xs font-semibold mb-1 block"
+                style={{ color: "var(--color-foreground)" }}
+              >
                 {dataType === "date" ? "To" : "Max"}
               </label>
               <Input
@@ -337,9 +345,10 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
                 value={value2}
                 onChange={(e) => setValue2(e.target.value)}
                 placeholder={`Enter ${dataType}...`}
-                className="mt-1 border focus:ring-(--color-ring)"
+                className="mt-1"
                 style={{
                   backgroundColor: "var(--color-card)",
+                  borderColor: "var(--color-border)",
                   color: "var(--color-foreground)",
                 }}
               />
@@ -348,7 +357,10 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
 
           <div className="flex gap-2 pt-2">
             <Button
-              onClick={applyFilter}
+              onClick={() => {
+                applyFilter();
+                setOpen(false); // Close the menu
+              }}
               size="sm"
               className="flex-1"
               disabled={!needsNoInput && !value && operator !== "between"}
@@ -356,10 +368,17 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
               Apply Filter
             </Button>
             <Button
-              onClick={clearFilter}
+              onClick={() => {
+                clearFilter();
+                setOpen(false); // Close the menu
+              }}
               variant="outline"
               size="sm"
-              className="flex-1 border-(--color-border) text-(--color-foreground)"
+              className="flex-1"
+              style={{
+                borderColor: "var(--color-border)",
+                color: "var(--color-foreground)",
+              }}
             >
               Clear
             </Button>
@@ -378,7 +397,11 @@ export function ActiveFilters({ table, columns }) {
 
   return (
     <div className="flex flex-wrap gap-2 px-4 pb-3">
-      <span className="text-xs font-semibold text-(--color-muted-foreground) flex items-center">
+      <span className="text-xs font-semibold flex items-center"
+        style={{
+          color:"var(--color-muted-foreground)"
+      }}
+      >
         Active filters:
       </span>
       <AnimatePresence>

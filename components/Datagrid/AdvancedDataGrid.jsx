@@ -31,11 +31,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Info, Maximize2, Minimize2 } from "lucide-react";
+import { animate } from "motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "./StatusBarModal";
-import { animate } from "motion";
 
 const AdvancedDataGrid = () => {
   const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -44,6 +44,13 @@ const AdvancedDataGrid = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [searchInputValue, setSearchInputValue] = useState("");
+  const debounceTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    setSearchInputValue(globalFilter);
+  }, [globalFilter]);
+
   const [rowSelection, setRowSelection] = useState({});
   const [expanded, setExpanded] = useState({});
   const [grouping, setGrouping] = useState([]);
@@ -71,13 +78,29 @@ const AdvancedDataGrid = () => {
   const viewButtonRef = useRef(null);
   const columnsButtonRef = useRef(null);
   const groupButtonRef = useRef(null);
-  const rowsButtonRef = useRef(null);
   const exportButtonRef = useRef(null);
 
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
   const [groupMenuOpen, setGroupMenuOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  const updateGlobalFilter = useCallback((value) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = setTimeout(() => {
+      setGlobalFilter(value);
+    }, 300);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Save preferences automatically
   const handleSavePrefs = useCallback(
@@ -245,6 +268,13 @@ const AdvancedDataGrid = () => {
     }, 0);
   };
 
+  const clearAllFilters = () => {
+    table.resetColumnFilters();
+    table.resetSorting();
+    table.setGrouping([]);
+    updateGlobalFilter("");
+  };
+
   // Keyboard shortcuts using react-hotkeys-hook (after table initialization)
   useHotkeys('slash', (e) => {
     e.preventDefault();
@@ -253,13 +283,9 @@ const AdvancedDataGrid = () => {
 
   useHotkeys('shift+r, R', (e) => {
     e.preventDefault();
-    loadData();
+    clearAllFilters();
   }, { enableOnFormTags: false });
 
-  useHotkeys('r', (e) => {
-    e.preventDefault();
-    rowsButtonRef.current?.click();
-  }, { enableOnFormTags: false });
 
   useHotkeys('v', (e) => {
     e.preventDefault();
@@ -455,9 +481,12 @@ const AdvancedDataGrid = () => {
   };
 
   const getHeaderBorderClasses = () => {
-    const borders = [];
+    const borders = ["border-b-2"];
     if (showHeaderLines || showGridLines) borders.push("border-r-2");
-    return borders.join(" ");
+    return (
+      borders.join(" ") +
+      " border-[color-mix(in_oklch,var(--color-border),transparent_50%)]"
+    );
   };
 
   // Position helpers
@@ -505,6 +534,7 @@ const AdvancedDataGrid = () => {
           )}
           {/* Table Card */}
           <motion.div
+            layout="position"
             className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
             style={{
               backgroundColor: "var(--color-card)",
@@ -528,7 +558,9 @@ const AdvancedDataGrid = () => {
               onResetPreferences={handleResetPreferences}
               onRefresh={loadData}
               globalFilter={globalFilter}
-              onGlobalFilterChange={setGlobalFilter}
+              onGlobalFilterChange={updateGlobalFilter}
+              searchInputValue={searchInputValue}
+              onSearchInputChange={setSearchInputValue}
               searchInputRef={searchInputRef}
               viewButtonRef={viewButtonRef}
               columnsButtonRef={columnsButtonRef}
@@ -542,6 +574,7 @@ const AdvancedDataGrid = () => {
               setGroupMenuOpen={setGroupMenuOpen}
               exportMenuOpen={exportMenuOpen}
               setExportMenuOpen={setExportMenuOpen}
+              clearAllFilters={clearAllFilters}
               extraButtons={
                 <Button
                   variant="ghost"

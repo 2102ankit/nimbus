@@ -38,7 +38,6 @@ import {
   Sun,
   Sigma
 } from "lucide-react";
-import { useState } from "react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
 import { HotkeyLabel } from "./HotkeyLabel";
 
@@ -48,6 +47,7 @@ export function DataGridToolbar({
   onExport,
   onResetPreferences,
   onRefresh,
+  clearAllFilters,
   globalFilter,
   onGlobalFilterChange,
   searchInputRef,
@@ -59,7 +59,9 @@ export function DataGridToolbar({
   setGroupMenuOpen,
   exportMenuOpen,
   setExportMenuOpen,
-  extraButtons
+  extraButtons,
+  searchInputValue,
+  onSearchInputChange,
 }) {
   const {
     density,
@@ -72,7 +74,6 @@ export function DataGridToolbar({
     showRowLines,
     toggleRowLines,
   } = useTheme();
-  const [searchDebounce, setSearchDebounce] = useState(null);
 
   const getColumnHeaderText = (col) => {
     const columnId = col.id;
@@ -84,17 +85,6 @@ export function DataGridToolbar({
       return col.columnDef?.meta?.headerText || col.columnDef?.meta?.originalKey || col.id;
     }
     return String(header);
-  };
-
-  const handleGlobalSearch = (value) => {
-    onGlobalFilterChange(value);
-  };
-
-  const clearAllFilters = () => {
-    table.resetColumnFilters();
-    table.resetSorting();
-    table.setGrouping([]);
-    onGlobalFilterChange("");
   };
 
   const hasFilters =
@@ -153,8 +143,8 @@ export function DataGridToolbar({
             <Input
               ref={searchInputRef}
               placeholder="(/) Search all columns..."
-              value={globalFilter ?? ""}
-              onChange={(e) => handleGlobalSearch(e.target.value)}
+              value={searchInputValue}           // Live value (instant)
+              onChange={onSearchInputChange}
               className="pl-10 h-11 border-2 shadow-sm focus:ring-2"
               style={{
                 backgroundColor: "var(--color-card)",
@@ -167,7 +157,7 @@ export function DataGridToolbar({
 
           <div className="flex gap-3">
             {/* Refresh */}
-            {onRefresh && (
+            {/* {onRefresh && (
               <Button
                 onClick={onRefresh}
                 variant="outline"
@@ -178,7 +168,7 @@ export function DataGridToolbar({
                 <RotateCcw className="h-4 w-4 mr-2" />
                 <HotkeyLabel hotkey={"R"}>Refresh</HotkeyLabel>
               </Button>
-            )}
+            )} */}
 
             {/* Reset All */}
             {hasFilters && (
@@ -190,7 +180,7 @@ export function DataGridToolbar({
                 style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Reset All
+                <HotkeyLabel hotkey={"R"}>Reset All</HotkeyLabel>
               </Button>
             )}
 
