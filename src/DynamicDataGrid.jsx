@@ -13,6 +13,12 @@ import {
 } from "@/components/Datagrid/dataGridUtils";
 import { KeyboardShortcutsModal } from "@/components/Datagrid/KeyboardShortcutsModal";
 import { useTheme } from "@/components/ThemeProvider";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
     getCoreRowModel,
@@ -764,18 +770,36 @@ const DynamicDataGrid = () => {
                         )}
                     </AnimatePresence>
                     {!isFullscreen && (
-                        <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Show shortcuts</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
 
                     {rawData.length > 0 && !isFullscreen && (
-                        <Button
-                            onClick={() => setShowUpload(true)}
-                            variant="outline"
-                            className="absolute top-0 right-12 m-4 border-2"
-                        >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Upload New File
-                        </Button>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={() => setShowUpload(true)}
+                                        variant="outline"
+                                        className="absolute top-0 right-12 m-4 border-2"
+                                    >
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        Upload New File
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Upload new file</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
 
                     {rawData.length > 0 && (

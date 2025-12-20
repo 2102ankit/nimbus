@@ -12,6 +12,12 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function DataGridPagination({ table, totalRows: totalRowsProp, totalSelectedRows: totalSelectedRowsProp }) {
   const pageSize = table.getState().pagination.pageSize;
@@ -113,89 +119,121 @@ export function DataGridPagination({ table, totalRows: totalRowsProp, totalSelec
         </div>
 
         {/* Navigation Buttons */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => table.setPageIndex(0)}
-          disabled={!canPreviousPage}
-          className="h-9 w-9 border-2 shadow-sm"
-          style={{ borderColor: "var(--color-border)" }}
-          onMouseEnter={(e) =>
-            !canPreviousPage &&
-            (e.currentTarget.style.backgroundColor =
-              "color-mix(in oklch, var(--color-muted), transparent 90%)")
-          }
-          onMouseLeave={(e) =>
-            !canPreviousPage &&
-            (e.currentTarget.style.backgroundColor = "transparent")
-          }
-          title="First page"
-        >
-          <ChevronsLeft className="h-4 w-4" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!canPreviousPage}
+                className="h-9 w-9 border-2 shadow-sm"
+                style={{ borderColor: "var(--color-border)" }}
+                onMouseEnter={(e) =>
+                  !canPreviousPage &&
+                  (e.currentTarget.style.backgroundColor =
+                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
+                }
+                onMouseLeave={(e) =>
+                  !canPreviousPage &&
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>First page</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => table.previousPage()}
-          disabled={!canPreviousPage}
-          className="h-9 w-9 border-2 shadow-sm"
-          style={{ borderColor: "var(--color-border)" }}
-          onMouseEnter={(e) =>
-            !canPreviousPage &&
-            (e.currentTarget.style.backgroundColor =
-              "color-mix(in oklch, var(--color-muted), transparent 90%)")
-          }
-          onMouseLeave={(e) =>
-            !canPreviousPage &&
-            (e.currentTarget.style.backgroundColor = "transparent")
-          }
-          title="Previous page"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => table.previousPage()}
+                disabled={!canPreviousPage}
+                className="h-9 w-9 border-2 shadow-sm"
+                style={{ borderColor: "var(--color-border)" }}
+                onMouseEnter={(e) =>
+                  !canPreviousPage &&
+                  (e.currentTarget.style.backgroundColor =
+                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
+                }
+                onMouseLeave={(e) =>
+                  !canPreviousPage &&
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Previous page</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => table.nextPage()}
-          disabled={!canNextPage}
-          className="h-9 w-9 border-2 shadow-sm"
-          style={{ borderColor: "var(--color-border)" }}
-          onMouseEnter={(e) =>
-            !canNextPage &&
-            (e.currentTarget.style.backgroundColor =
-              "color-mix(in oklch, var(--color-muted), transparent 90%)")
-          }
-          onMouseLeave={(e) =>
-            !canNextPage &&
-            (e.currentTarget.style.backgroundColor = "transparent")
-          }
-          title="Next page"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => table.nextPage()}
+                disabled={!canNextPage}
+                className="h-9 w-9 border-2 shadow-sm"
+                style={{ borderColor: "var(--color-border)" }}
+                onMouseEnter={(e) =>
+                  !canNextPage &&
+                  (e.currentTarget.style.backgroundColor =
+                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
+                }
+                onMouseLeave={(e) =>
+                  !canNextPage &&
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Next page</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => table.setPageIndex(pageCount - 1)}
-          disabled={!canNextPage}
-          className="h-9 w-9 border-2 shadow-sm"
-          style={{ borderColor: "var(--color-border)" }}
-          onMouseEnter={(e) =>
-            !canNextPage &&
-            (e.currentTarget.style.backgroundColor =
-              "color-mix(in oklch, var(--color-muted), transparent 90%)")
-          }
-          onMouseLeave={(e) =>
-            !canNextPage &&
-            (e.currentTarget.style.backgroundColor = "transparent")
-          }
-          title="Last page"
-        >
-          <ChevronsRight className="h-4 w-4" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => table.setPageIndex(pageCount - 1)}
+                disabled={!canNextPage}
+                className="h-9 w-9 border-2 shadow-sm"
+                style={{ borderColor: "var(--color-border)" }}
+                onMouseEnter={(e) =>
+                  !canNextPage &&
+                  (e.currentTarget.style.backgroundColor =
+                    "color-mix(in oklch, var(--color-muted), transparent 90%)")
+                }
+                onMouseLeave={(e) =>
+                  !canNextPage &&
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Last page</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );

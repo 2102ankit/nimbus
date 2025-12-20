@@ -41,6 +41,12 @@ import {
 } from "lucide-react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
 import { HotkeyLabel } from "./HotkeyLabel";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function DataGridToolbar({
   table,
@@ -101,7 +107,7 @@ export function DataGridToolbar({
   const exportData = (format) => {
     const selectedRowModel = table.getSelectedRowModel();
     const hasSelectedRows = selectedRowModel.rows.length > 0;
-    const rows = hasSelectedRows 
+    const rows = hasSelectedRows
       ? selectedRowModel.rows.map((row) => row.original)
       : table.getFilteredRowModel().rows.map((row) => row.original);
     const visibleColumns = table
@@ -288,7 +294,6 @@ export function DataGridToolbar({
                     </DropdownMenuRadioGroup>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
-                </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -336,30 +341,46 @@ export function DataGridToolbar({
                           </label>
                           {col.getCanPin() && (
                             <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  col.pin(isPinned === "left" ? false : "left");
-                                }}
-                                title={isPinned === "left" ? "Unpin from left" : "Pin to left"}
-                              >
-                                <Pin className={`h-3.5 w-3.5 ${isPinned === "left" ? "text-primary" : ""}`} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  col.pin(isPinned === "right" ? false : "right");
-                                }}
-                                title={isPinned === "right" ? "Unpin from right" : "Pin to right"}
-                              >
-                                <Pin className={`h-3.5 w-3.5 rotate-90 ${isPinned === "right" ? "text-primary" : ""}`} />
-                              </Button>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        col.pin(isPinned === "left" ? false : "left");
+                                      }}
+                                    >
+                                      <Pin className={`h-3.5 w-3.5 ${isPinned === "left" ? "text-primary" : ""}`} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{isPinned === "left" ? "Unpin from left" : "Pin to left"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        col.pin(isPinned === "right" ? false : "right");
+                                      }}
+                                    >
+                                      <Pin className={`h-3.5 w-3.5 rotate-90 ${isPinned === "right" ? "text-primary" : ""}`} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{isPinned === "right" ? "Unpin from right" : "Pin to right"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           )}
                         </div>
@@ -533,32 +554,36 @@ export function DataGridToolbar({
 
 
             {/* Theme Toggle */}
-            <Button
-              onClick={toggleTheme}
-              variant="outline"
-              size="icon"
-              className="h-11 w-11 border-2 shadow-sm transition-all bg-background ml-4"
-              style={{
-                borderColor: "var(--color-border)",
-              }}
-              title={
-                theme === "dark"
-                  ? "Switch to Light Mode"
-                  : "Switch to Dark Mode"
-              }
-            >
-              {theme === "dark" ? (
-                <Sun
-                  className="h-5 w-5"
-                  style={{ color: "var(--color-chart-3)" }}
-                />
-              ) : (
-                <Moon
-                  className="h-5 w-5"
-                  style={{ color: "var(--color-foreground)" }}
-                />
-              )}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={toggleTheme}
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11 border-2 shadow-sm transition-all bg-background ml-4"
+                    style={{
+                      borderColor: "var(--color-border)",
+                    }}
+                  >
+                    {theme === "dark" ? (
+                      <Sun
+                        className="h-5 w-5"
+                        style={{ color: "var(--color-chart-3)" }}
+                      />
+                    ) : (
+                      <Moon
+                        className="h-5 w-5"
+                        style={{ color: "var(--color-foreground)" }}
+                      />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {extraButtons}
           </div>
         </div>
@@ -566,6 +591,7 @@ export function DataGridToolbar({
         {/* Active Filters */}
         <ActiveFilters table={table} columns={columns} />
       </div>
+
     </div>
   );
 }

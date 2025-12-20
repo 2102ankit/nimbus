@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import {
     Select,
     SelectContent,
@@ -13,6 +14,12 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useCallback, useEffect, useMemo, memo, useRef } from "react";
 import { setColumnConfig, getColumnConfig, clearColumnConfigs } from "./columnConfigSystem";
 import { cn } from "@/lib/utils";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ columns = [], onConfigChange }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -82,14 +89,14 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                 }
             }
         };
-    // Task 8: Reset configs when closing without save
-    useEffect(() => {
-        if (!isOpen && selectedColumnId) {
-            // Reset to saved config when modal closes
-            const savedConfig = getColumnConfig(selectedColumnId);
-            setLocalConfigs(savedConfig || {});
-        }
-    }, [isOpen, selectedColumnId]);
+        // Task 8: Reset configs when closing without save
+        useEffect(() => {
+            if (!isOpen && selectedColumnId) {
+                // Reset to saved config when modal closes
+                const savedConfig = getColumnConfig(selectedColumnId);
+                setLocalConfigs(savedConfig || {});
+            }
+        }, [isOpen, selectedColumnId]);
 
         window.addEventListener('keydown', handleEscape);
         return () => window.removeEventListener('keydown', handleEscape);
@@ -180,18 +187,26 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
 
     return (
         <div>
-            <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(true)}
-                title="Configure columns"
-                className="h-11 border-2 shadow-sm bg-background text-foreground hover:bg-muted"
-                style={{
-                    borderColor: "var(--color-border)",
-                }}
-            >
-                <Settings className="h-4 w-4" />
-            </Button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsOpen(true)}
+                            className="h-11 border-2 shadow-sm bg-background text-foreground hover:bg-muted"
+                            style={{
+                                borderColor: "var(--color-border)",
+                            }}
+                        >
+                            <Settings className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Configure columns</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
 
             <AnimatePresence>
                 {isOpen && (
@@ -349,6 +364,25 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
+
+                                                {/* Precision (Task 10) */}
+                                                {['number', 'currency', 'percentage'].includes(localConfigs.dataType || getColumnType(selectedColumn)) && (
+                                                    <div className="bg-card border border-border rounded-lg p-4">
+                                                        <Label htmlFor="precision" className="text-sm font-semibold text-foreground mb-2 block">
+                                                            Precision (Decimals)
+                                                        </Label>
+                                                        <Input
+                                                            id="precision"
+                                                            type="number"
+                                                            min="0"
+                                                            max="10"
+                                                            value={localConfigs.precision !== undefined ? localConfigs.precision : ''}
+                                                            onChange={(e) => handleConfigChange('precision', e.target.value === '' ? undefined : parseInt(e.target.value))}
+                                                            className="bg-background border border-border text-foreground"
+                                                            placeholder="Default"
+                                                        />
+                                                    </div>
+                                                )}
 
                                                 {/* Enum Toggle */}
                                                 <div className="bg-card border border-border rounded-lg p-4">

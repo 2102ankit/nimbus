@@ -1,5 +1,84 @@
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ExternalLink } from "lucide-react";
+import { getColumnConfig } from "./columnConfigSystem";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+export function UrlCell({ value }) {
+    const [showWarning, setShowWarning] = useState(false);
+
+    if (!value) return <span className="text-muted-foreground">-</span>;
+
+    const handleClick = (e) => {
+        e.preventDefault();
+        const dontShowAgain = localStorage.getItem("datagrid-url-warning-dismissed");
+        if (dontShowAgain === "true") {
+            window.open(value, '_blank', 'noopener,noreferrer');
+        } else {
+            setShowWarning(true);
+        }
+    };
+
+    const handleConfirm = () => {
+        setShowWarning(false);
+        window.open(value, '_blank', 'noopener,noreferrer');
+    };
+
+    const handleDismiss = (checked) => {
+        if (checked) {
+            localStorage.setItem("datagrid-url-warning-dismissed", "true");
+        } else {
+            localStorage.removeItem("datagrid-url-warning-dismissed");
+        }
+    };
+
+    return (
+        <>
+            <a
+                href={value}
+                onClick={handleClick}
+                className="text-primary hover:underline cursor-pointer flex items-center gap-1 truncate max-w-full"
+            >
+                <span className="truncate">{value}</span>
+                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+            </a>
+
+            <Dialog open={showWarning} onOpenChange={setShowWarning}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>External Link Warning</DialogTitle>
+                        <DialogDescription>
+                            You are about to leave the application and visit an external website:
+                            <br />
+                            <span className="font-mono text-xs mt-2 block bg-muted p-2 rounded break-all">{value}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center space-x-2 py-4">
+                        <Checkbox id="dont-show" onCheckedChange={handleDismiss} />
+                        <label
+                            htmlFor="dont-show"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                            Don't show this warning again
+                        </label>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowWarning(false)}>Cancel</Button>
+                        <Button onClick={handleConfirm}>Continue</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
 
 export function ExpandableTextCell({ value }) {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -10,7 +89,7 @@ export function ExpandableTextCell({ value }) {
 
     const stringValue = String(value);
 
-    return (
+    const content = (
         <div
             className="text-sm cursor-pointer"
             onClick={() => setIsExpanded(!isExpanded)}
@@ -22,10 +101,26 @@ export function ExpandableTextCell({ value }) {
                 textOverflow: isExpanded ? 'clip' : 'ellipsis',
                 maxWidth: '100%',
             }}
-            title={isExpanded ? undefined : stringValue}
         >
             {stringValue}
         </div>
+    );
+
+    if (isExpanded) {
+        return content;
+    }
+
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    {content}
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p className="max-w-xs break-words">{stringValue}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 }
 
@@ -142,6 +237,12 @@ function detectDataType(values, columnName) {
         return 'date';
     }
 
+    // Check for URLs
+    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    if (values.some(val => typeof val === 'string' && urlPattern.test(val))) {
+        return 'url';
+    }
+
     // Check for numbers
     const numericValues = values.filter(val =>
         typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val))
@@ -230,6 +331,10 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
         };
     }
 
+    if (dataType === 'url') {
+        return ({ getValue }) => <UrlCell value={getValue()} />;
+    }
+
     if (dataType === 'currency') {
         return ({ getValue }) => {
             const value = getValue();
@@ -296,23 +401,35 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             }
 
             return (
-                <a
-                    href={`tel:${digits}`}
-                    className="text-primary hover:underline font-mono text-sm whitespace-nowrap"
-                    title={`Call ${formattedPhone}`}
-                >
-                    {formattedPhone}
-                </a>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <a
+                                href={`tel:${digits}`}
+                                className="text-primary hover:underline font-mono text-sm whitespace-nowrap"
+                            >
+                                {formattedPhone}
+                            </a>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Call {formattedPhone}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             );
         };
     }
 
     if (dataType === 'number') {
-        return ({ getValue }) => {
+        return ({ getValue, column }) => {
             const value = getValue();
             if (value === null || value === undefined) {
                 return <span className="text-muted-foreground">-</span>;
             }
+
+            const config = getColumnConfig(column.id);
+            const precision = config?.precision !== undefined ? config.precision : undefined;
+
             let displayValue = value;
             if (typeof value === 'number') {
                 // Always format large numbers to avoid scientific notation
@@ -322,7 +439,14 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
                 } else if (Math.abs(value) >= 1e15) {
                     displayValue = BigInt(Math.round(value)).toString();
                 } else {
-                    displayValue = value.toLocaleString('en-US', { maximumFractionDigits: 3 });
+                    if (precision !== undefined) {
+                        displayValue = value.toLocaleString('en-US', {
+                            minimumFractionDigits: precision,
+                            maximumFractionDigits: precision
+                        });
+                    } else {
+                        displayValue = value.toLocaleString('en-US', { maximumFractionDigits: 3 });
+                    }
                 }
             }
             return <span className="text-foreground font-mono text-sm">{displayValue}</span>;

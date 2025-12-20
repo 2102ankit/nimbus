@@ -5,6 +5,12 @@ import {
     DialogTitle
 } from "@/components/ui/dialog";
 import { Info } from "lucide-react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function StatusBarModal({ table, rowSelection, open, onOpenChange, filename }) {
     return (
@@ -22,7 +28,16 @@ export function StatusBarModal({ table, rowSelection, open, onOpenChange, filena
                 <div className="space-y-4 text-sm">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">File</span>
-                        <span className="font-medium truncate max-w-[300px]" title={filename}>{filename || "No file loaded"}</span>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="font-medium truncate max-w-[300px] cursor-help">{filename || "No file loaded"}</span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{filename || "No file loaded"}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Total Rows</span>

@@ -18,6 +18,12 @@ import {
   Pin,
   PinOff,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function ColumnHeader({
   header,
@@ -102,27 +108,35 @@ export function ColumnHeader({
         )}
 
         {enableSort ? (
-          <button
-            onClick={(e) => {
-              const isMulti = e.shiftKey;
-              column.toggleSorting(undefined, isMulti);
-            }}
-            className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-foreground transition-colors"
-            title="Click to sort, Shift+Click for multi-sort"
-          >
-            <span className="font-semibold truncate">{title}</span>
-            <div className="flex items-center gap-1 shrink-0">
-              <SortIcon
-                className={`h-4 w-4 ${isSorted ? "text-primary" : "text-muted-foreground"
-                  }`}
-              />
-              {showSortIndex && (
-                <span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-4 h-4 flex items-center justify-center">
-                  {sortIndex + 1}
-                </span>
-              )}
-            </div>
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    const isMulti = e.shiftKey;
+                    column.toggleSorting(undefined, isMulti);
+                  }}
+                  className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-foreground transition-colors"
+                >
+                  <span className="font-semibold truncate">{title}</span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <SortIcon
+                      className={`h-4 w-4 ${isSorted ? "text-primary" : "text-muted-foreground"
+                        }`}
+                    />
+                    {showSortIndex && (
+                      <span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-4 h-4 flex items-center justify-center">
+                        {sortIndex + 1}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Click to sort, Shift+Click for multi-sort</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         ) : (
           <span className="font-semibold truncate">{title}</span>
         )}
