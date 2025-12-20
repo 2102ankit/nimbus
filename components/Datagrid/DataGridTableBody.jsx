@@ -3,16 +3,18 @@ import { flexRender } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, Layers, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import React from "react";
+import { useTheme } from "@/components/ThemeProvider";
 
 // Loading State Component
-export function LoadingState() {
+export function LoadingState({ minHeight = 300 }) {
   return (
     <tr>
       <td colSpan={100} className="p-0">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center py-16"
+          className="flex flex-col items-center justify-center"
+          style={{ height: `${minHeight}px` }}
         >
           <Loader2
             className="h-10 w-10 animate-spin mb-4"
@@ -210,6 +212,7 @@ export function DataRow({
   getRightPosition,
   table
 }) {
+  const { showStripedColumns } = useTheme();
   const isGrouped = row.getIsGrouped();
 
   if (isGrouped) {
@@ -222,7 +225,9 @@ export function DataRow({
         style={{
           backgroundColor: row.getIsSelected()
             ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
-            : "transparent",
+            : showStripedColumns && idx % 2 === 1
+              ? "var(--color-muted)" // Striped effect
+              : "transparent",
           borderLeft: row.getIsSelected()
             ? `4px solid var(--color-primary)`
             : "none",
@@ -263,7 +268,9 @@ export function DataRow({
                 backgroundColor: isPinned
                   ? row.getIsSelected()
                     ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
-                    : "var(--color-card)"
+                    : showStripedColumns && idx % 2 === 1
+                      ? "var(--color-muted)"
+                      : "var(--color-card)"
                   : "inherit",
                 borderBottom: "1px solid var(--color-border)",
                 borderRight: isBeforeRightPinned ? 'none' : undefined,
@@ -420,11 +427,12 @@ export function DataGridTableBody({
   getCellBorderClasses,
   getLeftPosition,
   getRightPosition,
+  minRows = 10,
 }) {
   if (loading) {
     return (
       <tbody style={{ backgroundColor: "var(--color-card)" }}>
-        <LoadingState />
+        <LoadingState minHeight={minRows * 48} />
       </tbody>
     );
   }

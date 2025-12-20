@@ -299,7 +299,10 @@ const DynamicDataGrid = () => {
                 columnOrder,
                 columnSizing,
                 columnPinning,
-                pageSize
+                columnPinning,
+                pageSize,
+                pageIndex,
+                columnFilters
             });
         }, 500);
         return () => clearTimeout(timer);
@@ -860,20 +863,28 @@ const DynamicDataGrid = () => {
                                             columns={columnsWithHeadersAndConfigs}
                                             onConfigChange={handleConfigChange}
                                         />
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => setIsFullscreen(!isFullscreen)}
-                                            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                                            className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
-                                            style={{ color: "var(--color-muted-foreground)" }}
-                                        >
-                                            {isFullscreen ? (
-                                                <Minimize2 className="h-4 w-4" />
-                                            ) : (
-                                                <Maximize2 className="h-4 w-4" />
-                                            )}
-                                        </Button>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => setIsFullscreen(!isFullscreen)}
+                                                        className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
+                                                        style={{ color: "var(--color-muted-foreground)" }}
+                                                    >
+                                                        {isFullscreen ? (
+                                                            <Minimize2 className="h-4 w-4" />
+                                                        ) : (
+                                                            <Maximize2 className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>{isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </>
                                 }
                             />
@@ -916,6 +927,7 @@ const DynamicDataGrid = () => {
                                         getCellBorderClasses={getCellBorderClasses}
                                         getLeftPosition={getLeftPos}
                                         getRightPosition={getRightPos}
+                                        minRows={pageSize}
                                     />
                                 </table>
                             </div>
