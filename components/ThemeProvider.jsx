@@ -39,6 +39,13 @@ export function ThemeProvider({ children }) {
     return stored !== "false";
   });
   const [showRowLines, setShowRowLines] = useState(() => {
+  const [showStripedColumns, setShowStripedColumns] = useState(() => {
+  const [fontFamily, setFontFamily] = useState(() => {
+    return localStorage.getItem("datagrid-font") || "Inter";
+  });
+    const stored = localStorage.getItem("datagrid-stripedcolumns");
+    return stored === "true";
+  });
     const stored = localStorage.getItem("datagrid-rowlines");
     return stored !== "false";
   });
@@ -93,6 +100,18 @@ export function ThemeProvider({ children }) {
     });
   };
 
+  const toggleStripedColumns = () => {
+  const handleSetFont = (font) => {
+    localStorage.setItem("datagrid-font", font);
+    setFontFamily(font);
+  };
+
+    setShowStripedColumns((prev) => {
+      localStorage.setItem("datagrid-stripedcolumns", String(!prev));
+      return !prev;
+    });
+  };
+
   const toggleRowLines = () => {
     setShowRowLines((prev) => {
       localStorage.setItem("datagrid-rowlines", String(!prev));
@@ -113,6 +132,10 @@ export function ThemeProvider({ children }) {
         toggleHeaderLines,
         showRowLines,
         toggleRowLines,
+        showStripedColumns,
+        toggleStripedColumns,
+        fontFamily,
+        setFontFamily: handleSetFont,
       }}
     >
       {children}

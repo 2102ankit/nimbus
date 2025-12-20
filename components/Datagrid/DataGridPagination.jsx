@@ -13,14 +13,15 @@ import {
   ChevronsRight,
 } from "lucide-react";
 
-export function DataGridPagination({ table }) {
+export function DataGridPagination({ table, totalRows: totalRowsProp, totalSelectedRows: totalSelectedRowsProp }) {
   const pageSize = table.getState().pagination.pageSize;
   const pageIndex = table.getState().pagination.pageIndex;
   const pageCount = table.getPageCount();
   const canPreviousPage = table.getCanPreviousPage();
   const canNextPage = table.getCanNextPage();
-  const totalRows = table.getFilteredRowModel().rows.length;
-  const selectedRows = table.getFilteredSelectedRowModel().rows.length;
+  // Use props if provided (for manual pagination), otherwise fall back to table model
+  const totalRows = totalRowsProp !== undefined ? totalRowsProp : table.getFilteredRowModel().rows.length;
+  const selectedRows = totalSelectedRowsProp !== undefined ? totalSelectedRowsProp : table.getFilteredSelectedRowModel().rows.length;
 
   const handlePageSizeChange = (e) => {
     table.setPageSize(Number(e.target.value));

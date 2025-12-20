@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { getColumnConfig } from "../../src/columnConfigSystem";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -195,7 +196,10 @@ export const filterFunctions = {
   },
 };
 
-export function AdvancedColumnFilter({ column, dataType = "text" }) {
+export function AdvancedColumnFilter({ column, dataType: propDataType = "text" }) {
+  // Check if user has overridden the data type in column config
+  const columnConfig = getColumnConfig(column.id);
+  const dataType = columnConfig?.dataType || propDataType;
   const [operator, setOperator] = useState(
     dataType === "text" ? "contains" : "equals"
   );

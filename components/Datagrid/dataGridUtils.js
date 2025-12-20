@@ -82,6 +82,8 @@ export const loadPreferences = () => {
         columnSizing: {},
         columnPinning: { left: [], right: [] },
         sorting: [],
+        pageIndex: 0,
+        columnFilters: [],
         pageSize: 20,
       };
   } catch {
@@ -91,6 +93,8 @@ export const loadPreferences = () => {
       columnSizing: {},
       columnPinning: { left: [], right: [] },
       sorting: [],
+        pageIndex: 0,
+        columnFilters: [],
       pageSize: 20,
     };
   }

@@ -68,7 +68,7 @@ const DynamicDataGrid = () => {
     const [focusedColumnIndex, setFocusedColumnIndex] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
-    const [pageIndex, setPageIndex] = useState(0);
+    const [pageIndex, setPageIndex] = useState(prefs.pageIndex || 0);
     const [pageSize, setPageSize] = useState(prefs.pageSize || 20);
 
     const searchInputRef = useRef(null);
@@ -297,7 +297,7 @@ const DynamicDataGrid = () => {
             });
         }, 500);
         return () => clearTimeout(timer);
-    }, [sorting, columnVisibility, columnOrder, columnSizing, columnPinning, pageSize, handleSavePrefs]);
+    }, [sorting, columnVisibility, columnOrder, columnSizing, columnPinning, pageSize, columnFilters, pageIndex, handleSavePrefs]);
 
     const handleDataLoaded = useCallback((rawData, name = "Uploaded File") => {
         setLoading(true);
@@ -532,9 +532,44 @@ const DynamicDataGrid = () => {
     }, { enableOnFormTags: false });
 
     useHotkeys('esc', (e) => {
+        // ESC layered close: close most recent overlay first
+        // Priority: search input blur > dropdowns > modals > fullscreen
         if (document.activeElement === searchInputRef.current) {
             searchInputRef.current?.blur();
-        } else if (isFullscreen) {
+            return;
+        }
+        // Check if any dropdown menus are open
+        if (viewMenuOpen) {
+            setViewMenuOpen(false);
+            return;
+        }
+        if (columnsMenuOpen) {
+            setColumnsMenuOpen(false);
+            return;
+        }
+        if (groupMenuOpen) {
+            setGroupMenuOpen(false);
+            return;
+        }
+        if (exportMenuOpen) {
+            setExportMenuOpen(false);
+            return;
+        }
+        // Check if modals are open
+        if (showShortcutsModal) {
+            setShowShortcutsModal(false);
+            return;
+        }
+        if (showStatusModal) {
+            setShowStatusModal(false);
+            return;
+        }
+        if (showUpload) {
+            setShowUpload(false);
+            return;
+        }
+        // Finally close fullscreen if nothing else is open
+        if (isFullscreen) {
             setIsFullscreen(false);
         }
     }, { enableOnFormTags: true });
@@ -866,7 +901,11 @@ const DynamicDataGrid = () => {
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <DataGridPagination table={table} />
+                                <DataGridPagination
+                                    table={table}
+                                    totalRows={filteredCount}
+                                    totalSelectedRows={Object.keys(rowSelection).length}
+                                />
                             </motion.div>
                         </motion.div>
                     )}

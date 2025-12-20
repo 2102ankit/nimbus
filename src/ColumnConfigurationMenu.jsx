@@ -82,6 +82,15 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                 }
             }
         };
+    // Task 8: Reset configs when closing without save
+    useEffect(() => {
+        if (!isOpen && selectedColumnId) {
+            // Reset to saved config when modal closes
+            const savedConfig = getColumnConfig(selectedColumnId);
+            setLocalConfigs(savedConfig || {});
+        }
+    }, [isOpen, selectedColumnId]);
+
         window.addEventListener('keydown', handleEscape);
         return () => window.removeEventListener('keydown', handleEscape);
     }, [isOpen, isEditingHeader]);

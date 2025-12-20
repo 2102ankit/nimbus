@@ -36,7 +36,8 @@ import {
   Rows,
   Search,
   Sun,
-  Sigma
+  Sigma,
+  Type
 } from "lucide-react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
 import { HotkeyLabel } from "./HotkeyLabel";
@@ -73,6 +74,10 @@ export function DataGridToolbar({
     toggleHeaderLines,
     showRowLines,
     toggleRowLines,
+    showStripedColumns,
+    toggleStripedColumns,
+    fontFamily,
+    setFontFamily,
   } = useTheme();
 
   const getColumnHeaderText = (col) => {
@@ -94,7 +99,11 @@ export function DataGridToolbar({
     globalFilter;
 
   const exportData = (format) => {
-    const rows = table.getFilteredRowModel().rows.map((row) => row.original);
+    const selectedRowModel = table.getSelectedRowModel();
+    const hasSelectedRows = selectedRowModel.rows.length > 0;
+    const rows = hasSelectedRows 
+      ? selectedRowModel.rows.map((row) => row.original)
+      : table.getFilteredRowModel().rows.map((row) => row.original);
     const visibleColumns = table
       .getVisibleLeafColumns()
       .filter(
@@ -244,6 +253,42 @@ export function DataGridToolbar({
                   <Rows className="h-4 w-4 mr-2" />
                   Row Lines
                 </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel
+                  className="text-xs font-bold"
+                  style={{ color: "var(--color-muted-foreground)" }}
+                >
+                  APPEARANCE
+                </DropdownMenuLabel>
+                <DropdownMenuCheckboxItem
+                  checked={showStripedColumns}
+                  onCheckedChange={toggleStripedColumns}
+                >
+                  <Columns className="h-4 w-4 mr-2" />
+                  Striped Columns
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel
+                  className="text-xs font-bold"
+                  style={{ color: "var(--color-muted-foreground)" }}
+                >
+                  TYPOGRAPHY
+                </DropdownMenuLabel>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Type className="h-4 w-4 mr-2" />
+                    Font Family
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuRadioGroup value={fontFamily} onValueChange={setFontFamily}>
+                      <DropdownMenuRadioItem value="Inter">Inter</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Roboto">Roboto</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="system-ui">System UI</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="monospace">Monospace</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -285,7 +330,7 @@ export function DataGridToolbar({
                               onCheckedChange={() => col.toggleVisibility()}
                               className="h-4 w-4"
                             />
-                            <span className="text-sm font-medium text-foreground truncate">
+                            <span className="text-sm font-medium text-foreground break-words">
                               {getColumnHeaderText(col)}
                             </span>
                           </label>
