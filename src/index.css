@@ -167,29 +167,6 @@ html::-webkit-scrollbar {
   height: 0 !important;
 }
 
-.pinned-left-border::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background-color: var(--color-border);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.pinned-right-border::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 1px;
-  background-color: var(--color-border);
-  pointer-events: none;
-  z-index: 1;
-}
 
 .before-right-pinned {
   border-right: none !important;

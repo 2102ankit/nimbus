@@ -38,10 +38,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "./StatusBarModal";
-import { Link } from "react-router-dom";
 import { GridToggle } from "@/src/GridToggle";
 
-const AdvancedDataGrid = () => {
+const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
   const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines, currency, locale } = useTheme();
 
   // State management
@@ -725,7 +724,7 @@ const AdvancedDataGrid = () => {
           {/* Links moved to top left and hidden in fullscreen */}
           {!isFullscreen && (
             <div className="absolute top-4 left-4 z-50">
-              <GridToggle />
+              <GridToggle isDynamic={isDynamic} onToggle={onToggle} />
             </div>
           )}
 

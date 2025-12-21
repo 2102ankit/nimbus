@@ -140,7 +140,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                 [key]: value
             };
             // Apply immediately if it's a toggle change
-            if (selectedColumnId && key !== 'headerText' && key !== 'precision') {
+            if (selectedColumnId && key !== 'headerText') {
                 setColumnConfig(selectedColumnId, updated);
                 onConfigChange?.();
             }

@@ -41,11 +41,10 @@ import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
 import { applyColumnConfigs } from "./columnConfigSystem";
 import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
 import { useDataWorker } from "./useDataWorker";
-import { Link } from "react-router-dom";
 import { createColumns } from "@/components/Datagrid/columnDefinitions";
 import { GridToggle } from "./GridToggle";
 
-const DynamicDataGrid = () => {
+const DynamicDataGrid = ({ isDynamic, onToggle }) => {
     const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines, currency, locale } = useTheme();
     const { isReady: workerReady, processData } = useDataWorker();
 
@@ -830,7 +829,7 @@ const DynamicDataGrid = () => {
                     {!isFullscreen && (
                         <>
                             <div className="absolute top-0 left-0 m-4 z-50">
-                                <GridToggle />
+                                <GridToggle isDynamic={isDynamic} onToggle={onToggle} />
                             </div>
                             <TooltipProvider>
                                 <Tooltip>

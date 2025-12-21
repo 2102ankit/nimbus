@@ -51,7 +51,6 @@ function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPad
           : "none",
       }}
       className={`text-left align-middle font-bold relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getHeaderBorderClasses() : ''
-        } ${isPinned === "left" ? "pinned-left-border" : isPinned === "right" ? "pinned-right-border" : ""
         } ${isBeforeRightPinned ? 'before-right-pinned' : ''}`}
     >
       {

@@ -27,8 +27,8 @@ export function LoadingState({ minHeight = 300 }) {
     <tr>
       <td colSpan={100} className="p-0">
         <div
-          className="flex flex-col items-center justify-center w-full bg-card/10 z-50 rounded-lg sticky left-0"
-          style={{ height: minHeight, top: "var(--header-height)" }}
+          className="flex flex-col items-center justify-center w-full bg-card/10 z-50 rounded-lg"
+          style={{ height: minHeight }}
         >
           <Loader2
             className="h-10 w-10 animate-spin mb-4"
@@ -107,9 +107,7 @@ export function GroupRow({ row, getDensityPadding, table, getLeftPosition, getRi
     <tr
       className="font-semibold border-b-2 transition-all"
       style={{
-        background: `linear-gradient(to right,
-          color-mix(in oklch, var(--color-muted), transparent 90%),
-          color-mix(in oklch, var(--color-muted), transparent 95%))`,
+        backgroundColor: "var(--color-background)",
         borderBottomColor: "var(--color-border)",
       }}
     >
@@ -129,6 +127,7 @@ export function GroupRow({ row, getDensityPadding, table, getLeftPosition, getRi
               right: rightPos !== undefined ? `${rightPos}px` : undefined,
               backgroundColor: isPinned ? 'var(--color-muted)' : 'transparent',
               zIndex: isPinned ? 10 : 1,
+              borderBottom: "2px solid var(--color-border)",
             }}
           >
             {isGroupedCell ? (
@@ -267,8 +266,7 @@ export function DataRow({
                 }}
                 key={cell.id}
                 className={`align-middle relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getCellBorderClasses() : ''
-                  } ${isPinned ? "sticky z-10" : ""} ${isPinned === "left" ? "pinned-left-border" : isPinned === "right" ? "pinned-right-border" : ""
-                  } ${isBeforeRightPinned ? 'before-right-pinned' : ''} ${row.getIsPinned() ? `sticky z-20 sticky-pinned-td sticky-pinned-td-${row.getIsPinned()}` : ""}`}
+                  } ${isPinned ? "sticky z-10" : ""} ${isBeforeRightPinned ? 'before-right-pinned' : ''} ${row.getIsPinned() ? `sticky z-20 sticky-pinned-td sticky-pinned-td-${row.getIsPinned()}` : ""}`}
                 style={{
                   color: "var(--color-foreground)",
                   width: cell.column.getSize(),
