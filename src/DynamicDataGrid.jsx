@@ -45,7 +45,7 @@ import { Link } from "react-router-dom";
 import { createColumns } from "@/components/Datagrid/columnDefinitions";
 
 const DynamicDataGrid = () => {
-    const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
+    const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines, currency, locale } = useTheme();
     const { isReady: workerReady, processData } = useDataWorker();
 
     const [rawData, setRawData] = useState([]);
@@ -292,10 +292,13 @@ const DynamicDataGrid = () => {
     }, []);
 
     const handleSavePrefs = useCallback((newPrefs) => {
-        const merged = { ...prefs, ...newPrefs };
-        savePreferences(merged);
-        setPrefs(merged);
-    }, [prefs]);
+        setPrefs(prev => {
+            const merged = { ...prev, ...newPrefs };
+            if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+            savePreferences(merged);
+            return merged;
+        });
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -404,8 +407,8 @@ const DynamicDataGrid = () => {
         if (columns.length === 0) return [];
         const configuredColumns = applyColumnConfigs(columns);
         const withHeaders = addHeadersToColumns(configuredColumns);
-        return createColumns(withHeaders);
-    }, [columns, configReloadTrigger]);
+        return createColumns(withHeaders, currency, locale);
+    }, [columns, configReloadTrigger, currency, locale]);
 
     // Create a manual pagination model for the table
     const paginationState = useMemo(() => ({

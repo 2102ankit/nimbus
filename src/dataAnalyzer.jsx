@@ -198,7 +198,7 @@ function analyzeColumns(data) {
         columns[key] = {
             name: key,
             dataType: dataType,
-            isEnum: !isNested && isEnumColumn(values),
+            isEnum: !isNested && isEnumColumn(values, key),
             uniqueValues: getUniqueValues(values),
             hasNulls: data.some(row => row[key] === null || row[key] === undefined || row[key] === ''),
             maxLength: getMaxLength(values),
@@ -278,8 +278,9 @@ function detectDataType(values, columnName) {
     return 'text';
 }
 
-function isEnumColumn(values) {
+function isEnumColumn(values, key) {
     if (values.length === 0) return false;
+
     const uniqueValues = new Set(
         values.map(v => {
             if (typeof v === 'boolean') return String(v);

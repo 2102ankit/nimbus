@@ -51,76 +51,94 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
     enableColumnFilter: false,
   };
 
+  const selectCol = {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllPageRowsSelected() ? true : (table.getIsSomePageRowsSelected() ? "indeterminate" : false)}
+        onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(v) => row.toggleSelected(!!v)}
+        className="mx-auto"
+      />
+    ),
+    maxSize: 50,
+    enableSorting: false,
+    enableHiding: false,
+    enableResizing: false,
+    enablePinning: false,
+    enableReordering: false,
+    enableColumnFilter: false,
+    enableDrag: false,
+  };
+
+  const expandCol = {
+    id: "expand",
+    header: "",
+    cell: ({ row }) => (
+      <button
+        onClick={() => row.toggleExpanded()}
+        className="p-1 rounded-md transition-colors"
+        style={{
+          backgroundColor:
+            "color-mix(in oklch, var(--color-muted), transparent 90%)",
+          color: "var(--color-foreground)",
+        }}
+        onMouseEnter={(e) =>
+        (e.currentTarget.style.backgroundColor =
+          "color-mix(in oklch, var(--color-muted), transparent 70%)")
+        }
+        onMouseLeave={(e) =>
+        (e.currentTarget.style.backgroundColor =
+          "color-mix(in oklch, var(--color-muted), transparent 90%)")
+        }
+      >
+        {row.getIsExpanded() ? (
+          <ChevronDown
+            className="h-4 w-4"
+            style={{ color: "var(--color-muted-foreground)" }}
+          />
+        ) : (
+          <ChevronRight
+            className="h-4 w-4"
+            style={{ color: "var(--color-muted-foreground)" }}
+          />
+        )}
+      </button>
+    ),
+    size: 50,
+    enableSorting: false,
+    enableHiding: false,
+    enableResizing: false,
+    enablePinning: false,
+    enableReordering: false,
+    enableColumnFilter: false,
+    enableDrag: false,
+  };
+
+  // If dynamicColumns are provided, use them and add special columns
+  if (dynamicColumns && dynamicColumns.length > 0) {
+    // Filter out any existing special columns to avoid duplicates
+    const dataCols = dynamicColumns.filter(c => !['select', 'drag', 'pin', 'expand'].includes(c.id));
+
+    // Check if we need the expand column
+    const needsExpand = dynamicColumns.some(c => c.id === 'expand');
+
+    const result = [selectCol, dragCol, pinCol];
+    if (needsExpand) result.push(expandCol);
+    return [...result, ...dataCols];
+  }
+
+  // Fallback to default columns
   return [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected() ? true : (table.getIsSomePageRowsSelected() ? "indeterminate" : false)}
-          onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(v) => row.toggleSelected(!!v)}
-          className="mx-auto"
-        />
-      ),
-      maxSize: 50,
-      enableSorting: false,
-      enableHiding: false,
-      enableResizing: false,
-      enablePinning: false,
-      enableReordering: false,
-      enableColumnFilter: false,
-      enableDrag: false,
-    },
+    selectCol,
     dragCol,
     pinCol,
-    {
-      id: "expand",
-      header: "",
-      cell: ({ row }) => (
-        <button
-          onClick={() => row.toggleExpanded()}
-          className="p-1 rounded-md transition-colors"
-          style={{
-            backgroundColor:
-              "color-mix(in oklch, var(--color-muted), transparent 90%)",
-            color: "var(--color-foreground)",
-          }}
-          onMouseEnter={(e) =>
-          (e.currentTarget.style.backgroundColor =
-            "color-mix(in oklch, var(--color-muted), transparent 70%)")
-          }
-          onMouseLeave={(e) =>
-          (e.currentTarget.style.backgroundColor =
-            "color-mix(in oklch, var(--color-muted), transparent 90%)")
-          }
-        >
-          {row.getIsExpanded() ? (
-            <ChevronDown
-              className="h-4 w-4"
-              style={{ color: "var(--color-muted-foreground)" }}
-            />
-          ) : (
-            <ChevronRight
-              className="h-4 w-4"
-              style={{ color: "var(--color-muted-foreground)" }}
-            />
-          )}
-        </button>
-      ),
-      size: 50,
-      enableSorting: false,
-      enableHiding: false,
-      enableResizing: false,
-      enablePinning: false,
-      enableReordering: false,
-      enableColumnFilter: false,
-      enableDrag: false,
-    },
+    expandCol,
     {
       accessorKey: "id",
       filterFn: "advanced",
