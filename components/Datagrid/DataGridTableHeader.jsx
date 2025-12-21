@@ -45,13 +45,13 @@ function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPad
         left: leftPos !== undefined ? `${leftPos}px` : undefined,
         right: rightPos !== undefined ? `${rightPos}px` : undefined,
         borderBottom: "2px solid var(--color-border)",
-        borderRight: isBeforeRightPinned ? 'none' : undefined, // Remove border if before right-pinned
+        borderRight: isBeforeRightPinned ? 'none' : undefined,
         boxShadow: isFocused
           ? "inset 0 0 0 2px var(--color-primary)"
           : "none",
       }}
       className={`text-left align-middle font-bold relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getHeaderBorderClasses() : ''
-        } ${isBeforeRightPinned ? 'before-right-pinned' : ''}`}
+        } ${isPinned === "left" ? "pinned-left-header" : ""} ${isPinned === "right" ? "pinned-right-header" : ""} ${isBeforeRightPinned ? 'before-right-pinned' : ''}`}
     >
       {
         header.isPlaceholder
@@ -82,7 +82,7 @@ export function DataGridTableHeader({
   // ONLY CENTER COLUMNS – NEVER PINNED, NEVER SPECIAL
   const reorderableIds = table
     .getCenterLeafColumns()
-    .filter((c) => c.id !== "select" && c.id !== "expand")
+    .filter((c) => !["select", "expand", "drag", "pin"].includes(c.id))
     .map((c) => c.id);
 
   const handleDragOver = (event) => {

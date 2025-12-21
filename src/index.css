@@ -149,8 +149,8 @@ body {
   min-height: 100dvh;
   overflow: visible !important;
   overscroll-behavior-x: none;
-  /* Smooth font transition */
-  transition: font-family 0.05s ease, background-color 0.05s ease, color 0.05s ease, border-color 0.05s ease;
+  /* Instant theme transitions */
+  transition: font-family 0s ease, background-color 0s ease, color 0s ease, border-color 0s ease;
 }
 
 html {
@@ -167,9 +167,35 @@ html::-webkit-scrollbar {
   height: 0 !important;
 }
 
-
 .before-right-pinned {
   border-right: none !important;
+}
+
+/* Pinned column borders using pseudo-elements to prevent movement on scroll */
+.pinned-left-header::after,
+.pinned-left-cell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-border);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pinned-right-header::before,
+.pinned-right-cell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-border);
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Premium Table Styling */

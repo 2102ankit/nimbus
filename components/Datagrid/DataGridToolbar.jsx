@@ -296,13 +296,13 @@ export function DataGridToolbar({
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
                     <DropdownMenuRadioGroup value={fontFamily} onValueChange={setFontFamily}>
-                      <DropdownMenuRadioItem value="Inter">Inter</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="Roboto">Roboto</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="Geist Mono">Geist Mono</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="Google Sans Flex">Google Sans Flex</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="JetBrains Mono">JetBrains Mono</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="system-ui">System UI</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="monospace">Monospace</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Inter" style={{ fontFamily: 'var(--font-inter)' }}>Inter</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Roboto" style={{ fontFamily: 'var(--font-roboto)' }}>Roboto</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Geist Mono" style={{ fontFamily: 'var(--font-geist)' }}>Geist Mono</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Google Sans Flex" style={{ fontFamily: 'var(--font-google)' }}>Google Sans Flex</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="JetBrains Mono" style={{ fontFamily: 'var(--font-jetbrains)' }}>JetBrains Mono</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="system-ui" style={{ fontFamily: 'system-ui' }}>System UI</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="monospace" style={{ fontFamily: 'monospace' }}>Monospace</DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>

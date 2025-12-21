@@ -281,7 +281,7 @@ export function DataRow({
                 }
                 key={cell.id}
                 className={`align-middle relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getCellBorderClasses() : ''
-                  } ${isPinned ? "sticky z-10" : ""} ${isBeforeRightPinned ? 'before-right-pinned' : ''} ${row.getIsPinned() ? `sticky z-20 sticky-pinned-td sticky-pinned-td-${row.getIsPinned()}` : ""}`}
+                  } ${isPinned ? "sticky z-10" : ""} ${isPinned === "left" ? "pinned-left-cell" : ""} ${isPinned === "right" ? "pinned-right-cell" : ""} ${isBeforeRightPinned ? 'before-right-pinned' : ''} ${row.getIsPinned() ? `sticky z-20 sticky-pinned-td sticky-pinned-td-${row.getIsPinned()}` : ""}`}
                 style={{
                   color: "var(--color-foreground)",
                   width: cell.column.getSize(),
