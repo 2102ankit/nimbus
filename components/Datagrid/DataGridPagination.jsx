@@ -73,7 +73,7 @@ export function DataGridPagination({ table, totalRows: totalRowsProp, totalSelec
             onValueChange={(value) => table.setPageSize(Number(value))}
           >
             <SelectTrigger
-              className="h-9 w-20 border-2 shadow-sm"
+              className="h-9 w-20 border-2"
               style={{
                 backgroundColor: "var(--color-card)",
                 borderColor: "var(--color-border)",
@@ -127,7 +127,7 @@ export function DataGridPagination({ table, totalRows: totalRowsProp, totalSelec
                 size="icon"
                 onClick={() => table.setPageIndex(0)}
                 disabled={!canPreviousPage}
-                className="h-9 w-9 border-2 shadow-sm"
+                className="h-9 w-9 border-2"
                 style={{ borderColor: "var(--color-border)" }}
                 onMouseEnter={(e) =>
                   !canPreviousPage &&
@@ -156,7 +156,7 @@ export function DataGridPagination({ table, totalRows: totalRowsProp, totalSelec
                 size="icon"
                 onClick={() => table.previousPage()}
                 disabled={!canPreviousPage}
-                className="h-9 w-9 border-2 shadow-sm"
+                className="h-9 w-9 border-2"
                 style={{ borderColor: "var(--color-border)" }}
                 onMouseEnter={(e) =>
                   !canPreviousPage &&
@@ -185,7 +185,7 @@ export function DataGridPagination({ table, totalRows: totalRowsProp, totalSelec
                 size="icon"
                 onClick={() => table.nextPage()}
                 disabled={!canNextPage}
-                className="h-9 w-9 border-2 shadow-sm"
+                className="h-9 w-9 border-2"
                 style={{ borderColor: "var(--color-border)" }}
                 onMouseEnter={(e) =>
                   !canNextPage &&
@@ -214,7 +214,7 @@ export function DataGridPagination({ table, totalRows: totalRowsProp, totalSelec
                 size="icon"
                 onClick={() => table.setPageIndex(pageCount - 1)}
                 disabled={!canNextPage}
-                className="h-9 w-9 border-2 shadow-sm"
+                className="h-9 w-9 border-2"
                 style={{ borderColor: "var(--color-border)" }}
                 onMouseEnter={(e) =>
                   !canNextPage &&

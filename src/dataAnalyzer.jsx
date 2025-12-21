@@ -461,7 +461,7 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
                     }
                 }
             }
-            return <span className="text-foreground font-mono text-sm">{displayValue}</span>;
+            return <span className="text-foreground font-mono text-sm tabular-nums">{displayValue}</span>;
         };
     }
 

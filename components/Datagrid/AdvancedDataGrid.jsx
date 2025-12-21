@@ -57,7 +57,7 @@ const AdvancedDataGrid = () => {
   const [rowSelection, setRowSelection] = useState({});
   const [expanded, setExpanded] = useState({});
   const [grouping, setGrouping] = useState([]);
-  const [, setForceUpdate] = useState(0);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   const triggerUpdate = useCallback(() => setForceUpdate(v => v + 1), []);
 
@@ -259,8 +259,8 @@ const AdvancedDataGrid = () => {
   // Task 3: Implement persistent row reordering
   const onRowReorder = useCallback((activeId, overId) => {
     setData((old) => {
-      const oldIndex = old.findIndex((r) => r.id === activeId);
-      const newIndex = old.findIndex((r) => r.id === overId);
+      const oldIndex = old.findIndex((r) => String(r.id) === String(activeId));
+      const newIndex = old.findIndex((r) => String(r.id) === String(overId));
       if (oldIndex === -1 || newIndex === -1) return old;
 
       const newData = [...old];
@@ -666,7 +666,7 @@ const AdvancedDataGrid = () => {
                     size="icon"
                     onClick={() => setIsFullscreen(!isFullscreen)}
                     title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                    className="h-11 border-2 shadow-sm bg-background color-foreground border-border"
+                    className="h-11 border-2 bg-background color-foreground border-border"
                     style={{ color: "var(--color-muted-foreground)" }}
                   >
                     {isFullscreen ? (
@@ -686,7 +686,7 @@ const AdvancedDataGrid = () => {
                 overscrollBehavior: 'none',
               }}
             >
-              <table className="w-full text-sm border-collapse"
+              <table className="w-full text-sm border-separate border-spacing-0"
                 style={{
                   width: 'max-content',
                   minWidth: '100%'

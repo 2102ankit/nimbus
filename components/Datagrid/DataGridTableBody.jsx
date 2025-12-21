@@ -268,7 +268,7 @@ export function DataRow({
                 key={cell.id}
                 className={`align-middle relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getCellBorderClasses() : ''
                   } ${isPinned ? "sticky z-10" : ""} ${isPinned === "left" ? "pinned-left-border" : isPinned === "right" ? "pinned-right-border" : ""
-                  } ${isBeforeRightPinned ? 'before-right-pinned' : ''}`}
+                  } ${isBeforeRightPinned ? 'before-right-pinned' : ''} ${row.getIsPinned() ? `sticky z-20 sticky-pinned-td sticky-pinned-td-${row.getIsPinned()}` : ""}`}
                 style={{
                   color: "var(--color-foreground)",
                   width: cell.column.getSize(),

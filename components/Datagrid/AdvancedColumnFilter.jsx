@@ -293,7 +293,7 @@ export function AdvancedColumnFilter({ column, dataType: propDataType = "text" }
             </label>
             <Select value={operator} onValueChange={setOperator}>
               <SelectTrigger
-                className="mt-1 w-full h-9 border-2 shadow-sm"
+                className="mt-1 w-full h-9 border-2"
                 style={{
                   backgroundColor: "var(--color-card)",
                   borderColor: "var(--color-border)",

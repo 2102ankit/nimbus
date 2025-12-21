@@ -523,7 +523,7 @@ export function DataGridToolbar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 border-2 shadow-sm bg-background"
+                  className="h-11 border-2 bg-background"
                   style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Download className="h-4 w-4 mr-2" />
@@ -573,7 +573,7 @@ export function DataGridToolbar({
                     onClick={toggleTheme}
                     variant="outline"
                     size="icon"
-                    className="h-11 w-11 border-2 shadow-sm transition-all bg-background ml-4"
+                    className="h-11 w-11 border-2 transition-all bg-background ml-4"
                     style={{
                       borderColor: "var(--color-border)",
                     }}
