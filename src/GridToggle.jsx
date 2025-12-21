@@ -7,7 +7,7 @@ export function GridToggle() {
     const isBeta = location.pathname === "/beta";
 
     return (
-        <div className="flex p-1 bg-muted/30 backdrop-blur-md border border-border rounded-xl shadow-none">
+        <div className="flex p-1 bg-muted/30 border border-border rounded-xl shadow-none">
             <Link to="/" className="relative px-4 py-2 flex items-center gap-2 text-sm font-semibold transition-colors rounded-lg overflow-hidden group">
                 {location.pathname === "/" && (
                     <motion.div

@@ -873,7 +873,7 @@ const DynamicDataGrid = () => {
                     {rawData.length > 0 && (
                         <motion.div
                             layout="position"
-                            className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                            className="border-2 rounded-xl overflow-hidden flex flex-col"
                             style={{
                                 backgroundColor: "var(--color-card)",
                                 borderColor: "var(--color-border)",

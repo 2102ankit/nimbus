@@ -27,7 +27,7 @@ export function LoadingState({ minHeight = 300 }) {
     <tr>
       <td colSpan={100} className="p-0">
         <div
-          className="flex flex-col items-center justify-center w-full bg-card/10 backdrop-blur-[2px] z-50 rounded-lg sticky left-0"
+          className="flex flex-col items-center justify-center w-full bg-card/10 z-50 rounded-lg sticky left-0"
           style={{ height: minHeight, top: "var(--header-height)" }}
         >
           <Loader2

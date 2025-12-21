@@ -319,7 +319,7 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             const displayValue = typeof value === 'boolean' ? String(value) : value;
             return (
                 <Badge
-                    className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm border-2"
+                    className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border-2"
                     style={{
                         backgroundColor: getEnumColor(displayValue, uniqueValues).bg,
                         color: getEnumColor(displayValue, uniqueValues).text,
@@ -357,7 +357,7 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             }).format(numValue);
 
             return (
-                <span className="text-foreground font-mono text-sm tabular-nums">
+                <span className="text-foreground text-sm tabular-nums">
                     {currencySymbol}{formatted}
                 </span>
             );
@@ -384,7 +384,7 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
                             }}
                         />
                     </div>
-                    <span className="text-xs font-mono w-10 text-foreground tabular-nums">
+                    <span className="text-xs w-10 text-foreground tabular-nums">
                         {numValue}%
                     </span>
                 </div>
@@ -418,7 +418,7 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
                         <TooltipTrigger asChild>
                             <a
                                 href={`tel:${digits}`}
-                                className="text-primary hover:underline font-mono text-sm whitespace-nowrap"
+                                className="text-primary hover:underline text-sm whitespace-nowrap"
                             >
                                 {formattedPhone}
                             </a>
@@ -461,7 +461,7 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
                     }
                 }
             }
-            return <span className="text-foreground font-mono text-sm tabular-nums">{displayValue}</span>;
+            return <span className="text-foreground text-sm tabular-nums">{displayValue}</span>;
         };
     }
 

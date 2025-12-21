@@ -72,7 +72,7 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
             onClick={onClose}
         >
             <motion.div
@@ -80,7 +80,7 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-card rounded-xl shadow-2xl p-6 max-w-lg w-full border-2"
+                className="bg-card rounded-xl p-6 max-w-2xl w-full border border-border max-h-[80vh] flex flex-col"
                 style={{
                     borderColor: "var(--color-border)",
                     backgroundColor: "var(--color-card)"
