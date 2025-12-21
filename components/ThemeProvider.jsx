@@ -11,6 +11,14 @@ const ThemeContext = createContext({
   toggleHeaderLines: () => { },
   showRowLines: true,
   toggleRowLines: () => { },
+  currency: "USD",
+  setCurrency: () => { },
+  locale: "en-US",
+  setLocale: () => { },
+  showStripedColumns: false,
+  toggleStripedColumns: () => { },
+  fontFamily: "Inter",
+  setFontFamily: () => { },
 });
 
 export const useTheme = () => {
@@ -49,33 +57,18 @@ export function ThemeProvider({ children }) {
   const [fontFamily, setFontFamily] = useState(() => {
     return localStorage.getItem("datagrid-font") || "Inter";
   });
+  const [currency, setCurrency] = useState(() => {
+    return localStorage.getItem("datagrid-currency") || "USD";
+  });
+  const [locale, setLocale] = useState(() => {
+    return localStorage.getItem("datagrid-locale") || "en-US";
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
     localStorage.setItem("datagrid-theme", theme);
-
-    if (theme === "dark") {
-      root.style.setProperty("--bg-primary", "#1e293b");
-      root.style.setProperty("--bg-secondary", "#0f172a");
-      root.style.setProperty("--bg-tertiary", "#334155");
-      root.style.setProperty("--text-primary", "#f1f5f9");
-      root.style.setProperty("--text-secondary", "#cbd5e1");
-      root.style.setProperty("--text-muted", "#94a3b8");
-      root.style.setProperty("--border-color", "#334155");
-      root.style.setProperty("--hover-bg", "#334155");
-    } else {
-      root.style.setProperty("--bg-primary", "#ffffff");
-      root.style.setProperty("--bg-secondary", "#f8fafc");
-      root.style.setProperty("--bg-tertiary", "#f1f5f9");
-      root.style.setProperty("--text-primary", "#0f172a");
-      root.style.setProperty("--text-secondary", "#334155");
-      root.style.setProperty("--text-muted", "#64748b");
-      root.style.setProperty("--border-color", "#e2e8f0");
-      root.style.setProperty("--hover-bg", "#f8fafc");
-      root.style.setProperty("--hover-bg", "#f8fafc");
-    }
 
     // Apply font family
     root.style.setProperty("--font-family", fontFamily);
@@ -109,8 +102,6 @@ export function ThemeProvider({ children }) {
     setShowStripedColumns((prev) => {
       const newValue = !prev;
       localStorage.setItem("datagrid-stripedcolumns", String(newValue));
-      // Update CSS variable or attribute for instant feedback if possible, 
-      // but since we use inline styles in DataRow, we might need to refactor DataRow to use CSS classes.
       return newValue;
     });
   };
@@ -128,6 +119,16 @@ export function ThemeProvider({ children }) {
   const handleSetFont = (font) => {
     localStorage.setItem("datagrid-font", font);
     setFontFamily(font);
+  };
+
+  const handleSetCurrency = (curr) => {
+    localStorage.setItem("datagrid-currency", curr);
+    setCurrency(curr);
+  };
+
+  const handleSetLocale = (loc) => {
+    localStorage.setItem("datagrid-locale", loc);
+    setLocale(loc);
   };
 
   const toggleRowLines = () => {
@@ -154,6 +155,10 @@ export function ThemeProvider({ children }) {
         toggleStripedColumns,
         fontFamily,
         setFontFamily: handleSetFont,
+        currency,
+        setCurrency: handleSetCurrency,
+        locale,
+        setLocale: handleSetLocale,
       }}
     >
       {children}

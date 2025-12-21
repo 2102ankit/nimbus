@@ -4,67 +4,60 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronRight, Pin, PinOff, GripVertical } from "lucide-react";
 import { useRowDrag } from "./RowDragContext";
 
-export const createColumns = (dynamicColumns) => {
-  const dragAndPinColumns = [
-    {
-      id: "drag",
-      header: "",
-      cell: ({ row }) => {
-        const { attributes, listeners } = useRowDrag();
-        return (
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground flex justify-center"
-          >
-            <GripVertical className="h-4 w-4" />
-          </div>
-        );
-      },
-      size: 40,
-      enableSorting: false,
-      enableHiding: false,
-      enableResizing: false,
-      enablePinning: false,
-      enableReordering: false,
-      enableColumnFilter: false,
-      enableDrag: false,
-    },
-    {
-      id: "pin",
-      header: "",
-      cell: ({ row }) => (
-        <button
-          onClick={() => row.pin(row.getIsPinned() ? false : 'top')}
-          className="p-1 rounded-md transition-colors hover:bg-muted text-muted-foreground hover:text-foreground"
-          title={row.getIsPinned() ? "Unpin row" : "Pin row to top"}
+export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US") => {
+  const dragCol = {
+    id: "drag",
+    header: "",
+    cell: ({ row }) => {
+      const { attributes, listeners } = useRowDrag();
+      return (
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground flex justify-center"
         >
-          {row.getIsPinned() ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
-        </button>
-      ),
-      size: 40,
-      enableSorting: false,
-      enableHiding: false,
-      enableResizing: false,
-      enablePinning: false,
-      enableReordering: false,
-      enableColumnFilter: false,
-      enableDrag: false,
+          <GripVertical className="h-4 w-4" />
+        </div>
+      );
     },
-  ];
+    size: 40,
+    enableSorting: false,
+    enableHiding: false,
+    enableResizing: false,
+    enablePinning: false,
+    enableReordering: false,
+    enableColumnFilter: false,
+    enableDrag: false,
+  };
 
-  if (dynamicColumns && dynamicColumns.length > 0) {
-    return [...dragAndPinColumns, ...dynamicColumns];
-  }
+  const pinCol = {
+    id: "pin",
+    header: "",
+    cell: ({ row }) => (
+      <button
+        onClick={() => row.pin(row.getIsPinned() ? false : 'top')}
+        className="p-1 rounded-md transition-colors hover:bg-muted text-muted-foreground hover:text-foreground"
+        title={row.getIsPinned() ? "Unpin row" : "Pin row to top"}
+      >
+        {row.getIsPinned() ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+      </button>
+    ),
+    size: 40,
+    enableSorting: false,
+    enableHiding: false,
+    enableResizing: false,
+    enablePinning: false,
+    enableReordering: false,
+    enableColumnFilter: false,
+  };
 
   return [
-    ...dragAndPinColumns,
     {
       id: "select",
       header: ({ table }) => (
         <Checkbox
           checked={table.getIsAllPageRowsSelected()}
-          indeterminate={String(table.getIsSomePageRowsSelected())}
+          indeterminate={table.getIsSomePageRowsSelected()}
           onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
         />
       ),
@@ -84,6 +77,8 @@ export const createColumns = (dynamicColumns) => {
       enableColumnFilter: false,
       enableDrag: false,
     },
+    dragCol,
+    pinCol,
     {
       id: "expand",
       header: "",
@@ -233,9 +228,9 @@ export const createColumns = (dynamicColumns) => {
       filterFn: "advanced",
       header: "Salary",
       cell: ({ getValue }) =>
-        new Intl.NumberFormat("en-US", {
+        new Intl.NumberFormat(locale, {
           style: "currency",
-          currency: "USD",
+          currency: currency,
         }).format(getValue()),
       size: 200,
       meta: { dataType: "number", headerText: "Salary" },
@@ -244,9 +239,9 @@ export const createColumns = (dynamicColumns) => {
       aggregatedCell: ({ getValue }) => (
         <span className="font-bold" style={{ color: "var(--color-chart-2)" }}>
           Total:{" "}
-          {new Intl.NumberFormat("en-US", {
+          {new Intl.NumberFormat(locale, {
             style: "currency",
-            currency: "USD",
+            currency: currency,
           }).format(getValue())}
         </span>
       ),
