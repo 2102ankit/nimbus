@@ -1,6 +1,3 @@
-// ============ EXPORT FUNCTIONS ============
-// ============ EXPORT FUNCTIONS ============
-// ============ EXPORT FUNCTIONS ============
 export const exportToCSV = (table, dataRows, dataColumns) => {
   const columns = dataColumns || table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
   const rows = dataRows || table.getRowModel().rows;

@@ -56,12 +56,15 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
         return columns.filter(col =>
             col.id !== 'select' &&
             col.id !== 'expand' &&
-            (col.accessorKey || col.accessorFn)
+            col.id !== 'drag' &&
+            col.id !== 'pin' &&
+            (col.accessorKey || col.accessorFn || col.id)
         );
     }, [columns]);
 
     const getColumnTitle = useCallback((col) => {
-        const config = getColumnConfig(col.id);
+        const colId = col.id || col.accessorKey;
+        const config = getColumnConfig(colId);
         if (config?.headerText) return config.headerText;
 
         const header = col.header || col.columnDef?.header || col.meta?.headerText || col.accessorKey;
@@ -113,7 +116,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     const handleColumnSelect = useCallback((columnId) => {
         setSelectedColumnId(columnId);
         const existingConfig = getColumnConfig(columnId);
-        const selectedCol = filteredColumns.find(col => col.id === columnId);
+        const selectedCol = filteredColumns.find(col => (col.id || col.accessorKey) === columnId);
 
         if (!existingConfig && selectedCol) {
             setLocalConfigs({
@@ -160,7 +163,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, [onConfigChange]);
 
     const handleStartHeaderEdit = useCallback(() => {
-        const selectedCol = filteredColumns.find(col => col.id === selectedColumnId);
+        const selectedCol = filteredColumns.find(col => (col.id || col.accessorKey) === selectedColumnId);
         setEditedHeaderText(localConfigs.headerText || getColumnTitle(selectedCol));
         setIsEditingHeader(true);
     }, [selectedColumnId, localConfigs, filteredColumns, getColumnTitle]);
@@ -176,7 +179,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, []);
 
     const selectedColumn = useMemo(() =>
-        filteredColumns.find(col => col.id === selectedColumnId),
+        filteredColumns.find(col => (col.id || col.accessorKey) === selectedColumnId),
         [filteredColumns, selectedColumnId]
     );
 
@@ -265,7 +268,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                     </div>
                                     <div className="flex flex-col">
                                         {filteredColumns.map(col => {
-                                            const colId = col.id;
+                                            const colId = col.id || col.accessorKey;
                                             const isSelected = selectedColumnId === colId;
                                             const columnTitle = getColumnTitle(col);
                                             const columnType = getColumnType(col);

@@ -126,13 +126,14 @@ export function DataGridTableHeader({
   };
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragOver={handleDragOver}
-    >
-      <thead className="sticky top-0 z-20 border-b-2 border-border" style={{ background: "var(--color-background)" }}>
-        {table.getHeaderGroups().map((headerGroup) => (
+    <thead className="sticky top-0 z-20 border-b-2 border-border" style={{ background: "var(--color-background)" }}>
+      {table.getHeaderGroups().map((headerGroup) => (
+        <DndContext
+          key={headerGroup.id}
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragOver={handleDragOver}
+        >
           <tr key={headerGroup.id}>
             <SortableContext
               items={reorderableIds}
@@ -155,8 +156,8 @@ export function DataGridTableHeader({
               })}
             </SortableContext>
           </tr>
-        ))}
-      </thead>
-    </DndContext>
+        </DndContext>
+      ))}
+    </thead>
   );
 }

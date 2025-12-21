@@ -56,8 +56,7 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
-          indeterminate={table.getIsSomePageRowsSelected()}
+          checked={table.getIsAllPageRowsSelected() ? true : (table.getIsSomePageRowsSelected() ? "indeterminate" : false)}
           onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
         />
       ),
@@ -138,7 +137,7 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
       size: 200,
       meta: { dataType: "text", headerText: "Name" },
       enableColumnFilter: true,
-      enableGrouping: true,
+      enableGrouping: false,
     },
     {
       accessorKey: "email",

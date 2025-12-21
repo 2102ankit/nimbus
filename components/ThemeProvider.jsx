@@ -71,8 +71,17 @@ export function ThemeProvider({ children }) {
     localStorage.setItem("datagrid-theme", theme);
 
     // Apply font family
-    root.style.setProperty("--font-family", fontFamily);
-    root.style.fontFamily = fontFamily;
+    const fontMap = {
+      'Inter': 'var(--font-inter)',
+      'JetBrains Mono': 'var(--font-jetbrains)',
+      'Geist Mono': 'var(--font-geist)',
+      'Google Sans Flex': 'var(--font-google)',
+      'system-ui': 'system-ui',
+      'monospace': 'monospace'
+    };
+    const fontValue = fontMap[fontFamily] || 'var(--font-inter)';
+    root.style.setProperty("--font-sans", fontValue);
+    root.style.fontFamily = fontValue;
   }, [theme, fontFamily]);
 
   const toggleTheme = () => {

@@ -18,7 +18,9 @@ import {
   savePreferences,
 } from "@/components/Datagrid/dataGridUtils";
 import { KeyboardShortcutsModal } from "@/components/Datagrid/KeyboardShortcutsModal";
+import { ColumnConfigurationMenu } from "@/src/ColumnConfigurationMenu";
 import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
+import { getColumnConfig, setColumnConfig } from "@/src/columnConfigSystem";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -108,11 +110,16 @@ const AdvancedDataGrid = () => {
   // Save preferences automatically
   const handleSavePrefs = useCallback(
     (newPrefs) => {
-      const merged = { ...prefs, ...newPrefs };
-      savePreferences(merged);
-      setPrefs(merged);
+      setPrefs(prev => {
+        const merged = { ...prev, ...newPrefs };
+        // Only update if something actually changed to avoid "hasn't mounted yet" warnings
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+
+        savePreferences(merged);
+        return merged;
+      });
     },
-    [prefs]
+    []
   );
 
   useEffect(() => {
@@ -144,11 +151,29 @@ const AdvancedDataGrid = () => {
     loadData();
   }, []);
 
-  // Define columns
-  const columnsWithHeaders = useMemo(
-    () => addHeadersToColumns(columns),
-    [columns]
-  );
+  // Define columns and apply configurations
+  const columnsWithHeaders = useMemo(() => {
+    const baseColumns = createColumns([], currency, locale);
+    const configuredColumns = baseColumns.map(col => {
+      const config = getColumnConfig(col.id || col.accessorKey);
+      if (!config) return col;
+
+      return {
+        ...col,
+        header: config.headerText || col.header,
+        enableSorting: config.sortable !== undefined ? config.sortable : col.enableSorting,
+        enableColumnFilter: config.filterable !== undefined ? config.filterable : col.enableColumnFilter,
+        enableResizing: config.resizable !== undefined ? config.resizable : col.enableResizing,
+        enableGrouping: config.forceEnum !== undefined ? config.forceEnum : col.enableGrouping,
+        meta: {
+          ...col.meta,
+          headerText: config.headerText || col.meta?.headerText,
+          dataType: config.dataType || col.meta?.dataType,
+        }
+      };
+    });
+    return addHeadersToColumns(configuredColumns);
+  }, [columns, currency, locale, prefs]); // prefs as dependency to trigger re-render on save
 
   // Initialize table
   const table = useReactTable({
@@ -206,6 +231,28 @@ const AdvancedDataGrid = () => {
       },
     },
   });
+
+  // Task 3: Implement persistent row reordering
+  const onRowReorder = useCallback((activeId, overId) => {
+    setData((old) => {
+      const oldIndex = old.findIndex((r) => r.id === activeId);
+      const newIndex = old.findIndex((r) => r.id === overId);
+      if (oldIndex === -1 || newIndex === -1) return old;
+
+      const newData = [...old];
+      const [movedRow] = newData.splice(oldIndex, 1);
+      newData.splice(newIndex, 0, movedRow);
+      return newData;
+    });
+  }, []);
+
+  // Task 3: Row pinning state (if needed to be persistent beyond session)
+  // Note: TanStack Table's row pinning is usually transient. 
+  // We can track pinned row IDs in preferences if desired.
+  useEffect(() => {
+    // This is a placeholder if we want to persist row pinning
+    // handleSavePrefs({ pinnedRowIds: table.getState().rowPinning });
+  }, [table.getState().rowPinning]);
 
   const scrollColumnIntoView = (column, direction, isWrapping = false) => {
     if (!column) return;
@@ -576,21 +623,29 @@ const AdvancedDataGrid = () => {
               setExportMenuOpen={setExportMenuOpen}
               clearAllFilters={clearAllFilters}
               extraButtons={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                  className="h-11 border-2 shadow-sm bg-background color-foreground border-border"
-                  style={{ color: "var(--color-muted-foreground)" }}
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="h-4 w-4" />
-                  ) : (
-                    <Maximize2 className="h-4 w-4" />
-                  )}
-                </Button>
-
+                <div className="flex gap-2">
+                  <ColumnConfigurationMenu
+                    columns={table.getAllLeafColumns()}
+                    onConfigChange={() => {
+                      // Trigger a re-render by updating prefs
+                      setPrefs(loadPreferences());
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                    className="h-11 border-2 shadow-sm bg-background color-foreground border-border"
+                    style={{ color: "var(--color-muted-foreground)" }}
+                  >
+                    {isFullscreen ? (
+                      <Minimize2 className="h-4 w-4" />
+                    ) : (
+                      <Maximize2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               }
             />
 
@@ -623,6 +678,7 @@ const AdvancedDataGrid = () => {
                   getCellBorderClasses={getCellBorderClasses}
                   getLeftPosition={getLeftPos}
                   getRightPosition={getRightPos}
+                  onRowReorder={onRowReorder}
                 />
               </table>
             </div>
