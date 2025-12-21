@@ -42,6 +42,7 @@ import { applyColumnConfigs } from "./columnConfigSystem";
 import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
 import { useDataWorker } from "./useDataWorker";
 import { Link } from "react-router-dom";
+import { createColumns } from "@/components/Datagrid/columnDefinitions";
 
 const DynamicDataGrid = () => {
     const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
@@ -73,6 +74,7 @@ const DynamicDataGrid = () => {
     const [columnOrder, setColumnOrder] = useState(prefs.columnOrder || []);
     const [columnSizing, setColumnSizing] = useState(prefs.columnSizing || {});
     const [columnPinning, setColumnPinning] = useState(prefs.columnPinning || { left: [], right: [] });
+    const [rowPinning, setRowPinning] = useState({ top: [], bottom: [] });
     const [showShortcutsModal, setShowShortcutsModal] = useState(false);
     const [exportMode, setExportMode] = useState(null);
     const [focusedColumnIndex, setFocusedColumnIndex] = useState(null);
@@ -311,6 +313,35 @@ const DynamicDataGrid = () => {
         return () => clearTimeout(timer);
     }, [sorting, columnVisibility, columnOrder, columnSizing, columnPinning, pageSize, columnFilters, pageIndex, handleSavePrefs]);
 
+    // Pivot Mode Logic
+    useEffect(() => {
+        if (pivotMode) {
+            // Try to find a good grouping column
+            const candidate = columns.find(c =>
+                ['category', 'status', 'role', 'department', 'country'].includes(c.accessorKey?.toLowerCase())
+            );
+            if (candidate) {
+                setGrouping([candidate.id || candidate.accessorKey]);
+            }
+        } else {
+            setGrouping([]);
+        }
+    }, [pivotMode, columns]);
+
+    const handleRowReorder = useCallback((activeId, overId) => {
+        setRawData((currentData) => {
+            // Assuming rows have 'id' property. If not, we might need to use index or generate ID.
+            // But dnd-kit uses IDs.
+            const oldIndex = currentData.findIndex((item) => item.id === activeId);
+            const newIndex = currentData.findIndex((item) => item.id === overId);
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                return arrayMove(currentData, oldIndex, newIndex);
+            }
+            return currentData;
+        });
+    }, []);
+
     const handleDataLoaded = useCallback((rawData, name = "Uploaded File") => {
         setLoading(true);
         setShowUpload(false);
@@ -338,627 +369,657 @@ const DynamicDataGrid = () => {
                 setLoading(false);
             }, 300);
         });
-    }, []);
+        // Pivot Mode Logic
+        useEffect(() => {
+            if (pivotMode) {
+                // Find categorical columns to group by
+                const categoricalColumns = columns.filter(col =>
+                    col.meta?.isEnum ||
+                    (col.meta?.uniqueValues && col.meta.uniqueValues.length < 20) ||
+                    col.meta?.dataType === 'text'
+                );
 
-    const columnsWithHeadersAndConfigs = useMemo(() => {
-        if (columns.length === 0) return [];
-        const configuredColumns = applyColumnConfigs(columns);
-        const withHeaders = addHeadersToColumns(configuredColumns);
-        return withHeaders;
-    }, [columns, configReloadTrigger]);
+                if (categoricalColumns.length > 0) {
+                    // Prefer 'category', 'status', 'role', 'department', 'country'
+                    const preferred = ['category', 'status', 'role', 'department', 'country'];
+                    const bestColumn = categoricalColumns.find(col => {
+                        const name = col.id.toLowerCase();
+                        return preferred.some(p => name.includes(p));
+                    }) || categoricalColumns[0];
 
-    // Create a manual pagination model for the table
-    const paginationState = useMemo(() => ({
-        pageIndex,
-        pageSize
-    }), [pageIndex, pageSize]);
-
-    const table = useReactTable({
-        data: displayData,
-        columns: columnsWithHeadersAndConfigs,
-        pageCount: Math.ceil(filteredCount / pageSize),
-        state: {
-            sorting,
-            columnFilters,
-            columnVisibility,
-            rowSelection,
-            globalFilter,
-            columnOrder,
-            columnSizing,
-            columnPinning,
-            rowPinning,
-            expanded,
-            grouping,
-            pivotMode, // N5
-            pagination: paginationState
-        },
-        enableRowSelection: true,
-        enableMultiRowSelection: true,
-        enableColumnResizing: true,
-        columnResizeMode: "onChange",
-        columnResizeDirection: "ltr",
-        enableSorting: true,
-        enableMultiSort: true,
-        enableFilters: true,
-        enablePinning: true,
-        enableRowPinning: true,
-        keepPinnedRows: true,
-        enableExpanding: metadata?.hasNestedData || false,
-        enableGrouping: true,
-        manualPagination: true,
-        manualFiltering: true,
-        manualSorting: true,
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
-        onGlobalFilterChange: setGlobalFilter,
-        onColumnOrderChange: setColumnOrder,
-        onColumnSizingChange: setColumnSizing,
-        onColumnPinningChange: setColumnPinning,
-        onRowPinningChange: setRowPinning,
-        onExpandedChange: setExpanded,
-        onGroupingChange: setGrouping,
-        onPaginationChange: (updater) => {
-            const newState = typeof updater === 'function'
-                ? updater(paginationState)
-                : updater;
-            setPageIndex(newState.pageIndex);
-            setPageSize(newState.pageSize);
-        },
-        getCoreRowModel: getCoreRowModel(),
-        getExpandedRowModel: getExpandedRowModel(),
-        getGroupedRowModel: getGroupedRowModel(),
-        defaultColumn: {
-            size: 200,
-            minSize: 50,
-            maxSize: 600,
-        },
-    });
-
-    const scrollColumnIntoView = (column, direction, isWrapping = false) => {
-        if (!column) return;
-
-        setTimeout(() => {
-            const tableContainer = document.querySelector('.overflow-auto');
-            if (!tableContainer) return;
-
-            const columnId = column.id;
-            const headerCell = document.querySelector(`[data-column-id="${columnId}"]`);
-            if (!headerCell) return;
-
-            // Calculate total width of left pinned columns
-            const leftPinnedColumns = table.getState().columnPinning.left || [];
-            let leftPinnedWidth = 0;
-            leftPinnedColumns.forEach(colId => {
-                const col = table.getAllLeafColumns().find(c => c.id === colId);
-                if (col) leftPinnedWidth += col.getSize();
-            });
-
-            // Calculate right pinned columns width
-            const rightPinnedColumns = table.getState().columnPinning.right || [];
-            let rightPinnedWidth = 0;
-            rightPinnedColumns.forEach(colId => {
-                const col = table.getAllLeafColumns().find(c => c.id === colId);
-                if (col) rightPinnedWidth += col.getSize();
-            });
-
-            const containerRect = tableContainer.getBoundingClientRect();
-            const cellRect = headerCell.getBoundingClientRect();
-
-            // Get current scroll position
-            const currentScroll = tableContainer.scrollLeft;
-
-            const borderWidth = 2;
-            let targetScrollLeft;
-
-            if (direction === 'right') {
-                // Moving right: align left edge of cell just after left-pinned area
-                const cellLeftRelativeToScroll = cellRect.left - containerRect.left + currentScroll;
-                targetScrollLeft = cellLeftRelativeToScroll - leftPinnedWidth;
-            } else if (direction === 'left') {
-                // Moving left: align right edge of cell just before right-pinned area
-                const cellRightRelativeToScroll = cellRect.right - containerRect.left + currentScroll;
-                const visibleAreaEnd = containerRect.width - rightPinnedWidth;
-                targetScrollLeft = cellRightRelativeToScroll + borderWidth - visibleAreaEnd;
+                    setGrouping([bestColumn.id]);
+                } else if (columns.length > 0) {
+                    // Fallback to first non-select/expand column
+                    const firstDataCol = columns.find(c => c.id !== 'select' && c.id !== 'expand');
+                    if (firstDataCol) setGrouping([firstDataCol.id]);
+                }
             } else {
-                return;
+                setGrouping([]);
             }
+        }, [pivotMode, columns]);
 
-            tableContainer.scroll({
-                left: targetScrollLeft,
-                behavior: isWrapping ? 'instant' : 'smooth'
-            });
-        }, 0);
-    };
+        const columnsWithHeadersAndConfigs = useMemo(() => {
+            if (columns.length === 0) return [];
+            const configuredColumns = applyColumnConfigs(columns);
+            const withHeaders = addHeadersToColumns(configuredColumns);
+            return createColumns(withHeaders);
+        }, [columns, configReloadTrigger]);
 
-    const clearAllFilters = () => {
-        table.resetColumnFilters();
-        table.resetSorting();
-        table.setGrouping([]);
-        updateGlobalFilter("");
-    };
+        // Create a manual pagination model for the table
+        const paginationState = useMemo(() => ({
+            pageIndex,
+            pageSize
+        }), [pageIndex, pageSize]);
 
-    // Keyboard shortcuts
-    useHotkeys('slash', (e) => {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-    }, { enableOnFormTags: true });
+        const table = useReactTable({
+            data: displayData,
+            columns: columnsWithHeadersAndConfigs,
+            pageCount: Math.ceil(filteredCount / pageSize),
+            state: {
+                sorting,
+                columnFilters,
+                columnVisibility,
+                rowSelection,
+                globalFilter,
+                columnOrder,
+                columnSizing,
+                columnPinning,
+                rowPinning,
+                expanded,
+                grouping,
+                pivotMode, // N5
+                pagination: paginationState
+            },
+            enableRowSelection: true,
+            enableMultiRowSelection: true,
+            enableColumnResizing: true,
+            columnResizeMode: "onChange",
+            columnResizeDirection: "ltr",
+            enableSorting: true,
+            enableMultiSort: true,
+            enableFilters: true,
+            enablePinning: true,
+            enableRowPinning: true,
+            keepPinnedRows: true,
+            enableExpanding: metadata?.hasNestedData || false,
+            enableGrouping: true,
+            manualPagination: true,
+            manualFiltering: true,
+            manualSorting: true,
+            onSortingChange: setSorting,
+            onColumnFiltersChange: setColumnFilters,
+            onColumnVisibilityChange: setColumnVisibility,
+            onRowSelectionChange: setRowSelection,
+            onGlobalFilterChange: setGlobalFilter,
+            onColumnOrderChange: setColumnOrder,
+            onColumnSizingChange: setColumnSizing,
+            onColumnPinningChange: setColumnPinning,
+            onRowPinningChange: setRowPinning,
+            onExpandedChange: setExpanded,
+            onGroupingChange: setGrouping,
+            onPaginationChange: (updater) => {
+                const newState = typeof updater === 'function'
+                    ? updater(paginationState)
+                    : updater;
+                setPageIndex(newState.pageIndex);
+                setPageSize(newState.pageSize);
+            },
+            getCoreRowModel: getCoreRowModel(),
+            getExpandedRowModel: getExpandedRowModel(),
+            getGroupedRowModel: getGroupedRowModel(),
+            defaultColumn: {
+                size: 200,
+                minSize: 50,
+                maxSize: 600,
+            },
+        });
 
-    useHotkeys('u', (e) => {
-        e.preventDefault();
-        setShowUpload(true);
-    }, { enableOnFormTags: false });
+        const scrollColumnIntoView = (column, direction, isWrapping = false) => {
+            if (!column) return;
 
-    useHotkeys('d', () => toggleTheme(), { enableOnFormTags: false });
-    useHotkeys('i', () => setShowShortcutsModal((v) => !v), { enableOnFormTags: false });
-    useHotkeys('f', () => setIsFullscreen((v) => !v), { enableOnFormTags: false });
-    useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
+            setTimeout(() => {
+                const tableContainer = document.querySelector('.overflow-auto');
+                if (!tableContainer) return;
+
+                const columnId = column.id;
+                const headerCell = document.querySelector(`[data-column-id="${columnId}"]`);
+                if (!headerCell) return;
+
+                // Calculate total width of left pinned columns
+                const leftPinnedColumns = table.getState().columnPinning.left || [];
+                let leftPinnedWidth = 0;
+                leftPinnedColumns.forEach(colId => {
+                    const col = table.getAllLeafColumns().find(c => c.id === colId);
+                    if (col) leftPinnedWidth += col.getSize();
+                });
+
+                // Calculate right pinned columns width
+                const rightPinnedColumns = table.getState().columnPinning.right || [];
+                let rightPinnedWidth = 0;
+                rightPinnedColumns.forEach(colId => {
+                    const col = table.getAllLeafColumns().find(c => c.id === colId);
+                    if (col) rightPinnedWidth += col.getSize();
+                });
+
+                const containerRect = tableContainer.getBoundingClientRect();
+                const cellRect = headerCell.getBoundingClientRect();
+
+                // Get current scroll position
+                const currentScroll = tableContainer.scrollLeft;
+
+                const borderWidth = 2;
+                let targetScrollLeft;
+
+                if (direction === 'right') {
+                    // Moving right: align left edge of cell just after left-pinned area
+                    const cellLeftRelativeToScroll = cellRect.left - containerRect.left + currentScroll;
+                    targetScrollLeft = cellLeftRelativeToScroll - leftPinnedWidth;
+                } else if (direction === 'left') {
+                    // Moving left: align right edge of cell just before right-pinned area
+                    const cellRightRelativeToScroll = cellRect.right - containerRect.left + currentScroll;
+                    const visibleAreaEnd = containerRect.width - rightPinnedWidth;
+                    targetScrollLeft = cellRightRelativeToScroll + borderWidth - visibleAreaEnd;
+                } else {
+                    return;
+                }
+
+                tableContainer.scroll({
+                    left: targetScrollLeft,
+                    behavior: isWrapping ? 'instant' : 'smooth'
+                });
+            }, 0);
+        };
+
+        const clearAllFilters = () => {
+            table.resetColumnFilters();
+            table.resetSorting();
+            table.setGrouping([]);
+            updateGlobalFilter("");
+        };
+
+        // Keyboard shortcuts
+        useHotkeys('slash', (e) => {
+            e.preventDefault();
+            searchInputRef.current?.focus();
+        }, { enableOnFormTags: true });
+
+        useHotkeys('u', (e) => {
+            e.preventDefault();
+            setShowUpload(true);
+        }, { enableOnFormTags: false });
+
+        useHotkeys('d', () => toggleTheme(), { enableOnFormTags: false });
+        useHotkeys('i', () => setShowShortcutsModal((v) => !v), { enableOnFormTags: false });
+        useHotkeys('f', () => setIsFullscreen((v) => !v), { enableOnFormTags: false });
+        useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
 
-    useHotkeys('r', (e) => {
-        e.preventDefault();
-        clearAllFilters();
-    }, { enableOnFormTags: false });
+        useHotkeys('r', (e) => {
+            e.preventDefault();
+            clearAllFilters();
+        }, { enableOnFormTags: false });
 
-    useHotkeys('c', (e) => {
-        e.preventDefault();
-        if (!exportMenuOpen) {
-            if (exportMode === 'export') {
-                handleExport('csv');
+        useHotkeys('c', (e) => {
+            e.preventDefault();
+            if (!exportMenuOpen) {
+                if (exportMode === 'export') {
+                    handleExport('csv');
+                    setExportMode(null);
+                } else {
+                    setColumnsMenuOpen((v) => !v);
+                }
+            }
+        }, { enableOnFormTags: false });
+
+        useHotkeys('e', () => {
+            if (exportMenuOpen) {
+                setExportMenuOpen(false);
+                setExportMode(null);
+            } else if (exportMode === 'export') {
+                handleExport('excel');
                 setExportMode(null);
             } else {
-                setColumnsMenuOpen((v) => !v);
+                setExportMenuOpen(true);
+                setExportMode('export');
+                setTimeout(() => {
+                    if (!exportMenuOpen) {
+                        setExportMode(null);
+                    }
+                }, 3000);
             }
-        }
-    }, { enableOnFormTags: false });
+        }, { enableOnFormTags: false });
 
-    useHotkeys('e', () => {
-        if (exportMenuOpen) {
-            setExportMenuOpen(false);
-            setExportMode(null);
-        } else if (exportMode === 'export') {
-            handleExport('excel');
-            setExportMode(null);
-        } else {
-            setExportMenuOpen(true);
-            setExportMode('export');
-            setTimeout(() => {
-                if (!exportMenuOpen) {
-                    setExportMode(null);
+        useHotkeys('j', () => {
+            if (exportMode === 'export' && !exportMenuOpen) {
+                handleExport('json');
+                setExportMode(null);
+            }
+        }, { enableOnFormTags: false });
+
+        useHotkeys('v', (e) => {
+            e.preventDefault();
+            setViewMenuOpen((v) => !v);
+        }, { enableOnFormTags: false });
+
+        useHotkeys('g', (e) => {
+            e.preventDefault();
+            setGroupMenuOpen((v) => !v);
+        }, { enableOnFormTags: false });
+
+        useHotkeys('esc', (e) => {
+            // ESC layered close: close most recent overlay first
+            // Priority: search input blur > dropdowns > modals > fullscreen
+            if (document.activeElement === searchInputRef.current) {
+                searchInputRef.current?.blur();
+                return;
+            }
+            // Check if any dropdown menus are open
+            if (viewMenuOpen) {
+                setViewMenuOpen(false);
+                return;
+            }
+            if (columnsMenuOpen) {
+                setColumnsMenuOpen(false);
+                return;
+            }
+            if (groupMenuOpen) {
+                setGroupMenuOpen(false);
+                return;
+            }
+            if (exportMenuOpen) {
+                setExportMenuOpen(false);
+                return;
+            }
+            // Check if modals are open
+            if (showShortcutsModal) {
+                setShowShortcutsModal(false);
+                return;
+            }
+            if (showStatusModal) {
+                setShowStatusModal(false);
+                return;
+            }
+            if (showUpload) {
+                setShowUpload(false);
+                return;
+            }
+            // Finally close fullscreen if nothing else is open
+            if (isFullscreen) {
+                setIsFullscreen(false);
+            }
+        }, { enableOnFormTags: true });
+
+        useHotkeys('pageup', (e) => {
+            e.preventDefault();
+            if (table.getCanPreviousPage()) table.previousPage();
+        }, { enableOnFormTags: false });
+
+        useHotkeys('pagedown', (e) => {
+            e.preventDefault();
+            if (table.getCanNextPage()) table.nextPage();
+        }, { enableOnFormTags: false });
+
+        useHotkeys('left', (e) => {
+            if (document.activeElement === searchInputRef.current) return;
+            e.preventDefault();
+
+            const visibleColumns = table.getVisibleLeafColumns()
+                .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
+
+            if (visibleColumns.length === 0) return;
+
+            setFocusedColumnIndex(prev => {
+                const isWrapping = prev === null || prev <= 0;
+                if (isWrapping) {
+                    const newIndex = visibleColumns.length - 1;
+                    scrollColumnIntoView(visibleColumns[newIndex], 'left', true);
+                    return newIndex;
                 }
-            }, 3000);
-        }
-    }, { enableOnFormTags: false });
-
-    useHotkeys('j', () => {
-        if (exportMode === 'export' && !exportMenuOpen) {
-            handleExport('json');
-            setExportMode(null);
-        }
-    }, { enableOnFormTags: false });
-
-    useHotkeys('v', (e) => {
-        e.preventDefault();
-        setViewMenuOpen((v) => !v);
-    }, { enableOnFormTags: false });
-
-    useHotkeys('g', (e) => {
-        e.preventDefault();
-        setGroupMenuOpen((v) => !v);
-    }, { enableOnFormTags: false });
-
-    useHotkeys('esc', (e) => {
-        // ESC layered close: close most recent overlay first
-        // Priority: search input blur > dropdowns > modals > fullscreen
-        if (document.activeElement === searchInputRef.current) {
-            searchInputRef.current?.blur();
-            return;
-        }
-        // Check if any dropdown menus are open
-        if (viewMenuOpen) {
-            setViewMenuOpen(false);
-            return;
-        }
-        if (columnsMenuOpen) {
-            setColumnsMenuOpen(false);
-            return;
-        }
-        if (groupMenuOpen) {
-            setGroupMenuOpen(false);
-            return;
-        }
-        if (exportMenuOpen) {
-            setExportMenuOpen(false);
-            return;
-        }
-        // Check if modals are open
-        if (showShortcutsModal) {
-            setShowShortcutsModal(false);
-            return;
-        }
-        if (showStatusModal) {
-            setShowStatusModal(false);
-            return;
-        }
-        if (showUpload) {
-            setShowUpload(false);
-            return;
-        }
-        // Finally close fullscreen if nothing else is open
-        if (isFullscreen) {
-            setIsFullscreen(false);
-        }
-    }, { enableOnFormTags: true });
-
-    useHotkeys('pageup', (e) => {
-        e.preventDefault();
-        if (table.getCanPreviousPage()) table.previousPage();
-    }, { enableOnFormTags: false });
-
-    useHotkeys('pagedown', (e) => {
-        e.preventDefault();
-        if (table.getCanNextPage()) table.nextPage();
-    }, { enableOnFormTags: false });
-
-    useHotkeys('left', (e) => {
-        if (document.activeElement === searchInputRef.current) return;
-        e.preventDefault();
-
-        const visibleColumns = table.getVisibleLeafColumns()
-            .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
-
-        if (visibleColumns.length === 0) return;
-
-        setFocusedColumnIndex(prev => {
-            const isWrapping = prev === null || prev <= 0;
-            if (isWrapping) {
-                const newIndex = visibleColumns.length - 1;
-                scrollColumnIntoView(visibleColumns[newIndex], 'left', true);
+                const newIndex = prev - 1;
+                scrollColumnIntoView(visibleColumns[newIndex], 'left', false);
                 return newIndex;
+            });
+        }, { enableOnFormTags: false });
+
+        useHotkeys('right', (e) => {
+            if (document.activeElement === searchInputRef.current) return;
+            e.preventDefault();
+
+            const visibleColumns = table.getVisibleLeafColumns()
+                .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
+
+            if (visibleColumns.length === 0) return;
+
+            setFocusedColumnIndex(prev => {
+                const isWrapping = prev === null || prev >= visibleColumns.length - 1;
+                if (isWrapping) {
+                    scrollColumnIntoView(visibleColumns[0], 'right', true);
+                    return 0;
+                }
+                const newIndex = prev + 1;
+                scrollColumnIntoView(visibleColumns[newIndex], 'right', false);
+                return newIndex;
+            });
+        }, { enableOnFormTags: false });
+
+        const handleExport = useCallback((format, rows, columns) => {
+            try {
+                if (format === 'csv') {
+                    exportToCSV(table, rows, columns);
+                } else if (format === 'json') {
+                    exportToJSON(table, rows, columns);
+                } else if (format === 'excel') {
+                    exportToExcel(table, rows, columns);
+                }
+            } catch (error) {
+                console.error('Export error:', error);
             }
-            const newIndex = prev - 1;
-            scrollColumnIntoView(visibleColumns[newIndex], 'left', false);
-            return newIndex;
-        });
-    }, { enableOnFormTags: false });
+        }, [table]);
 
-    useHotkeys('right', (e) => {
-        if (document.activeElement === searchInputRef.current) return;
-        e.preventDefault();
+        const handleResetPreferences = useCallback(() => {
+            resetPreferences();
+            setSorting([]);
+            setColumnVisibility({});
+            setColumnOrder([]);
+            setColumnSizing({});
+            setColumnPinning({ left: [], right: [] });
+            setColumnFilters([]);
+            setGlobalFilter("");
+            setGrouping([]);
+            setPageIndex(0);
+            setPageSize(20);
+            table.resetColumnVisibility();
+            table.resetColumnOrder();
+            table.resetColumnSizing();
+            table.resetSorting();
+        }, [table]);
 
-        const visibleColumns = table.getVisibleLeafColumns()
-            .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
-
-        if (visibleColumns.length === 0) return;
-
-        setFocusedColumnIndex(prev => {
-            const isWrapping = prev === null || prev >= visibleColumns.length - 1;
-            if (isWrapping) {
-                scrollColumnIntoView(visibleColumns[0], 'right', true);
-                return 0;
+        const getDensityPadding = useCallback(() => {
+            switch (density) {
+                case "compact":
+                    return "py-1 pl-2";
+                case "comfortable":
+                    return "py-4 pl-4";
+                default:
+                    return "py-2 pl-4";
             }
-            const newIndex = prev + 1;
-            scrollColumnIntoView(visibleColumns[newIndex], 'right', false);
-            return newIndex;
-        });
-    }, { enableOnFormTags: false });
+        }, [density]);
 
-    const handleExport = useCallback((format) => {
-        try {
-            if (format === 'csv') {
-                exportToCSV(table);
-            } else if (format === 'json') {
-                exportToJSON(table);
-            } else if (format === 'excel') {
-                exportToExcel(table);
-            }
-        } catch (error) {
-            console.error('Export error:', error);
-        }
-    }, [table]);
+        const isEmpty = displayData.length === 0 && !loading;
 
-    const handleResetPreferences = useCallback(() => {
-        resetPreferences();
-        setSorting([]);
-        setColumnVisibility({});
-        setColumnOrder([]);
-        setColumnSizing({});
-        setColumnPinning({ left: [], right: [] });
-        setColumnFilters([]);
-        setGlobalFilter("");
-        setGrouping([]);
-        setPageIndex(0);
-        setPageSize(20);
-        table.resetColumnVisibility();
-        table.resetColumnOrder();
-        table.resetColumnSizing();
-        table.resetSorting();
-    }, [table]);
+        const getCellBorderClasses = useCallback(() => {
+            const borders = [];
+            if (showRowLines) borders.push("border-b");
+            if (showGridLines) borders.push("border-r");
+            return borders.join(" ") + " border-(--color-border)";
+        }, [showRowLines, showGridLines]);
 
-    const getDensityPadding = useCallback(() => {
-        switch (density) {
-            case "compact":
-                return "py-1 pl-2";
-            case "comfortable":
-                return "py-4 pl-4";
-            default:
-                return "py-2 pl-4";
-        }
-    }, [density]);
+        const getHeaderBorderClasses = useCallback(() => {
+            const borders = ["border-b-2"];
+            if (showHeaderLines || showGridLines) borders.push("border-r-2");
+            return (
+                borders.join(" ") +
+                " border-[color-mix(in_oklch,var(--color-border),transparent_50%)]"
+            );
+        }, [showHeaderLines, showGridLines]);
 
-    const isEmpty = displayData.length === 0 && !loading;
+        const getLeftPos = useCallback((column) => getLeftPosition(column, table), [table]);
+        const getRightPos = useCallback((column) => getRightPosition(column, table), [table]);
 
-    const getCellBorderClasses = useCallback(() => {
-        const borders = [];
-        if (showRowLines) borders.push("border-b");
-        if (showGridLines) borders.push("border-r");
-        return borders.join(" ") + " border-(--color-border)";
-    }, [showRowLines, showGridLines]);
-
-    const getHeaderBorderClasses = useCallback(() => {
-        const borders = ["border-b-2"];
-        if (showHeaderLines || showGridLines) borders.push("border-r-2");
         return (
-            borders.join(" ") +
-            " border-[color-mix(in_oklch,var(--color-border),transparent_50%)]"
-        );
-    }, [showHeaderLines, showGridLines]);
-
-    const getLeftPos = useCallback((column) => getLeftPosition(column, table), [table]);
-    const getRightPos = useCallback((column) => getRightPosition(column, table), [table]);
-
-    return (
-        <div
-            className="w-full min-h-screen transition-colors relative scrollbar-hide"
-            style={{
-                backgroundColor: "var(--color-background)",
-                willChange: isFullscreen ? 'padding, margin' : 'auto',
-                textSizeAdjust: 'none',           // Add this
-                WebkitTextSizeAdjust: 'none',     // Add this (for Safari)
-            }}
-        >
-            <AnimatePresence>
-                {showUpload && (
-                    <FileUploadHandler
-                        onDataLoaded={handleDataLoaded}
-                        onClose={() => setShowUpload(false)}
-                    />
-                )}
-            </AnimatePresence>
-
-            <motion.div
-                layout="position"
-                className="w-full relative z-10"
-                animate={{
-                    padding: isFullscreen ? "0" : "0.5rem 2rem",
-                    marginTop: isFullscreen ? "0" : "0",
-                }}
-                transition={{
-                    type: "tween",
-                    duration: 0.3,
-                    ease: [0.25, 1, 0.5, 1]
+            <div
+                className="w-full min-h-screen transition-colors relative scrollbar-hide"
+                style={{
+                    backgroundColor: "var(--color-background)",
+                    willChange: isFullscreen ? 'padding, margin' : 'auto',
+                    textSizeAdjust: 'none',           // Add this
+                    WebkitTextSizeAdjust: 'none',     // Add this (for Safari)
                 }}
             >
-                <div className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}>
-                    <AnimatePresence>
+                <AnimatePresence>
+                    {showUpload && (
+                        <FileUploadHandler
+                            onDataLoaded={handleDataLoaded}
+                            onClose={() => setShowUpload(false)}
+                        />
+                    )}
+                </AnimatePresence>
+
+                <motion.div
+                    layout="position"
+                    className="w-full relative z-10"
+                    animate={{
+                        padding: isFullscreen ? "0" : "0.5rem 2rem",
+                        marginTop: isFullscreen ? "0" : "0",
+                    }}
+                    transition={{
+                        type: "tween",
+                        duration: 0.3,
+                        ease: [0.25, 1, 0.5, 1]
+                    }}
+                >
+                    <div className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}>
+                        <AnimatePresence>
+                            {!isFullscreen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -50 }}   // Start from hidden and above
+                                    animate={{ opacity: 1, y: 0 }}     // Animate to visible and in position
+                                    exit={{ opacity: 0, y: -50 }}      // Exit by fading and sliding up
+                                    transition={{
+                                        duration: 0.3,
+                                        ease: [0.25, 1, 0.5, 1]        // Matches your other smooth easings
+                                    }}
+                                    className="mb-4 w-full text-center"
+                                >
+                                    <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
+                                        Nimbus<span className="text-white!">☁️</span>- Enterprise DataGrid
+                                    </h1>
+                                    <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
+                                        Complete table with Advanced Filters, Multi-Column Sort, Column Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
+                                    </p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                         {!isFullscreen && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -50 }}   // Start from hidden and above
-                                animate={{ opacity: 1, y: 0 }}     // Animate to visible and in position
-                                exit={{ opacity: 0, y: -50 }}      // Exit by fading and sliding up
-                                transition={{
-                                    duration: 0.3,
-                                    ease: [0.25, 1, 0.5, 1]        // Matches your other smooth easings
-                                }}
-                                className="mb-4 w-full text-center"
-                            >
-                                <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
-                                    Nimbus<span className="text-white!">☁️</span>- Enterprise DataGrid
-                                </h1>
-                                <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
-                                    Complete table with Advanced Filters, Multi-Column Sort, Column Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
-                                </p>
-                            </motion.div>
+                            <>
+                                <Link
+                                    to="/"
+                                    className="absolute top-0 left-0 m-4 text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                                >
+                                    <ArrowRight className="h-4 w-4 rotate-180" />
+                                    Regular Grid
+                                </Link>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Show shortcuts</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </>
                         )}
-                    </AnimatePresence>
-                    {!isFullscreen && (
-                        <>
-                            <Link
-                                to="/"
-                                className="absolute top-0 left-0 m-4 text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-                            >
-                                <ArrowRight className="h-4 w-4 rotate-180" />
-                                Regular Grid
-                            </Link>
+
+                        {rawData.length > 0 && !isFullscreen && (
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
+                                        <Button
+                                            onClick={() => setShowUpload(true)}
+                                            variant="outline"
+                                            className="absolute top-0 right-12 m-4 border-2"
+                                        >
+                                            <Upload className="h-4 w-4 mr-2" />
+                                            Upload New File
+                                        </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Show shortcuts</p>
+                                        <p>Upload new file</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
-                        </>
-                    )}
+                        )}
 
-                    {rawData.length > 0 && !isFullscreen && (
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        onClick={() => setShowUpload(true)}
-                                        variant="outline"
-                                        className="absolute top-0 right-12 m-4 border-2"
-                                    >
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        Upload New File
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Upload new file</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    )}
-
-                    {rawData.length > 0 && (
-                        <motion.div
-                            layout="position"
-                            className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
-                            style={{
-                                backgroundColor: "var(--color-card)",
-                                borderColor: "var(--color-border)",
-                                height: isFullscreen ? "100dvh" : "auto",
-                                maxHeight: isFullscreen ? "none" : "80vh",
-                            }}
-                            animate={{
-                                borderRadius: isFullscreen ? "0" : "12px"
-                            }}
-                            transition={{
-                                layout: { duration: 0 },
-                                borderRadius: {
-                                    type: "tween",
-                                    duration: 0.3,
-                                    ease: [0.25, 1, 0.5, 1]
-                                },
-                            }}
-                        >
-                            <DataGridToolbar
-                                table={table}
-                                columns={columnsWithHeadersAndConfigs}
-                                onExport={handleExport}
-                                onResetPreferences={handleResetPreferences}
-                                onRefresh={() => {
-                                    setLoading(true);
-                                    setTimeout(() => {
-                                        const sampleData = generateSampleData(250);
-                                        const analyzed = analyzeData(sampleData);
-                                        setRawData(analyzed.data);
-                                        setColumns(analyzed.columns);
-                                        setMetadata(analyzed.metadata);
-                                        setLoading(false);
-                                    }, 500);
-                                }}
-                                globalFilter={globalFilter}
-                                onGlobalFilterChange={updateGlobalFilter}
-                                searchInputValue={searchInputValue}
-                                onSearchInputChange={(e) => setSearchInputValue(e.target.value)}
-                                searchInputRef={searchInputRef}
-                                viewMenuOpen={viewMenuOpen}
-                                setViewMenuOpen={setViewMenuOpen}
-                                columnsMenuOpen={columnsMenuOpen}
-                                setColumnsMenuOpen={setColumnsMenuOpen}
-                                groupMenuOpen={groupMenuOpen}
-                                setGroupMenuOpen={setGroupMenuOpen}
-                                exportMenuOpen={exportMenuOpen}
-                                setExportMenuOpen={setExportMenuOpen}
-                                clearAllFilters={clearAllFilters}
-                                extraButtons={
-                                    <>
-                                        <ColumnConfigurationMenu
-                                            columns={columnsWithHeadersAndConfigs}
-                                            onConfigChange={handleConfigChange}
-                                        />
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => setIsFullscreen(!isFullscreen)}
-                                                        className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
-                                                        style={{ color: "var(--color-muted-foreground)" }}
-                                                    >
-                                                        {isFullscreen ? (
-                                                            <Minimize2 className="h-4 w-4" />
-                                                        ) : (
-                                                            <Maximize2 className="h-4 w-4" />
-                                                        )}
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>{isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </>
-                                }
-                            />
-
-                            <div
-                                className="flex-1 overflow-auto min-h-0 scroll-smooth"
-                                style={{
-                                    overscrollBehavior: 'none',
-                                    scrollBehavior: 'smooth',
-                                    willChange: 'scroll-position',
-                                    transform: 'translateZ(0)',
-                                    backfaceVisibility: 'hidden',
-                                }}
-                                role="grid"
-                            >
-                                <table
-                                    className="w-full text-sm border-collapse font-medium"  // add font-medium
-                                    style={{
-                                        width: 'max-content',
-                                        minWidth: '100%',
-                                        contain: 'layout style paint',
-                                        fontSize: '0.875rem',
-                                        lineHeight: '1.25rem',
-                                        textRendering: 'optimizeLegibility',
-                                    }}
-                                >
-                                    <DataGridTableHeader
-                                        table={table}
-                                        getDensityPadding={getDensityPadding}
-                                        getHeaderBorderClasses={getHeaderBorderClasses}
-                                        getLeftPosition={getLeftPos}
-                                        getRightPosition={getRightPos}
-                                        focusedColumnIndex={focusedColumnIndex}
-                                    />
-                                    <DataGridTableBody
-                                        table={table}
-                                        loading={loading || processing}
-                                        isEmpty={isEmpty}
-                                        getDensityPadding={getDensityPadding}
-                                        getCellBorderClasses={getCellBorderClasses}
-                                        getLeftPosition={getLeftPos}
-                                        getRightPosition={getRightPos}
-                                        minRows={pageSize}
-                                    />
-                                </table>
-                            </div>
-
+                        {rawData.length > 0 && (
                             <motion.div
-                                initial={{ opacity: 1 }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.2 }}
+                                layout="position"
+                                className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                                style={{
+                                    backgroundColor: "var(--color-card)",
+                                    borderColor: "var(--color-border)",
+                                    height: isFullscreen ? "100dvh" : "auto",
+                                    maxHeight: isFullscreen ? "none" : "80vh",
+                                }}
+                                animate={{
+                                    borderRadius: isFullscreen ? "0" : "12px"
+                                }}
+                                transition={{
+                                    layout: { duration: 0 },
+                                    borderRadius: {
+                                        type: "tween",
+                                        duration: 0.3,
+                                        ease: [0.25, 1, 0.5, 1]
+                                    },
+                                }}
                             >
-                                <DataGridPagination
+                                <DataGridToolbar
                                     table={table}
-                                    totalRows={filteredCount}
-                                    totalSelectedRows={Object.keys(rowSelection).length}
+                                    columns={columnsWithHeadersAndConfigs}
+                                    onExport={handleExport}
+                                    onResetPreferences={handleResetPreferences}
+                                    onRefresh={() => {
+                                        setLoading(true);
+                                        setTimeout(() => {
+                                            const sampleData = generateSampleData(250);
+                                            const analyzed = analyzeData(sampleData);
+                                            setRawData(analyzed.data);
+                                            setColumns(analyzed.columns);
+                                            setMetadata(analyzed.metadata);
+                                            setLoading(false);
+                                        }, 500);
+                                    }}
+                                    globalFilter={globalFilter}
+                                    onGlobalFilterChange={updateGlobalFilter}
+                                    searchInputValue={searchInputValue}
+                                    onSearchInputChange={(e) => setSearchInputValue(e.target.value)}
+                                    searchInputRef={searchInputRef}
+                                    viewMenuOpen={viewMenuOpen}
+                                    setViewMenuOpen={setViewMenuOpen}
+                                    columnsMenuOpen={columnsMenuOpen}
+                                    setColumnsMenuOpen={setColumnsMenuOpen}
+                                    groupMenuOpen={groupMenuOpen}
+                                    setGroupMenuOpen={setGroupMenuOpen}
+                                    exportMenuOpen={exportMenuOpen}
+                                    setExportMenuOpen={setExportMenuOpen}
+                                    clearAllFilters={clearAllFilters}
+                                    pivotMode={pivotMode}
+                                    setPivotMode={setPivotMode}
+                                    extraButtons={
+                                        <>
+                                            <ColumnConfigurationMenu
+                                                columns={columnsWithHeadersAndConfigs}
+                                                onConfigChange={handleConfigChange}
+                                            />
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => setIsFullscreen(!isFullscreen)}
+                                                            className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
+                                                            style={{ color: "var(--color-muted-foreground)" }}
+                                                        >
+                                                            {isFullscreen ? (
+                                                                <Minimize2 className="h-4 w-4" />
+                                                            ) : (
+                                                                <Maximize2 className="h-4 w-4" />
+                                                            )}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>{isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </>
+                                    }
                                 />
+
+                                <div
+                                    className="flex-1 overflow-auto min-h-0 scroll-smooth"
+                                    style={{
+                                        overscrollBehavior: 'none',
+                                        scrollBehavior: 'smooth',
+                                        willChange: 'scroll-position',
+                                        transform: 'translateZ(0)',
+                                        backfaceVisibility: 'hidden',
+                                    }}
+                                    role="grid"
+                                >
+                                    <table
+                                        className="w-full text-sm border-collapse font-medium"  // add font-medium
+                                        style={{
+                                            width: 'max-content',
+                                            minWidth: '100%',
+                                            contain: 'layout style paint',
+                                            fontSize: '0.875rem',
+                                            lineHeight: '1.25rem',
+                                            textRendering: 'optimizeLegibility',
+                                        }}
+                                    >
+                                        <DataGridTableHeader
+                                            table={table}
+                                            getDensityPadding={getDensityPadding}
+                                            getHeaderBorderClasses={getHeaderBorderClasses}
+                                            getLeftPosition={getLeftPos}
+                                            getRightPosition={getRightPos}
+                                            focusedColumnIndex={focusedColumnIndex}
+                                        />
+                                        <DataGridTableBody
+                                            table={table}
+                                            loading={loading || processing}
+                                            isEmpty={isEmpty}
+                                            getDensityPadding={getDensityPadding}
+                                            getCellBorderClasses={getCellBorderClasses}
+                                            getLeftPosition={getLeftPos}
+                                            getRightPosition={getRightPos}
+                                            minRows={pageSize}
+                                            onRowReorder={handleRowReorder}
+                                        />
+                                    </table>
+                                </div>
+
+                                <motion.div
+                                    initial={{ opacity: 1 }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <DataGridPagination
+                                        table={table}
+                                        totalRows={filteredCount}
+                                        totalSelectedRows={Object.keys(rowSelection).length}
+                                    />
+                                </motion.div>
                             </motion.div>
-                        </motion.div>
-                    )}
+                        )}
 
-                    {!isFullscreen && (
-                        <div className="text-center mt-6 text-sm text-muted-foreground bottom-0">
-                            Built with ❤️ by {" "}
-                            <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
-                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
-                        </div>
-                    )}
-                </div>
-            </motion.div>
+                        {!isFullscreen && (
+                            <div className="text-center mt-6 text-sm text-muted-foreground bottom-0">
+                                Built with ❤️ by {" "}
+                                <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
+                                • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
 
-            <StatusBarModal open={showStatusModal} onOpenChange={setShowStatusModal} table={table} rowSelection={rowSelection} filename={filename} />
-            <KeyboardShortcutsModal open={showShortcutsModal} onOpenChange={setShowShortcutsModal} />
-        </div>
-    );
-};
+                <StatusBarModal open={showStatusModal} onOpenChange={setShowStatusModal} table={table} rowSelection={rowSelection} filename={filename} />
+                <KeyboardShortcutsModal open={showShortcutsModal} onOpenChange={setShowShortcutsModal} />
+            </div>
+        );
+    };
 
-export default DynamicDataGrid;
+    export default DynamicDataGrid;

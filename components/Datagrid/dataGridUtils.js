@@ -1,12 +1,13 @@
 // ============ EXPORT FUNCTIONS ============
 // ============ EXPORT FUNCTIONS ============
-export const exportToCSV = (table) => {
-  const columns = table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
-  const rows = table.getRowModel().rows;
+// ============ EXPORT FUNCTIONS ============
+export const exportToCSV = (table, dataRows, dataColumns) => {
+  const columns = dataColumns || table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
+  const rows = dataRows || table.getRowModel().rows;
 
   const headers = columns
     .map((c) => {
-      const header = c.columnDef.header;
+      const header = c.header || c.columnDef?.header;
       return typeof header === "string" ? header : c.id;
     })
     .join(",");
@@ -15,7 +16,7 @@ export const exportToCSV = (table) => {
     .map((row) =>
       columns
         .map((c) => {
-          const val = row.getValue(c.id);
+          const val = row.getValue ? row.getValue(c.id) : row[c.id];
           return `"${String(val || "").replace(/"/g, '""')}"`;
         })
         .join(",")
@@ -32,14 +33,15 @@ export const exportToCSV = (table) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportToJSON = (table) => {
-  const columns = table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
-  const rows = table.getRowModel().rows;
+export const exportToJSON = (table, dataRows, dataColumns) => {
+  const columns = dataColumns || table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
+  const rows = dataRows || table.getRowModel().rows;
 
   const exportData = rows.map((row) => {
     const obj = {};
     columns.forEach((c) => {
-      obj[c.id] = row.getValue(c.id);
+      const val = row.getValue ? row.getValue(c.id) : row[c.id];
+      obj[c.id] = val;
     });
     return obj;
   });
@@ -54,20 +56,21 @@ export const exportToJSON = (table) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportToExcel = (table) => {
-  const columns = table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
-  const rows = table.getRowModel().rows;
+export const exportToExcel = (table, dataRows, dataColumns) => {
+  const columns = dataColumns || table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
+  const rows = dataRows || table.getRowModel().rows;
 
   let html = "<table><thead><tr>";
   columns.forEach((c) => {
-    const header = c.columnDef.header;
+    const header = c.header || c.columnDef?.header;
     html += `<th>${typeof header === "string" ? header : c.id}</th>`;
   });
   html += "</tr></thead><tbody>";
   rows.forEach((row) => {
     html += "<tr>";
     columns.forEach((c) => {
-      html += `<td>${row.getValue(c.id) || ""}</td>`;
+      const val = row.getValue ? row.getValue(c.id) : row[c.id];
+      html += `<td>${val || ""}</td>`;
     });
     html += "</tr>";
   });
