@@ -282,7 +282,7 @@ export function AdvancedColumnFilter({ column, dataType: propDataType = "text" }
           className={`h-7 w-7 ${hasFilter ? "bg-blue-600 hover:bg-blue-700" : ""
             }`}
         >
-          <Filter className="h-3.5 w-3.5" />
+          <Filter className="h-3.5 w-3.5" style={{ color: hasFilter ? "white" : "var(--color-foreground)" }} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
@@ -467,7 +467,7 @@ export function ActiveFilters({ table, columns }) {
                 className="ml-1 hover:opacity-70"
                 style={{ color: "var(--color-primary-foreground)" }}
               >
-                <X className="h-3 w-3" />
+                <X className="h-3 w-3" style={{ color: "var(--color-primary-foreground)" }} />
               </button>
             </motion.div>
           );

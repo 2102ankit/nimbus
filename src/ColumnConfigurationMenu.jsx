@@ -266,7 +266,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => setIsOpen(false)}
-                                        className="h-8 w-8"
+                                        className="h-8 w-8 text-muted-foreground"
                                     >
                                         <X className="h-5 w-5" />
                                     </Button>
@@ -277,7 +277,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                             <div className="flex-1 overflow-hidden flex">
                                 {/* Column List */}
                                 <div className="w-1/3 border-r border-border overflow-y-auto bg-muted/10">
-                                    <div className="p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+                                    <div className="p-4 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
                                         <p className="text-sm font-semibold text-foreground">Columns ({filteredColumns.length})</p>
                                     </div>
                                     <div className="flex flex-col">
@@ -323,7 +323,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={handleStartHeaderEdit}
-                                                            className="h-7 px-2"
+                                                            className="h-7 px-2 text-muted-foreground"
                                                         >
                                                             <Pencil className="h-3 w-3" />
                                                         </Button>
@@ -345,7 +345,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                         <Button size="sm" onClick={handleSaveHeaderEdit} className="h-9">
                                                             <Check className="h-4 w-4" />
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" onClick={handleCancelHeaderEdit} className="h-9">
+                                                        <Button size="sm" variant="ghost" onClick={handleCancelHeaderEdit} className="h-9 text-muted-foreground">
                                                             <X className="h-4 w-4" />
                                                         </Button>
                                                     </div>

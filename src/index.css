@@ -53,6 +53,8 @@
   --shadow-lg: none;
   --tracking-normal: 0rem;
   --spacing: 0.25rem;
+  --header-height: 0px;
+  
 }
 
 .dark {
@@ -72,7 +74,7 @@
   --accent-foreground: oklch(0.8109 0 0);
   --destructive: oklch(0.5770 0.2450 27.3250);
   --destructive-foreground: oklch(0.1797 0.0043 308.1928);
-  --border: oklch(0.3407 0.00004 271.152);
+  --border: oklch(0.269 0 0 / 0.8);
   --input: oklch(0.2520 0 0);
   --ring: oklch(0.8370 0.1280 66.2900);
   --sidebar: oklch(0.1822 0 0);
@@ -239,7 +241,7 @@ tr.sticky-pinned-row {
 }
 
 tr.sticky-pinned-row-top {
-  top: 0;
+  top: var(--header-height);
 }
 
 tr.sticky-pinned-row-bottom {
@@ -253,7 +255,7 @@ tr.sticky-pinned-row-bottom {
 }
 
 .sticky-pinned-td-top {
-  top: 0;
+  top: var(--header-height);
 }
 
 .sticky-pinned-td-bottom {

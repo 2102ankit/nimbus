@@ -43,6 +43,7 @@ import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
 import { useDataWorker } from "./useDataWorker";
 import { Link } from "react-router-dom";
 import { createColumns } from "@/components/Datagrid/columnDefinitions";
+import { GridToggle } from "./GridToggle";
 
 const DynamicDataGrid = () => {
     const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines, currency, locale } = useTheme();
@@ -477,6 +478,7 @@ const DynamicDataGrid = () => {
             minSize: 50,
             maxSize: 600,
         },
+        getRowId: (row) => row.id,
     });
 
     const scrollColumnIntoView = (column, direction, isWrapping = false) => {
@@ -827,13 +829,9 @@ const DynamicDataGrid = () => {
                     </AnimatePresence>
                     {!isFullscreen && (
                         <>
-                            <Link
-                                to="/"
-                                className="absolute top-0 left-0 m-4 text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-                            >
-                                <ArrowRight className="h-4 w-4 rotate-180" />
-                                Regular Grid
-                            </Link>
+                            <div className="absolute top-0 left-0 m-4 z-50">
+                                <GridToggle />
+                            </div>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -854,7 +852,12 @@ const DynamicDataGrid = () => {
                                     <Button
                                         onClick={() => setShowUpload(true)}
                                         variant="outline"
-                                        className="absolute top-0 right-12 m-4 border-2"
+                                        className="absolute top-0 right-12 m-4 border-2 shadow-none hover:bg-muted font-normal"
+                                        style={{
+                                            borderColor: "var(--color-border)",
+                                            backgroundColor: "var(--color-background)",
+                                            color: "var(--color-foreground)"
+                                        }}
                                     >
                                         <Upload className="h-4 w-4 mr-2" />
                                         Upload New File
@@ -965,7 +968,7 @@ const DynamicDataGrid = () => {
                                 role="grid"
                             >
                                 <table
-                                    className="w-full text-sm border-collapse font-medium"  // add font-medium
+                                    className="w-full text-sm border-separate border-spacing-0 font-medium"
                                     style={{
                                         width: 'max-content',
                                         minWidth: '100%',

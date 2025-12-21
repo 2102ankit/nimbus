@@ -39,6 +39,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "./StatusBarModal";
 import { Link } from "react-router-dom";
+import { GridToggle } from "@/src/GridToggle";
 
 const AdvancedDataGrid = () => {
   const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines, currency, locale } = useTheme();
@@ -723,21 +724,8 @@ const AdvancedDataGrid = () => {
 
           {/* Links moved to top left and hidden in fullscreen */}
           {!isFullscreen && (
-            <div className="absolute top-4 left-4 flex gap-4 text-sm font-medium z-50">
-              <Link
-                to="/"
-                className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-background/50 backdrop-blur-sm border border-border"
-              >
-                <Layout className="h-4 w-4" />
-                Regular Grid
-              </Link>
-              <Link
-                to="/beta"
-                className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-background/50 backdrop-blur-sm border border-border"
-              >
-                <Grid3x3 className="h-4 w-4" />
-                Dynamic Grid
-              </Link>
+            <div className="absolute top-4 left-4 z-50">
+              <GridToggle />
             </div>
           )}
 

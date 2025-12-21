@@ -80,13 +80,17 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-card rounded-xl shadow-2xl p-6 max-w-lg w-full border"
+                className="bg-card rounded-xl shadow-2xl p-6 max-w-lg w-full border-2"
+                style={{
+                    borderColor: "var(--color-border)",
+                    backgroundColor: "var(--color-card)"
+                }}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-foreground">Upload Data File</h2>
                     <Button variant="ghost" size="icon" onClick={onClose}>
-                        <X className="h-4 w-4" />
+                        <X className="h-4 w-4 text-muted-foreground" />
                     </Button>
                 </div>
 
@@ -111,8 +115,8 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
                                 <p className="text-lg font-medium text-foreground">
                                     {isDragActive ? "Drop your file here" : "Drag & drop your file here"}
                                 </p>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    or <span className="text-primary underline">click to browse</span>
+                                <p className="text-sm text-muted-foreground mt-1" style={{ color: "var(--color-muted-foreground)" }}>
+                                    or <span className="text-primary underline" style={{ color: "var(--color-primary)" }}>click to browse</span>
                                 </p>
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -136,7 +140,7 @@ export function FileUploadHandler({ onDataLoaded, onClose }) {
                                 e.stopPropagation();
                                 removeFile();
                             }}>
-                                <X className="h-4 w-4" />
+                                <X className="h-4 w-4 text-muted-foreground" />
                             </Button>
                         </div>
                     )}

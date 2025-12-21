@@ -26,11 +26,9 @@ export function LoadingState({ minHeight = 300 }) {
   return (
     <tr>
       <td colSpan={100} className="p-0">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center"
-          style={{ height: minHeight }}
+        <div
+          className="flex flex-col items-center justify-center w-full bg-card/10 backdrop-blur-[2px] z-50 rounded-lg sticky left-0"
+          style={{ height: minHeight, top: "var(--header-height)" }}
         >
           <Loader2
             className="h-10 w-10 animate-spin mb-4"
@@ -42,7 +40,7 @@ export function LoadingState({ minHeight = 300 }) {
           >
             Loading data...
           </p>
-        </motion.div>
+        </div>
       </td>
     </tr>
   );
@@ -230,6 +228,8 @@ export function DataRow({
     borderLeft: row.getIsSelected()
       ? "4px solid var(--color-primary)"
       : "none",
+    top: row.getIsPinned() === "top" ? "var(--header-height)" : undefined,
+    bottom: row.getIsPinned() === "bottom" ? "0px" : undefined,
   };
 
   if (isGrouped) {
@@ -340,23 +340,33 @@ export function DataRow({
                       <Layers className="h-4 w-4" />
                       <span>Full Details</span>
                     </h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      {Object.entries(row.original).map(([key, value]) => (
-                        <div key={key} className="flex">
-                          <span
-                            className="font-semibold w-32"
-                            style={{ color: "var(--color-muted-foreground)" }}
-                          >
-                            {key}:
-                          </span>
-                          <span
-                            className="font-medium"
-                            style={{ color: "var(--color-foreground)" }}
-                          >
-                            {String(value)}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm mt-4">
+                      {table.getAllLeafColumns()
+                        .filter(col => col.id !== 'select' && col.id !== 'expand' && col.id !== 'drag' && col.id !== 'pin')
+                        .map((col) => {
+                          const key = col.id || col.accessorKey;
+                          const label = col.columnDef.meta?.headerText || col.id;
+                          const value = row.original[key];
+
+                          if (value === undefined || value === null) return null;
+
+                          return (
+                            <div key={key} className="flex border-b border-border/30 pb-2">
+                              <span
+                                className="font-bold w-1/3 truncate"
+                                style={{ color: "var(--color-muted-foreground)" }}
+                              >
+                                {label}:
+                              </span>
+                              <span
+                                className="font-medium flex-1"
+                                style={{ color: "var(--color-foreground)" }}
+                              >
+                                {String(value)}
+                              </span>
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                   <div className="w-64">
