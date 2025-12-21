@@ -101,7 +101,7 @@ export function EmptyState() {
 // Group Row Component
 export function GroupRow({ row, getDensityPadding, table, getLeftPosition, getRightPosition }) {
   const depth = row.depth || 0;
-  const indentPx = depth * 32;
+  const indentPx = depth * 32 * 0;
 
   return (
     <tr

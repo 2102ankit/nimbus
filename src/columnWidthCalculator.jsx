@@ -6,8 +6,8 @@
 const CHAR_WIDTH_ESTIMATE = 8.5; // pixels per character (approximate for monospace/default font)
 const PADDING = 32; // horizontal padding (left + right in cells)
 const HEADER_PADDING = 16; // extra padding for header content
-const MIN_WIDTH = 80;
-const MAX_WIDTH = 500;
+const MIN_WIDTH = 120;
+const MAX_WIDTH = 600;
 
 /**
  * Calculate width based on header text length

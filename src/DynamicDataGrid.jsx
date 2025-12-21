@@ -985,7 +985,7 @@ const DynamicDataGrid = ({ isDynamic, onToggle }) => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info
-                      className="absolute top-0 right-0 text-primary m-4 cursor-pointer"
+                      className="absolute top-0 right-0 text-primary m-4 mt-5 cursor-pointer"
                       onClick={() => setShowShortcutsModal((v) => !v)}
                     />
                   </TooltipTrigger>
