@@ -9,3 +9,4 @@ export const useRowDrag = () => {
     }
     return context;
 };
+export const RowDragProvider = RowDragContext.Provider;

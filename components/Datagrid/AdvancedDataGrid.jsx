@@ -529,113 +529,121 @@ const AdvancedDataGrid = () => {
                 </h1>
                 <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
                   Complete table with Advanced Filters, Multi-Column Sort, Column Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
-                  backgroundColor: "var(--color-card)",
-                  borderColor: "var(--color-border)",
-                  height: isFullscreen ? "100dvh" : "auto",
-                  maxHeight: isFullscreen ? "none" : "80vh",
-            }}
-                  animate={{
-                    borderRadius: isFullscreen ? 0 : 12
-                  }}
-                  transition={{
-                    duration: 0.2,
-                    ease: [0.4, 0, 0.2, 1]
-                  }}
-          >
-                  {/* Toolbar with Fullscreen Toggle */}
-                  <DataGridToolbar
-                    table={table}
-                    columns={columns}
-                    onExport={handleExport}
-                    onResetPreferences={handleResetPreferences}
-                    onRefresh={loadData}
-                    globalFilter={globalFilter}
-                    onGlobalFilterChange={updateGlobalFilter}
-                    searchInputValue={searchInputValue}
-                    onSearchInputChange={setSearchInputValue}
-                    searchInputRef={searchInputRef}
-                    viewButtonRef={viewButtonRef}
-                    columnsButtonRef={columnsButtonRef}
-                    groupButtonRef={groupButtonRef}
-                    exportButtonRef={exportButtonRef}
-                    viewMenuOpen={viewMenuOpen}
-                    setViewMenuOpen={setViewMenuOpen}
-                    columnsMenuOpen={columnsMenuOpen}
-                    setColumnsMenuOpen={setColumnsMenuOpen}
-                    groupMenuOpen={groupMenuOpen}
-                    setGroupMenuOpen={setGroupMenuOpen}
-                    exportMenuOpen={exportMenuOpen}
-                    setExportMenuOpen={setExportMenuOpen}
-                    clearAllFilters={clearAllFilters}
-                    extraButtons={
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIsFullscreen(!isFullscreen)}
-                        title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                        className="h-11 border-2 shadow-sm bg-background color-foreground border-border"
-                        style={{ color: "var(--color-muted-foreground)" }}
-                      >
-                        {isFullscreen ? (
-                          <Minimize2 className="h-4 w-4" />
-                        ) : (
-                          <Maximize2 className="h-4 w-4" />
-                        )}
-                      </Button>
-
-                    }
-                  />
-
-                  {/* Scrollable Table */}
-                  <div
-                    className="flex-1 overflow-auto min-h-0"
-                    style={{
-                      overscrollBehavior: 'none',
-                    }}
-                  >
-                    <table className="w-full text-sm border-collapse"
-                      style={{
-                        width: 'max-content',
-                        minWidth: '100%'
-                      }}
-                    >
-                      <DataGridTableHeader
-                        table={table}
-                        getDensityPadding={getDensityPadding}
-                        getHeaderBorderClasses={getHeaderBorderClasses}
-                        getLeftPosition={getLeftPos}
-                        getRightPosition={getRightPos}
-                        focusedColumnIndex={focusedColumnIndex}
-                      />
-                      <DataGridTableBody
-                        table={table}
-                        loading={loading}
-                        isEmpty={isEmpty}
-                        getDensityPadding={getDensityPadding}
-                        getCellBorderClasses={getCellBorderClasses}
-                        getLeftPosition={getLeftPos}
-                        getRightPosition={getRightPos}
-                      />
-                    </table>
-                  </div>
-                  <motion.div
-                    initial={{ opacity: 1 }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <DataGridPagination table={table} />
-                  </motion.div>
+                </p>
               </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.div
+            className="flex flex-col bg-card border border-border shadow-sm overflow-hidden"
+            style={{
+              backgroundColor: "var(--color-card)",
+              borderColor: "var(--color-border)",
+              height: isFullscreen ? "100dvh" : "auto",
+              maxHeight: isFullscreen ? "none" : "80vh",
+            }}
+            animate={{
+              borderRadius: isFullscreen ? 0 : 12
+            }}
+            transition={{
+              duration: 0.2,
+              ease: [0.4, 0, 0.2, 1]
+            }}
+          >
+            {/* Toolbar with Fullscreen Toggle */}
+            <DataGridToolbar
+              table={table}
+              columns={columns}
+              onExport={handleExport}
+              onResetPreferences={handleResetPreferences}
+              onRefresh={loadData}
+              globalFilter={globalFilter}
+              onGlobalFilterChange={updateGlobalFilter}
+              searchInputValue={searchInputValue}
+              onSearchInputChange={setSearchInputValue}
+              searchInputRef={searchInputRef}
+              viewButtonRef={viewButtonRef}
+              columnsButtonRef={columnsButtonRef}
+              groupButtonRef={groupButtonRef}
+              exportButtonRef={exportButtonRef}
+              viewMenuOpen={viewMenuOpen}
+              setViewMenuOpen={setViewMenuOpen}
+              columnsMenuOpen={columnsMenuOpen}
+              setColumnsMenuOpen={setColumnsMenuOpen}
+              groupMenuOpen={groupMenuOpen}
+              setGroupMenuOpen={setGroupMenuOpen}
+              exportMenuOpen={exportMenuOpen}
+              setExportMenuOpen={setExportMenuOpen}
+              clearAllFilters={clearAllFilters}
+              extraButtons={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                  className="h-11 border-2 shadow-sm bg-background color-foreground border-border"
+                  style={{ color: "var(--color-muted-foreground)" }}
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="h-4 w-4" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4" />
+                  )}
+                </Button>
+
+              }
+            />
+
+            {/* Scrollable Table */}
+            <div
+              className="flex-1 overflow-auto min-h-0"
+              style={{
+                overscrollBehavior: 'none',
+              }}
+            >
+              <table className="w-full text-sm border-collapse"
+                style={{
+                  width: 'max-content',
+                  minWidth: '100%'
+                }}
+              >
+                <DataGridTableHeader
+                  table={table}
+                  getDensityPadding={getDensityPadding}
+                  getHeaderBorderClasses={getHeaderBorderClasses}
+                  getLeftPosition={getLeftPos}
+                  getRightPosition={getRightPos}
+                  focusedColumnIndex={focusedColumnIndex}
+                />
+                <DataGridTableBody
+                  table={table}
+                  loading={loading}
+                  isEmpty={isEmpty}
+                  getDensityPadding={getDensityPadding}
+                  getCellBorderClasses={getCellBorderClasses}
+                  getLeftPosition={getLeftPos}
+                  getRightPosition={getRightPos}
+                />
+              </table>
+            </div>
+            <motion.div
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <DataGridPagination table={table} />
+            </motion.div>
+          </motion.div>
 
           {/* Footer Credit */}
-            {!isFullscreen && (
-              <div className="text-center mt-6 text-sm text-muted-foreground">
-                Built with ❤️ by {" "}
-                <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
-                • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts • {" "}
-                <Link to="/beta">Dynamic Grid (beta)</Link>
-              </div>
-            )}
+          {!isFullscreen && (
+            <div className="text-center mt-6 text-sm text-muted-foreground">
+              Built with ❤️ by {" "}
+              <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
+              • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts • {" "}
+              <Link to="/beta">Dynamic Grid (beta)</Link>
+            </div>
+          )}
         </div>
       </motion.div>
 
