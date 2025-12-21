@@ -137,7 +137,7 @@ export const savePreferences = (prefs) => {
     } catch (error) {
       console.error("Failed to save preferences:", error);
     }
-  }, 500); // Save after 500ms of inactivity
+  }, 100); // Save after 100ms of inactivity
 };
 
 export const resetPreferences = () => {
@@ -226,8 +226,8 @@ export const advancedFilterFn = (row, columnId, filterValue) => {
           .toLowerCase()
           .endsWith(String(fv).toLowerCase());
       },
-      isEmpty: (v) => !v || String(v).trim() === "",
-      isNotEmpty: (v) => v && String(v).trim() !== "",
+      isEmpty: (v) => v === null || v === undefined || String(v).trim() === "" || v === "-",
+      isNotEmpty: (v) => v !== null && v !== undefined && String(v).trim() !== "" && v !== "-",
     },
     number: {
       equals: (v, fv) => {
@@ -261,8 +261,8 @@ export const advancedFilterFn = (row, columnId, filterValue) => {
         const max = fv.max ? Number(fv.max) : Infinity;
         return num >= min && num <= max;
       },
-      isEmpty: (v) => v === null || v === undefined || v === "",
-      isNotEmpty: (v) => v !== null && v !== undefined && v !== "",
+      isEmpty: (v) => v === null || v === undefined || String(v).trim() === "" || v === "-",
+      isNotEmpty: (v) => v !== null && v !== undefined && String(v).trim() !== "" && v !== "-",
     },
     date: {
       equals: (v, fv) => {

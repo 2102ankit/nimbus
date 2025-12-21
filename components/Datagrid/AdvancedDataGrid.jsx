@@ -32,7 +32,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Info, Maximize2, Minimize2, Layout } from "lucide-react";
+import { Info, Maximize2, Minimize2, Layout, Grid3x3 } from "lucide-react";
 import { animate } from "motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,6 +57,9 @@ const AdvancedDataGrid = () => {
   const [rowSelection, setRowSelection] = useState({});
   const [expanded, setExpanded] = useState({});
   const [grouping, setGrouping] = useState([]);
+  const [, setForceUpdate] = useState(0);
+
+  const triggerUpdate = useCallback(() => setForceUpdate(v => v + 1), []);
 
   // Load preferences
   const [prefs, setPrefs] = useState(loadPreferences);
@@ -183,16 +186,17 @@ const AdvancedDataGrid = () => {
         enableSorting: config.sortable !== undefined ? config.sortable : col.enableSorting,
         enableColumnFilter: config.filterable !== undefined ? config.filterable : col.enableColumnFilter,
         enableResizing: config.resizable !== undefined ? config.resizable : col.enableResizing,
+        enableHiding: config.hideable !== undefined ? config.hideable : col.enableHiding,
         enableGrouping: config.forceEnum !== undefined ? config.forceEnum : col.enableGrouping,
         meta: {
           ...col.meta,
-          headerText: config.headerText || col.meta?.headerText,
-          dataType: config.dataType || col.meta?.dataType,
+          ...config,
+          headerText: config.headerText || col.meta?.headerText || col.header,
         }
       };
     });
     return addHeadersToColumns(configuredColumns);
-  }, [columns, currency, locale, prefs]); // prefs as dependency to trigger re-render on save
+  }, [columns, currency, locale, prefs, forceUpdate]); // forceUpdate as dependency to trigger re-render on save
 
   // Initialize table
   const table = useReactTable({
@@ -611,7 +615,7 @@ const AdvancedDataGrid = () => {
           </AnimatePresence>
 
           <motion.div
-            className="flex flex-col bg-card border border-border overflow-hidden"
+            className="flex flex-col bg-card border border-border overflow-hidden shadow-none"
             style={{
               backgroundColor: "var(--color-card)",
               borderColor: "var(--color-border)",
@@ -629,7 +633,7 @@ const AdvancedDataGrid = () => {
             {/* Toolbar with Fullscreen Toggle */}
             <DataGridToolbar
               table={table}
-              columns={columns}
+              columns={table.getAllLeafColumns().map(c => c.columnDef)}
               onExport={handleExport}
               onResetPreferences={handleResetPreferences}
               onRefresh={loadData}
@@ -655,10 +659,7 @@ const AdvancedDataGrid = () => {
                 <div className="flex gap-2">
                   <ColumnConfigurationMenu
                     columns={table.getAllLeafColumns()}
-                    onConfigChange={() => {
-                      // Trigger a re-render by updating prefs
-                      setPrefs(loadPreferences());
-                    }}
+                    onConfigChange={triggerUpdate}
                   />
                   <Button
                     variant="ghost"

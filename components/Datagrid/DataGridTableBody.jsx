@@ -242,6 +242,7 @@ export function DataRow({
         <tr
           ref={setNodeRef}
           style={style}
+          className={`${row.getIsPinned() ? `sticky-pinned-row sticky-pinned-row-${row.getIsPinned()}` : ""}`}
         >
           {row.getVisibleCells().map((cell) => {
             const isPinned = cell.column.getIsPinned();
@@ -284,11 +285,7 @@ export function DataRow({
                     : "inherit",
                   borderBottom: "1px solid var(--color-border)",
                   borderRight: isBeforeRightPinned ? 'none' : undefined,
-                  boxShadow: isPinned
-                    ? isPinned === "left"
-                      ? "2px 0 5px rgba(0,0,0,0.05)"
-                      : "-2px 0 5px rgba(0,0,0,0.05)"
-                    : "none",
+                  boxShadow: "none",
                 }}
               >
                 {cell.getIsGrouped() ? (
@@ -465,18 +462,20 @@ export function DataGridTableBody({
             ))}
 
             {/* Center Rows */}
-            {(table.getPaginationRowModel()?.rows || table.getRowModel().rows).map((row, idx) => (
-              <DataRow
-                key={row.id}
-                row={row}
-                idx={idx}
-                getDensityPadding={getDensityPadding}
-                getCellBorderClasses={getCellBorderClasses}
-                getLeftPosition={getLeftPosition}
-                getRightPosition={getRightPosition}
-                table={table}
-              />
-            ))}
+            {(table.getPaginationRowModel()?.rows || table.getRowModel().rows)
+              .filter(r => !r.getIsPinned())
+              .map((row, idx) => (
+                <DataRow
+                  key={row.id}
+                  row={row}
+                  idx={idx}
+                  getDensityPadding={getDensityPadding}
+                  getCellBorderClasses={getCellBorderClasses}
+                  getLeftPosition={getLeftPosition}
+                  getRightPosition={getRightPosition}
+                  table={table}
+                />
+              ))}
 
             {/* Bottom Pinned Rows */}
             {table.getBottomRows().map((row, idx) => (

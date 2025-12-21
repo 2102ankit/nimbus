@@ -92,12 +92,12 @@ export function DataGridToolbar({
     const columnId = col.id;
     const config = getColumnConfig(columnId);
     if (config?.headerText) return config.headerText;
+    if (col.columnDef?.meta?.headerText) return col.columnDef.meta.headerText;
 
-    const header = col.columnDef?.header || col.columnDef?.meta?.headerText || col.id;
-    if (typeof header === 'function' || typeof header === 'object') {
-      return col.columnDef?.meta?.headerText || col.columnDef?.meta?.originalKey || col.id;
-    }
-    return String(header);
+    const header = col.columnDef?.header;
+    if (typeof header === 'string') return header;
+
+    return col.columnDef?.meta?.originalKey || col.id;
   };
 
   const hasFilters =
@@ -298,6 +298,9 @@ export function DataGridToolbar({
                     <DropdownMenuRadioGroup value={fontFamily} onValueChange={setFontFamily}>
                       <DropdownMenuRadioItem value="Inter">Inter</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="Roboto">Roboto</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Geist Mono">Geist Mono</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Google Sans Flex">Google Sans Flex</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="JetBrains Mono">JetBrains Mono</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="system-ui">System UI</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="monospace">Monospace</DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>

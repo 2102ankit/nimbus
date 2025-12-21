@@ -357,7 +357,7 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             }).format(numValue);
 
             return (
-                <span className="text-foreground font-mono text-sm">
+                <span className="text-foreground font-mono text-sm tabular-nums">
                     {currencySymbol}{formatted}
                 </span>
             );
@@ -384,7 +384,7 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
                             }}
                         />
                     </div>
-                    <span className="text-xs font-bold w-10 text-foreground">
+                    <span className="text-xs font-mono w-10 text-foreground tabular-nums">
                         {numValue}%
                     </span>
                 </div>

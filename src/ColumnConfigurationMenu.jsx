@@ -134,11 +134,19 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, [filteredColumns]);
 
     const handleConfigChange = useCallback((key, value) => {
-        setLocalConfigs(prev => ({
-            ...prev,
-            [key]: value
-        }));
-    }, []);
+        setLocalConfigs(prev => {
+            const updated = {
+                ...prev,
+                [key]: value
+            };
+            // Apply immediately if it's a toggle change
+            if (selectedColumnId && key !== 'headerText' && key !== 'precision') {
+                setColumnConfig(selectedColumnId, updated);
+                onConfigChange?.();
+            }
+            return updated;
+        });
+    }, [selectedColumnId, onConfigChange]);
 
     const handleSaveConfig = useCallback(() => {
         if (selectedColumnId) {

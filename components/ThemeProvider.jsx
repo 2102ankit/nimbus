@@ -73,6 +73,7 @@ export function ThemeProvider({ children }) {
     // Apply font family
     const fontMap = {
       'Inter': 'var(--font-inter)',
+      'Roboto': 'var(--font-roboto)',
       'JetBrains Mono': 'var(--font-jetbrains)',
       'Geist Mono': 'var(--font-geist)',
       'Google Sans Flex': 'var(--font-google)',
