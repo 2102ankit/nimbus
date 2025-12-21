@@ -282,26 +282,28 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
     if (!column) return;
 
     setTimeout(() => {
-      const tableContainer = document.querySelector('.overflow-auto');
+      const tableContainer = document.querySelector(".overflow-auto");
       if (!tableContainer) return;
 
       const columnId = column.id;
-      const headerCell = document.querySelector(`[data-column-id="${columnId}"]`);
+      const headerCell = document.querySelector(
+        `[data-column-id="${columnId}"]`
+      );
       if (!headerCell) return;
 
       // Calculate total width of left pinned columns
       const leftPinnedColumns = table.getState().columnPinning.left || [];
       let leftPinnedWidth = 0;
-      leftPinnedColumns.forEach(colId => {
-        const col = table.getAllLeafColumns().find(c => c.id === colId);
+      leftPinnedColumns.forEach((colId) => {
+        const col = table.getAllLeafColumns().find((c) => c.id === colId);
         if (col) leftPinnedWidth += col.getSize();
       });
 
       // Calculate right pinned columns width
       const rightPinnedColumns = table.getState().columnPinning.right || [];
       let rightPinnedWidth = 0;
-      rightPinnedColumns.forEach(colId => {
-        const col = table.getAllLeafColumns().find(c => c.id === colId);
+      rightPinnedColumns.forEach((colId) => {
+        const col = table.getAllLeafColumns().find((c) => c.id === colId);
         if (col) rightPinnedWidth += col.getSize();
       });
 
@@ -314,15 +316,18 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
       const borderWidth = 2;
       let targetScrollLeft;
 
-      if (direction === 'right') {
+      if (direction === "right") {
         // Moving right: align left border of cell to right border of left-pinned columns
-        const cellLeftRelativeToScroll = cellRect.left - containerRect.left + currentScroll;
+        const cellLeftRelativeToScroll =
+          cellRect.left - containerRect.left + currentScroll;
         targetScrollLeft = cellLeftRelativeToScroll - leftPinnedWidth;
-      } else if (direction === 'left') {
+      } else if (direction === "left") {
         // Moving left: align right border of cell to left border of right-pinned columns
-        const cellRightRelativeToScroll = cellRect.right - containerRect.left + currentScroll;
+        const cellRightRelativeToScroll =
+          cellRect.right - containerRect.left + currentScroll;
         const visibleAreaEnd = containerRect.width - rightPinnedWidth;
-        targetScrollLeft = cellRightRelativeToScroll + borderWidth - visibleAreaEnd;
+        targetScrollLeft =
+          cellRightRelativeToScroll + borderWidth - visibleAreaEnd;
       }
 
       // If wrapping around, use instant scroll; otherwise animate smoothly
@@ -335,7 +340,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
           ease: [0.4, 0.0, 0.2, 1],
           onUpdate: (latest) => {
             tableContainer.scrollLeft = latest;
-          }
+          },
         });
       }
     }, 0);
@@ -349,90 +354,151 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
   };
 
   // Keyboard shortcuts using react-hotkeys-hook (after table initialization)
-  useHotkeys('slash', (e) => {
-    e.preventDefault();
-    searchInputRef.current?.focus();
-  }, { enableOnFormTags: true });
+  useHotkeys(
+    "slash",
+    (e) => {
+      e.preventDefault();
+      searchInputRef.current?.focus();
+    },
+    { enableOnFormTags: true }
+  );
 
-  useHotkeys('shift+r, R', (e) => {
-    e.preventDefault();
-    clearAllFilters();
-  }, { enableOnFormTags: false });
+  useHotkeys(
+    "shift+r, R",
+    (e) => {
+      e.preventDefault();
+      clearAllFilters();
+    },
+    { enableOnFormTags: false }
+  );
 
-  useHotkeys('r', (e) => {
-    e.preventDefault();
-    clearAllFilters();
-  }, { enableOnFormTags: false });
+  useHotkeys(
+    "r",
+    (e) => {
+      e.preventDefault();
+      clearAllFilters();
+    },
+    { enableOnFormTags: false }
+  );
 
-  useHotkeys('v', (e) => {
-    e.preventDefault();
-    setViewMenuOpen((v) => !v);
-  }, { enableOnFormTags: false });
+  useHotkeys(
+    "v",
+    (e) => {
+      e.preventDefault();
+      setViewMenuOpen((v) => !v);
+    },
+    { enableOnFormTags: false }
+  );
 
-  useHotkeys('g', (e) => {
-    e.preventDefault();
-    setGroupMenuOpen((v) => !v);
-  }, { enableOnFormTags: false });
+  useHotkeys(
+    "g",
+    (e) => {
+      e.preventDefault();
+      setGroupMenuOpen((v) => !v);
+    },
+    { enableOnFormTags: false }
+  );
 
-  useHotkeys('e', () => {
-    if (exportMenuOpen) {
-      // Menu is open, close it without exporting
-      setExportMenuOpen(false);
-      setExportMode(null);
-    } else if (exportMode === 'export') {
-      // Menu was just closed, now export
-      const rows = table.getFilteredRowModel().rows.map(r => r.original);
-      const cols = table.getVisibleLeafColumns()
-        .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
-        .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
-      exportToExcel(rows, cols);
-      setExportMode(null);
-    } else {
-      // Open menu and set export mode
-      setExportMenuOpen(true);
-      setExportMode('export');
-      setTimeout(() => {
-        if (!exportMenuOpen) {
-          setExportMode(null);
-        }
-      }, 3000);
-    }
-  }, { enableOnFormTags: false });
-
-  useHotkeys('c', (e) => {
-    e.preventDefault();
-    if (!exportMenuOpen) {
-      if (exportMode === 'export') {
-        const rows = table.getFilteredRowModel().rows.map(r => r.original);
-        const cols = table.getVisibleLeafColumns()
-          .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
-          .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
-        exportToCSV(rows, cols);
+  useHotkeys(
+    "e",
+    () => {
+      if (exportMenuOpen) {
+        // Menu is open, close it without exporting
+        setExportMenuOpen(false);
+        setExportMode(null);
+      } else if (exportMode === "export") {
+        // Menu was just closed, now export
+        const rows = table.getFilteredRowModel().rows.map((r) => r.original);
+        const cols = table
+          .getVisibleLeafColumns()
+          .filter(
+            (col) =>
+              col.id !== "select" && col.id !== "actions" && col.id !== "expand"
+          )
+          .map((col) => ({
+            id: col.id,
+            header: col.columnDef.meta?.headerText || col.id,
+          }));
+        exportToExcel(rows, cols);
         setExportMode(null);
       } else {
-        setColumnsMenuOpen((v) => !v);
+        // Open menu and set export mode
+        setExportMenuOpen(true);
+        setExportMode("export");
+        setTimeout(() => {
+          if (!exportMenuOpen) {
+            setExportMode(null);
+          }
+        }, 3000);
       }
-    }
-  }, { enableOnFormTags: false });
+    },
+    { enableOnFormTags: false }
+  );
 
-  useHotkeys('j', () => {
-    if (exportMode === 'export' && !exportMenuOpen) {
-      const rows = table.getFilteredRowModel().rows.map(r => r.original);
-      const cols = table.getVisibleLeafColumns()
-        .filter(col => col.id !== 'select' && col.id !== 'actions' && col.id !== 'expand')
-        .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
-      exportToJSON(rows, cols);
-      setExportMode(null);
-    }
-  }, { enableOnFormTags: false });
+  useHotkeys(
+    "c",
+    (e) => {
+      e.preventDefault();
+      if (!exportMenuOpen) {
+        if (exportMode === "export") {
+          const rows = table.getFilteredRowModel().rows.map((r) => r.original);
+          const cols = table
+            .getVisibleLeafColumns()
+            .filter(
+              (col) =>
+                col.id !== "select" &&
+                col.id !== "actions" &&
+                col.id !== "expand"
+            )
+            .map((col) => ({
+              id: col.id,
+              header: col.columnDef.meta?.headerText || col.id,
+            }));
+          exportToCSV(rows, cols);
+          setExportMode(null);
+        } else {
+          setColumnsMenuOpen((v) => !v);
+        }
+      }
+    },
+    { enableOnFormTags: false }
+  );
 
-  useHotkeys('d', () => toggleTheme(), { enableOnFormTags: false });
+  useHotkeys(
+    "j",
+    () => {
+      if (exportMode === "export" && !exportMenuOpen) {
+        const rows = table.getFilteredRowModel().rows.map((r) => r.original);
+        const cols = table
+          .getVisibleLeafColumns()
+          .filter(
+            (col) =>
+              col.id !== "select" && col.id !== "actions" && col.id !== "expand"
+          )
+          .map((col) => ({
+            id: col.id,
+            header: col.columnDef.meta?.headerText || col.id,
+          }));
+        exportToJSON(rows, cols);
+        setExportMode(null);
+      }
+    },
+    { enableOnFormTags: false }
+  );
 
-  useHotkeys('i', () => setShowShortcutsModal((v) => !v), { enableOnFormTags: false });
+  useHotkeys("d", () => toggleTheme(), { enableOnFormTags: false });
 
-  useHotkeys('f', () => setIsFullscreen((v) => !v), { enableOnFormTags: false });
+  useHotkeys("i", () => setShowShortcutsModal((v) => !v), {
+    enableOnFormTags: false,
+  });
 
-  useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
+  useHotkeys("f", () => setIsFullscreen((v) => !v), {
+    enableOnFormTags: false,
+  });
+
+  useHotkeys("s", () => setShowStatusModal((v) => !v), {
+    enableOnFormTags: false,
+  });
 
   useHotkeys('esc', (e) => {
     const isAnyMenuOpen = viewMenuOpen || columnsMenuOpen || groupMenuOpen || exportMenuOpen || showShortcutsModal || showStatusModal;
@@ -452,64 +518,86 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
     }
   }, { enableOnFormTags: true });
 
-  useHotkeys('pageup', (e) => {
-    e.preventDefault();
-    if (table.getCanPreviousPage()) table.previousPage();
-  }, { enableOnFormTags: false });
+  useHotkeys(
+    "pageup",
+    (e) => {
+      e.preventDefault();
+      if (table.getCanPreviousPage()) table.previousPage();
+    },
+    { enableOnFormTags: false }
+  );
 
-  useHotkeys('pagedown', (e) => {
-    e.preventDefault();
-    if (table.getCanNextPage()) table.nextPage();
-  }, { enableOnFormTags: false });
+  useHotkeys(
+    "pagedown",
+    (e) => {
+      e.preventDefault();
+      if (table.getCanNextPage()) table.nextPage();
+    },
+    { enableOnFormTags: false }
+  );
 
-  useHotkeys('left', (e) => {
-    if (document.activeElement === searchInputRef.current) return;
-    e.preventDefault();
+  useHotkeys(
+    "left",
+    (e) => {
+      if (document.activeElement === searchInputRef.current) return;
+      e.preventDefault();
 
-    const visibleColumns = table.getVisibleLeafColumns()
-      .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
+      const visibleColumns = table
+        .getVisibleLeafColumns()
+        .filter(
+          (col) =>
+            col.id !== "select" && col.id !== "expand" && !col.getIsPinned()
+        );
 
-    if (visibleColumns.length === 0) return;
+      if (visibleColumns.length === 0) return;
 
-    setFocusedColumnIndex(prev => {
-      const isWrapping = prev === null || prev <= 0;
+      setFocusedColumnIndex((prev) => {
+        const isWrapping = prev === null || prev <= 0;
 
-      if (isWrapping) {
-        const newIndex = visibleColumns.length - 1;
-        scrollColumnIntoView(visibleColumns[newIndex], 'left', true); // Pass true for wrapping
+        if (isWrapping) {
+          const newIndex = visibleColumns.length - 1;
+          scrollColumnIntoView(visibleColumns[newIndex], "left", true); // Pass true for wrapping
+          return newIndex;
+        }
+
+        const newIndex = prev - 1;
+        scrollColumnIntoView(visibleColumns[newIndex], "left", false);
         return newIndex;
-      }
+      });
+    },
+    { enableOnFormTags: false }
+  );
 
-      const newIndex = prev - 1;
-      scrollColumnIntoView(visibleColumns[newIndex], 'left', false);
-      return newIndex;
-    });
-  }, { enableOnFormTags: false });
+  useHotkeys(
+    "right",
+    (e) => {
+      if (document.activeElement === searchInputRef.current) return;
+      e.preventDefault();
 
-  useHotkeys('right', (e) => {
-    if (document.activeElement === searchInputRef.current) return;
-    e.preventDefault();
+      const visibleColumns = table
+        .getVisibleLeafColumns()
+        .filter(
+          (col) =>
+            col.id !== "select" && col.id !== "expand" && !col.getIsPinned()
+        );
 
-    const visibleColumns = table.getVisibleLeafColumns()
-      .filter(col => col.id !== 'select' && col.id !== 'expand' && !col.getIsPinned());
+      if (visibleColumns.length === 0) return;
 
-    if (visibleColumns.length === 0) return;
+      setFocusedColumnIndex((prev) => {
+        const isWrapping = prev === null || prev >= visibleColumns.length - 1;
 
+        if (isWrapping) {
+          scrollColumnIntoView(visibleColumns[0], "right", true); // Pass true for wrapping
+          return 0;
+        }
 
-    setFocusedColumnIndex(prev => {
-      const isWrapping = prev === null || prev >= visibleColumns.length - 1;
-
-      if (isWrapping) {
-        scrollColumnIntoView(visibleColumns[0], 'right', true); // Pass true for wrapping
-        return 0;
-      }
-
-      const newIndex = prev + 1;
-      scrollColumnIntoView(visibleColumns[newIndex], 'right', false);
-      return newIndex;
-    });
-  }, { enableOnFormTags: false });
-
+        const newIndex = prev + 1;
+        scrollColumnIntoView(visibleColumns[newIndex], "right", false);
+        return newIndex;
+      });
+    },
+    { enableOnFormTags: false }
+  );
 
   // Handle export
   const handleExport = (format, rows, cols) => {
@@ -594,7 +682,9 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        <div className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}>
+        <div
+          className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}
+        >
           {/* Header - Hidden in fullscreen */}
           <AnimatePresence>
             {!isFullscreen && (
@@ -623,11 +713,11 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
               maxHeight: isFullscreen ? "100dvh" : "80vh",
             }}
             animate={{
-              borderRadius: isFullscreen ? 0 : 12
+              borderRadius: isFullscreen ? 0 : 12,
             }}
             transition={{
               duration: 0.2,
-              ease: [0.4, 0, 0.2, 1]
+              ease: [0.4, 0, 0.2, 1],
             }}
           >
             {/* Toolbar with Fullscreen Toggle */}
@@ -683,13 +773,14 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
             <div
               className="flex-1 overflow-auto min-h-0"
               style={{
-                overscrollBehavior: 'none',
+                overscrollBehavior: "none",
               }}
             >
-              <table className="w-full text-sm border-collapse"
+              <table
+                className="w-full text-sm border-collapse"
                 style={{
-                  width: 'max-content',
-                  minWidth: '100%'
+                  width: "max-content",
+                  minWidth: "100%",
                 }}
               >
                 <DataGridTableHeader
@@ -739,8 +830,16 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
         </div>
       </motion.div>
 
-      <StatusBarModal open={showStatusModal} onOpenChange={setShowStatusModal} table={table} rowSelection={rowSelection} />
-      <KeyboardShortcutsModal open={showShortcutsModal} onOpenChange={setShowShortcutsModal} />
+      <StatusBarModal
+        open={showStatusModal}
+        onOpenChange={setShowStatusModal}
+        table={table}
+        rowSelection={rowSelection}
+      />
+      <KeyboardShortcutsModal
+        open={showShortcutsModal}
+        onOpenChange={setShowShortcutsModal}
+      />
     </div>
   );
 };

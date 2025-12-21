@@ -1,7 +1,13 @@
 import { ColumnHeader } from "@/components/Datagrid/ColumnHeader";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronRight, Pin, PinOff, GripVertical } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Pin,
+  PinOff,
+  GripVertical,
+} from "lucide-react";
 import { useRowDrag } from "./RowDragContext";
 
 export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US") => {
@@ -32,7 +38,7 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
 
   const pinCol = {
     id: "pin",
-    header: "",
+    header: null,
     cell: ({ row }) => (
       <button
         onClick={() => row.pin(row.getIsPinned() ? false : 'top')}
@@ -55,7 +61,13 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={table.getIsAllPageRowsSelected() ? true : (table.getIsSomePageRowsSelected() ? "indeterminate" : false)}
+        checked={
+          table.getIsAllPageRowsSelected()
+            ? true
+            : table.getIsSomePageRowsSelected()
+              ? "indeterminate"
+              : false
+        }
         onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
       />
     ),
@@ -78,7 +90,7 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
 
   const expandCol = {
     id: "expand",
-    header: "",
+    header: () => null,
     cell: ({ row }) => (
       <button
         onClick={() => row.toggleExpanded()}
@@ -89,12 +101,12 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
           color: "var(--color-foreground)",
         }}
         onMouseEnter={(e) =>
-        (e.currentTarget.style.backgroundColor =
-          "color-mix(in oklch, var(--color-muted), transparent 70%)")
+          (e.currentTarget.style.backgroundColor =
+            "color-mix(in oklch, var(--color-muted), transparent 70%)")
         }
         onMouseLeave={(e) =>
-        (e.currentTarget.style.backgroundColor =
-          "color-mix(in oklch, var(--color-muted), transparent 90%)")
+          (e.currentTarget.style.backgroundColor =
+            "color-mix(in oklch, var(--color-muted), transparent 90%)")
         }
       >
         {row.getIsExpanded() ? (
@@ -326,18 +338,18 @@ export const addHeadersToColumns = (columns) => {
     header:
       typeof col.header === "string"
         ? ({ column, table, header }) => (
-          <ColumnHeader
-            header={header}
-            column={column}
-            title={col.header}
-            table={table}
-            dataType={col.meta?.dataType}
-            enableSort={col.enableSorting}
-            enableFilter={col.enableColumnFilter}
-            enableResize={col.enableResizing}
-            enableDrag={col.enableDrag}
-          />
-        )
+            <ColumnHeader
+              header={header}
+              column={column}
+              title={col.meta?.headerText || col.header}
+              table={table}
+              dataType={col.meta?.dataType}
+              enableSort={col.enableSorting}
+              enableFilter={col.enableColumnFilter}
+              enableResize={col.enableResizing}
+              enableDrag={col.enableDrag}
+            />
+          )
         : col.header,
   }));
 };

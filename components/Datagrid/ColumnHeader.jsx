@@ -25,6 +25,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { getColumnConfig } from "@/src/columnConfigSystem";
 
 export function ColumnHeader({
   header,
@@ -42,6 +43,11 @@ export function ColumnHeader({
   const isSorted = column.getIsSorted();
   const isPinned = column.getIsPinned();
 
+  // Get the actual header text and dataType from column meta/config (for config sync)
+  const config = getColumnConfig(column.id);
+  const displayTitle = config?.headerText || column.columnDef?.meta?.headerText || title;
+  const effectiveDataType = config?.dataType || column.columnDef?.meta?.dataType || dataType;
+
   const SortIcon =
     isSorted === "asc"
       ? ArrowUp
@@ -54,7 +60,10 @@ export function ColumnHeader({
     .sorting.findIndex((s) => s.id === column.id);
   const showSortIndex = table.getState().sorting.length > 1 && sortIndex !== -1;
   // Determine if any menu options should be shown for this column
-  const hasMenuOptions = enableSort || (enablePin && column.columnDef.enablePinning !== false) || (enableHide && column.columnDef.enableHiding !== false);
+  const hasMenuOptions =
+    enableSort ||
+    (enablePin && column.columnDef.enablePinning !== false) ||
+    (enableHide && column.columnDef.enableHiding !== false);
 
   // Drag handling using @dnd-kit
   const {
@@ -85,7 +94,6 @@ export function ColumnHeader({
     header.getResizeHandler()(e);
   };
 
-
   return (
     <div
       className="flex items-center justify-between w-full gap-1 group relative"
@@ -97,9 +105,11 @@ export function ColumnHeader({
       }}
     >
       {/* Column Title & Sort */}
-      <div className="flex items-center flex-1 min-w-0"
+      <div
+        className="flex items-center flex-1 min-w-0"
         {...attributes}
-        {...listeners}>
+        {...listeners}
+      >
         {/* Drag Handle */}
         {enableDrag && (
           <div
@@ -117,11 +127,14 @@ export function ColumnHeader({
             }}
             className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-foreground transition-colors py-1"
           >
-            <span className="font-semibold truncate">{title}</span>
+            <span className="font-semibold truncate">{displayTitle}</span>
             <div className="flex items-center gap-1 shrink-0">
               <SortIcon
-                className={`h-4 w-4 transition-colors ${isSorted ? "text-primary" : "text-muted-foreground/30 group-hover:text-muted-foreground/60"
-                  }`}
+                className={`h-4 w-4 transition-colors ${
+                  isSorted
+                    ? "text-primary"
+                    : "text-muted-foreground/30 group-hover:text-muted-foreground/60"
+                }`}
               />
               {showSortIndex && (
                 <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full w-3.5 h-3.5 flex items-center justify-center">
@@ -131,16 +144,19 @@ export function ColumnHeader({
             </div>
           </button>
         ) : (
-          <span className="font-semibold truncate py-1">{title}</span>
+          <span className="font-semibold truncate py-1">{displayTitle}</span>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-0.5 shrink-0 pr-1">
+      <div className="flex items-center gap-0.5 shrink-0 pr-2">
         {/* Filter */}
         {enableFilter && (
-          <div className="opacity-30 group-hover:opacity-70 transition-opacity">
-            <AdvancedColumnFilter column={column} dataType={dataType} />
+            <div className="opacity-30 group-hover:opacity-70 transition-opacity">
+            <AdvancedColumnFilter
+              column={column}
+              dataType={effectiveDataType}
+            />
           </div>
         )}
 
@@ -192,7 +208,11 @@ export function ColumnHeader({
 
               {enablePin && (
                 <>
-                  <DropdownMenuItem onClick={() => column.pin(isPinned === "left" ? false : "left")}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      column.pin(isPinned === "left" ? false : "left")
+                    }
+                  >
                     {isPinned === "left" ? (
                       <>
                         <PinOff className="mr-2 h-4 w-4" />
@@ -205,7 +225,11 @@ export function ColumnHeader({
                       </>
                     )}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => column.pin(isPinned === "right" ? false : "right")}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      column.pin(isPinned === "right" ? false : "right")
+                    }
+                  >
                     {isPinned === "right" ? (
                       <>
                         <PinOff className="mr-2 h-4 w-4" />
@@ -223,7 +247,9 @@ export function ColumnHeader({
               )}
 
               {enableHide && (
-                <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <DropdownMenuItem
+                  onClick={() => column.toggleVisibility(false)}
+                >
                   <EyeOff className="mr-2 h-4 w-4" />
                   Hide Column
                 </DropdownMenuItem>
@@ -248,9 +274,7 @@ export function ColumnHeader({
             column.getIsResizing() ? "bg-primary" : "hover:bg-primary/50"
           )}
           style={{ userSelect: "none" }}
-        >
-          <div className="absolute right-0 top-0 h-full w-[1px] bg-border group-hover/resizer:bg-primary/50 transition-colors" />
-        </div>
+        />
       )}
     </div>
   );
