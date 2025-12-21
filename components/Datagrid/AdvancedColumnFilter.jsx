@@ -282,7 +282,7 @@ export function AdvancedColumnFilter({ column, dataType: propDataType = "text" }
           className={`h-7 w-7 ${hasFilter ? "bg-blue-600 hover:bg-blue-700" : ""
             }`}
         >
-          <Filter className="h-3.5 w-3.5" style={{ color: hasFilter ? "white" : "var(--color-foreground)" }} />
+          <Filter className="h-4 w-4" style={{ color: hasFilter ? "white" : "var(--color-foreground)" }} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
@@ -293,7 +293,7 @@ export function AdvancedColumnFilter({ column, dataType: propDataType = "text" }
             </label>
             <Select value={operator} onValueChange={setOperator}>
               <SelectTrigger
-                className="mt-1 w-full h-9 border-2"
+                className="mt-1 w-full h-9 border-2 shadow-sm"
                 style={{
                   backgroundColor: "var(--color-card)",
                   borderColor: "var(--color-border)",

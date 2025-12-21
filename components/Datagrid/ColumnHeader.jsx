@@ -97,15 +97,15 @@ export function ColumnHeader({
       }}
     >
       {/* Column Title & Sort */}
-      <div className="flex items-center flex-1 min-w-0">
+      <div className="flex items-center flex-1 min-w-0"
+        {...attributes}
+        {...listeners}>
         {/* Drag Handle */}
         {enableDrag && (
           <div
-            {...attributes}
-            {...listeners}
             className="cursor-grab active:cursor-grabbing opacity-30 group-hover:opacity-60 transition-opacity shrink-0 px-1.5 py-1 rounded hover:bg-muted/50"
           >
-            <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
         )}
 
@@ -120,7 +120,7 @@ export function ColumnHeader({
             <span className="font-semibold truncate">{title}</span>
             <div className="flex items-center gap-1 shrink-0">
               <SortIcon
-                className={`h-3.5 w-3.5 transition-colors ${isSorted ? "text-primary" : "text-muted-foreground/30 group-hover:text-muted-foreground/60"
+                className={`h-4 w-4 transition-colors ${isSorted ? "text-primary" : "text-muted-foreground/30 group-hover:text-muted-foreground/60"
                   }`}
               />
               {showSortIndex && (
@@ -155,7 +155,7 @@ export function ColumnHeader({
               >
                 <span className="sr-only">Column menu</span>
                 <svg
-                  className="h-3.5 w-3.5"
+                  className="h-4 w-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -244,7 +244,7 @@ export function ColumnHeader({
           }}
           data-dnd-kit-disabled="true"
           className={cn(
-            "absolute -right-[1px] top-0 h-full w-[3px] cursor-col-resize touch-none select-none z-30 group/resizer transition-colors",
+            "absolute -right-1 -top-2 h-10 w-2 cursor-col-resize touch-none select-none z-30 group/resizer transition-colors",
             column.getIsResizing() ? "bg-primary" : "hover:bg-primary/50"
           )}
           style={{ userSelect: "none" }}

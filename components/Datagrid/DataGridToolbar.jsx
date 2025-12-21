@@ -345,7 +345,7 @@ export function DataGridToolbar({
                             <Checkbox
                               checked={col.getIsVisible()}
                               onCheckedChange={() => col.toggleVisibility()}
-                              className="h-4 w-4"
+                              className="h-4 w-4 border-foreground/20"
                             />
                             <span className="text-sm font-medium text-foreground whitespace-normal break-words">
                               {getColumnHeaderText(col)}
@@ -365,7 +365,7 @@ export function DataGridToolbar({
                                         col.pin(isPinned === "left" ? false : "left");
                                       }}
                                     >
-                                      <Pin className={`h-3.5 w-3.5 ${isPinned === "left" ? "text-primary" : ""}`} />
+                                      <Pin className={`h-4 w-4 ${isPinned === "left" ? "text-primary" : ""}`} />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -385,7 +385,7 @@ export function DataGridToolbar({
                                         col.pin(isPinned === "right" ? false : "right");
                                       }}
                                     >
-                                      <Pin className={`h-3.5 w-3.5 rotate-90 ${isPinned === "right" ? "text-primary" : ""}`} />
+                                      <Pin className={`h-4 w-4 rotate-90 ${isPinned === "right" ? "text-primary" : ""}`} />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>

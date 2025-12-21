@@ -73,7 +73,7 @@ export function DataGridPagination({ table, totalRows: totalRowsProp, totalSelec
             onValueChange={(value) => table.setPageSize(Number(value))}
           >
             <SelectTrigger
-              className="h-9 w-20 border-2"
+              className="h-9 w-20 border-2 shadow-sm"
               style={{
                 backgroundColor: "var(--color-card)",
                 borderColor: "var(--color-border)",

@@ -63,7 +63,7 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(v) => row.toggleSelected(!!v)}
-        className="mx-auto"
+        className="mx-auto border-foreground/20"
       />
     ),
     maxSize: 50,

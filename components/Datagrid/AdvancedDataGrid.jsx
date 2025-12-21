@@ -687,7 +687,7 @@ const AdvancedDataGrid = () => {
                 overscrollBehavior: 'none',
               }}
             >
-              <table className="w-full text-sm border-separate border-spacing-0"
+              <table className="w-full text-sm border-collapse"
                 style={{
                   width: 'max-content',
                   minWidth: '100%'

@@ -366,7 +366,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                         value={localConfigs.dataType || getColumnType(selectedColumn)}
                                                         onValueChange={(value) => handleConfigChange('dataType', value)}
                                                     >
-                                                        <SelectTrigger id="data-type" className="w-full bg-background border border-border text-foreground">
+                                                        <SelectTrigger id="data-type" className="w-full bg-background border border-border text-foreground shadow-sm">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent className="bg-card border border-border">
@@ -415,7 +415,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                             value={localConfigs.currencySymbol || '$'}
                                                             onValueChange={(value) => handleConfigChange('currencySymbol', value)}
                                                         >
-                                                            <SelectTrigger id="currency-symbol" className="w-full bg-background border border-border text-foreground">
+                                                            <SelectTrigger id="currency-symbol" className="w-full bg-background border border-border text-foreground shadow-sm">
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent className="bg-card border border-border">
@@ -456,7 +456,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                             value={localConfigs.aggregationFn || getColumnAggregation(selectedColumn)}
                                                             onValueChange={(value) => handleConfigChange('aggregationFn', value)}
                                                         >
-                                                            <SelectTrigger id="aggregation-fn" className="w-full bg-background border border-border text-foreground">
+                                                            <SelectTrigger id="aggregation-fn" className="w-full bg-background border border-border text-foreground shadow-sm">
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent className="bg-card border border-border">

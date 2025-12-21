@@ -62,7 +62,7 @@ export function UrlCell({ value }) {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex items-center space-x-2 py-4">
-                        <Checkbox id="dont-show" onCheckedChange={handleDismiss} />
+                        <Checkbox id="dont-show" onCheckedChange={handleDismiss} className="border-foreground/20" />
                         <label
                             htmlFor="dont-show"
                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
