@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import {
     Select,
     SelectContent,
@@ -13,6 +14,12 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useCallback, useEffect, useMemo, memo, useRef } from "react";
 import { setColumnConfig, getColumnConfig, clearColumnConfigs } from "./columnConfigSystem";
 import { cn } from "@/lib/utils";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ columns = [], onConfigChange }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -49,19 +56,27 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
         return columns.filter(col =>
             col.id !== 'select' &&
             col.id !== 'expand' &&
-            (col.accessorKey || col.accessorFn)
+            col.id !== 'drag' &&
+            col.id !== 'pin' &&
+            (col.accessorKey || col.accessorFn || col.id)
         );
     }, [columns]);
 
     const getColumnTitle = useCallback((col) => {
-        const config = getColumnConfig(col.id);
+        const colId = col.id || col.accessorKey;
+        const config = getColumnConfig(colId);
         if (config?.headerText) return config.headerText;
 
-        const header = col.header || col.columnDef?.header || col.meta?.headerText || col.accessorKey;
-        if (typeof header === 'function' || typeof header === 'object') {
-            return col.meta?.headerText || col.meta?.originalKey || col.accessorKey || col.id;
-        }
-        return String(header);
+        // Check meta.headerText first (most reliable)
+        if (col.meta?.headerText) return col.meta.headerText;
+        if (col.columnDef?.meta?.headerText) return col.columnDef.meta.headerText;
+
+        // Check columnDef.header if it's a string
+        const header = col.columnDef?.header || col.header;
+        if (typeof header === 'string') return header;
+
+        // Fallback to originalKey or accessorKey
+        return col.meta?.originalKey || col.columnDef?.meta?.originalKey || col.accessorKey || col.id;
     }, []);
 
     const getColumnType = useCallback((col) => {
@@ -82,9 +97,19 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                 }
             }
         };
+
         window.addEventListener('keydown', handleEscape);
         return () => window.removeEventListener('keydown', handleEscape);
     }, [isOpen, isEditingHeader]);
+
+    // Task 8: Reset configs when closing without save
+    useEffect(() => {
+        if (!isOpen && selectedColumnId) {
+            // Reset to saved config when modal closes
+            const savedConfig = getColumnConfig(selectedColumnId);
+            setLocalConfigs(savedConfig || {});
+        }
+    }, [isOpen, selectedColumnId]);
 
     useEffect(() => {
         if (isEditingHeader && headerInputRef.current) {
@@ -96,7 +121,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     const handleColumnSelect = useCallback((columnId) => {
         setSelectedColumnId(columnId);
         const existingConfig = getColumnConfig(columnId);
-        const selectedCol = filteredColumns.find(col => col.id === columnId);
+        const selectedCol = filteredColumns.find(col => (col.id || col.accessorKey) === columnId);
 
         if (!existingConfig && selectedCol) {
             setLocalConfigs({
@@ -114,11 +139,19 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, [filteredColumns]);
 
     const handleConfigChange = useCallback((key, value) => {
-        setLocalConfigs(prev => ({
-            ...prev,
-            [key]: value
-        }));
-    }, []);
+        setLocalConfigs(prev => {
+            const updated = {
+                ...prev,
+                [key]: value
+            };
+            // Apply immediately if it's a toggle change
+            if (selectedColumnId && key !== 'headerText') {
+                setColumnConfig(selectedColumnId, updated);
+                onConfigChange?.();
+            }
+            return updated;
+        });
+    }, [selectedColumnId, onConfigChange]);
 
     const handleSaveConfig = useCallback(() => {
         if (selectedColumnId) {
@@ -143,7 +176,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, [onConfigChange]);
 
     const handleStartHeaderEdit = useCallback(() => {
-        const selectedCol = filteredColumns.find(col => col.id === selectedColumnId);
+        const selectedCol = filteredColumns.find(col => (col.id || col.accessorKey) === selectedColumnId);
         setEditedHeaderText(localConfigs.headerText || getColumnTitle(selectedCol));
         setIsEditingHeader(true);
     }, [selectedColumnId, localConfigs, filteredColumns, getColumnTitle]);
@@ -151,7 +184,13 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     const handleSaveHeaderEdit = useCallback(() => {
         handleConfigChange('headerText', editedHeaderText);
         setIsEditingHeader(false);
-    }, [editedHeaderText, handleConfigChange]);
+        // Save immediately when header is edited via the "check" button
+        if (selectedColumnId) {
+            const currentConfigs = { ...localConfigs, headerText: editedHeaderText };
+            setColumnConfig(selectedColumnId, currentConfigs);
+            onConfigChange?.();
+        }
+    }, [editedHeaderText, handleConfigChange, selectedColumnId, localConfigs, onConfigChange]);
 
     const handleCancelHeaderEdit = useCallback(() => {
         setIsEditingHeader(false);
@@ -159,7 +198,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     }, []);
 
     const selectedColumn = useMemo(() =>
-        filteredColumns.find(col => col.id === selectedColumnId),
+        filteredColumns.find(col => (col.id || col.accessorKey) === selectedColumnId),
         [filteredColumns, selectedColumnId]
     );
 
@@ -171,18 +210,26 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
 
     return (
         <div>
-            <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(true)}
-                title="Configure columns"
-                className="h-11 border-2 shadow-sm bg-background text-foreground hover:bg-muted"
-                style={{
-                    borderColor: "var(--color-border)",
-                }}
-            >
-                <Settings className="h-4 w-4" />
-            </Button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsOpen(true)}
+                            className="h-11 border-2 bg-background text-foreground hover:bg-muted"
+                            style={{
+                                borderColor: "var(--color-border)",
+                            }}
+                        >
+                            <Settings className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Configure columns</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
 
             <AnimatePresence>
                 {isOpen && (
@@ -224,7 +271,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => setIsOpen(false)}
-                                        className="h-8 w-8"
+                                        className="h-8 w-8 text-muted-foreground"
                                     >
                                         <X className="h-5 w-5" />
                                     </Button>
@@ -235,12 +282,12 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                             <div className="flex-1 overflow-hidden flex">
                                 {/* Column List */}
                                 <div className="w-1/3 border-r border-border overflow-y-auto bg-muted/10">
-                                    <div className="p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+                                    <div className="p-4 border-b border-border bg-background sticky top-0 z-10">
                                         <p className="text-sm font-semibold text-foreground">Columns ({filteredColumns.length})</p>
                                     </div>
                                     <div className="flex flex-col">
                                         {filteredColumns.map(col => {
-                                            const colId = col.id;
+                                            const colId = col.id || col.accessorKey;
                                             const isSelected = selectedColumnId === colId;
                                             const columnTitle = getColumnTitle(col);
                                             const columnType = getColumnType(col);
@@ -281,7 +328,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={handleStartHeaderEdit}
-                                                            className="h-7 px-2"
+                                                            className="h-7 px-2 text-muted-foreground"
                                                         >
                                                             <Pencil className="h-3 w-3" />
                                                         </Button>
@@ -303,7 +350,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                         <Button size="sm" onClick={handleSaveHeaderEdit} className="h-9">
                                                             <Check className="h-4 w-4" />
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" onClick={handleCancelHeaderEdit} className="h-9">
+                                                        <Button size="sm" variant="ghost" onClick={handleCancelHeaderEdit} className="h-9 text-muted-foreground">
                                                             <X className="h-4 w-4" />
                                                         </Button>
                                                     </div>
@@ -324,7 +371,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                         value={localConfigs.dataType || getColumnType(selectedColumn)}
                                                         onValueChange={(value) => handleConfigChange('dataType', value)}
                                                     >
-                                                        <SelectTrigger id="data-type" className="w-full bg-background border border-border text-foreground">
+                                                        <SelectTrigger id="data-type" className="w-full bg-background border border-border text-foreground shadow-sm">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent className="bg-card border border-border">
@@ -340,6 +387,54 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
+
+                                                {/* Precision (Task 10) */}
+                                                {['number', 'currency', 'percentage'].includes(localConfigs.dataType || getColumnType(selectedColumn)) && (
+                                                    <div className="bg-card border border-border rounded-lg p-4">
+                                                        <Label htmlFor="precision" className="text-sm font-semibold text-foreground mb-2 block">
+                                                            Precision (Decimals)
+                                                        </Label>
+                                                        <Input
+                                                            id="precision"
+                                                            type="number"
+                                                            min="0"
+                                                            max="10"
+                                                            value={localConfigs.precision !== undefined ? localConfigs.precision : ''}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value === '' ? undefined : parseInt(e.target.value);
+                                                                handleConfigChange('precision', val);
+                                                            }}
+                                                            className="bg-background border border-border text-foreground"
+                                                            placeholder="Default"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {/* Currency Symbol (F4) */}
+                                                {(localConfigs.dataType || getColumnType(selectedColumn)) === 'currency' && (
+                                                    <div className="bg-card border border-border rounded-lg p-4">
+                                                        <Label htmlFor="currency-symbol" className="text-sm font-semibold text-foreground mb-2 block">
+                                                            Currency Symbol
+                                                        </Label>
+                                                        <Select
+                                                            value={localConfigs.currencySymbol || '$'}
+                                                            onValueChange={(value) => handleConfigChange('currencySymbol', value)}
+                                                        >
+                                                            <SelectTrigger id="currency-symbol" className="w-full bg-background border border-border text-foreground shadow-sm">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-card border border-border">
+                                                                <SelectItem value="$" className="text-foreground hover:bg-muted">$ (USD)</SelectItem>
+                                                                <SelectItem value="€" className="text-foreground hover:bg-muted">€ (EUR)</SelectItem>
+                                                                <SelectItem value="£" className="text-foreground hover:bg-muted">£ (GBP)</SelectItem>
+                                                                <SelectItem value="¥" className="text-foreground hover:bg-muted">¥ (JPY)</SelectItem>
+                                                                <SelectItem value="₹" className="text-foreground hover:bg-muted">₹ (INR)</SelectItem>
+                                                                <SelectItem value="₽" className="text-foreground hover:bg-muted">₽ (RUB)</SelectItem>
+                                                                <SelectItem value="kr" className="text-foreground hover:bg-muted">kr (SEK/NOK)</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                )}
 
                                                 {/* Enum Toggle */}
                                                 <div className="bg-card border border-border rounded-lg p-4">
@@ -366,7 +461,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                             value={localConfigs.aggregationFn || getColumnAggregation(selectedColumn)}
                                                             onValueChange={(value) => handleConfigChange('aggregationFn', value)}
                                                         >
-                                                            <SelectTrigger id="aggregation-fn" className="w-full bg-background border border-border text-foreground">
+                                                            <SelectTrigger id="aggregation-fn" className="w-full bg-background border border-border text-foreground shadow-sm">
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent className="bg-card border border-border">

@@ -5,6 +5,8 @@ import { DataGridTableHeader } from "@/components/Datagrid/DataGridTableHeader";
 import { DataGridToolbar } from "@/components/Datagrid/DataGridToolbar";
 import {
     exportToExcel,
+    exportToCSV,
+    exportToJSON,
     getLeftPosition,
     getRightPosition,
     loadPreferences,
@@ -13,6 +15,12 @@ import {
 } from "@/components/Datagrid/dataGridUtils";
 import { KeyboardShortcutsModal } from "@/components/Datagrid/KeyboardShortcutsModal";
 import { useTheme } from "@/components/ThemeProvider";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
     getCoreRowModel,
@@ -20,7 +28,8 @@ import {
     getGroupedRowModel,
     useReactTable,
 } from "@tanstack/react-table";
-import { Info, Maximize2, Minimize2, Upload } from "lucide-react";
+import { arrayMove } from "@dnd-kit/sortable";
+import { Info, Maximize2, Minimize2, Upload, ArrowRight } from "lucide-react";
 import { animate } from "motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,10 +41,11 @@ import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
 import { applyColumnConfigs } from "./columnConfigSystem";
 import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
 import { useDataWorker } from "./useDataWorker";
-import { Link } from "react-router-dom";
+import { createColumns } from "@/components/Datagrid/columnDefinitions";
+import { GridToggle } from "./GridToggle";
 
-const DynamicDataGrid = () => {
-    const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
+const DynamicDataGrid = ({ isDynamic, onToggle }) => {
+    const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines, currency, locale } = useTheme();
     const { isReady: workerReady, processData } = useDataWorker();
 
     const [rawData, setRawData] = useState([]);
@@ -55,6 +65,7 @@ const DynamicDataGrid = () => {
     const [rowSelection, setRowSelection] = useState({});
     const [expanded, setExpanded] = useState({});
     const [grouping, setGrouping] = useState([]);
+    const [pivotMode, setPivotMode] = useState(false);
 
     const [prefs, setPrefs] = useState(loadPreferences);
     const [sorting, setSorting] = useState(prefs.sorting || []);
@@ -63,12 +74,13 @@ const DynamicDataGrid = () => {
     const [columnOrder, setColumnOrder] = useState(prefs.columnOrder || []);
     const [columnSizing, setColumnSizing] = useState(prefs.columnSizing || {});
     const [columnPinning, setColumnPinning] = useState(prefs.columnPinning || { left: [], right: [] });
+    const [rowPinning, setRowPinning] = useState({ top: [], bottom: [] });
     const [showShortcutsModal, setShowShortcutsModal] = useState(false);
     const [exportMode, setExportMode] = useState(null);
     const [focusedColumnIndex, setFocusedColumnIndex] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
-    const [pageIndex, setPageIndex] = useState(0);
+    const [pageIndex, setPageIndex] = useState(prefs.pageIndex || 0);
     const [pageSize, setPageSize] = useState(prefs.pageSize || 20);
 
     const searchInputRef = useRef(null);
@@ -280,10 +292,13 @@ const DynamicDataGrid = () => {
     }, []);
 
     const handleSavePrefs = useCallback((newPrefs) => {
-        const merged = { ...prefs, ...newPrefs };
-        savePreferences(merged);
-        setPrefs(merged);
-    }, [prefs]);
+        setPrefs(prev => {
+            const merged = { ...prev, ...newPrefs };
+            if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+            savePreferences(merged);
+            return merged;
+        });
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -293,11 +308,42 @@ const DynamicDataGrid = () => {
                 columnOrder,
                 columnSizing,
                 columnPinning,
-                pageSize
+                pageSize,
+                pageIndex,
+                columnFilters
             });
         }, 500);
         return () => clearTimeout(timer);
-    }, [sorting, columnVisibility, columnOrder, columnSizing, columnPinning, pageSize, handleSavePrefs]);
+    }, [sorting, columnVisibility, columnOrder, columnSizing, columnPinning, pageSize, columnFilters, pageIndex, handleSavePrefs]);
+
+    // Pivot Mode Logic
+    useEffect(() => {
+        if (pivotMode) {
+            // Try to find a good grouping column
+            const candidate = columns.find(c =>
+                ['category', 'status', 'role', 'department', 'country'].includes(c.accessorKey?.toLowerCase())
+            );
+            if (candidate) {
+                setGrouping([candidate.id || candidate.accessorKey]);
+            }
+        } else {
+            setGrouping([]);
+        }
+    }, [pivotMode, columns]);
+
+    const handleRowReorder = useCallback((activeId, overId) => {
+        setRawData((currentData) => {
+            // Assuming rows have 'id' property. If not, we might need to use index or generate ID.
+            // But dnd-kit uses IDs.
+            const oldIndex = currentData.findIndex((item) => item.id === activeId);
+            const newIndex = currentData.findIndex((item) => item.id === overId);
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                return arrayMove(currentData, oldIndex, newIndex);
+            }
+            return currentData;
+        });
+    }, []);
 
     const handleDataLoaded = useCallback((rawData, name = "Uploaded File") => {
         setLoading(true);
@@ -328,12 +374,41 @@ const DynamicDataGrid = () => {
         });
     }, []);
 
+    // Pivot Mode Logic
+    useEffect(() => {
+        if (pivotMode) {
+            // Find categorical columns to group by
+            const categoricalColumns = columns.filter(col =>
+                col.meta?.isEnum ||
+                (col.meta?.uniqueValues && col.meta.uniqueValues.length < 20) ||
+                col.meta?.dataType === 'text'
+            );
+
+            if (categoricalColumns.length > 0) {
+                // Prefer 'category', 'status', 'role', 'department', 'country'
+                const preferred = ['category', 'status', 'role', 'department', 'country'];
+                const bestColumn = categoricalColumns.find(col => {
+                    const name = col.id.toLowerCase();
+                    return preferred.some(p => name.includes(p));
+                }) || categoricalColumns[0];
+
+                setGrouping([bestColumn.id]);
+            } else if (columns.length > 0) {
+                // Fallback to first non-select/expand column
+                const firstDataCol = columns.find(c => c.id !== 'select' && c.id !== 'expand');
+                if (firstDataCol) setGrouping([firstDataCol.id]);
+            }
+        } else {
+            setGrouping([]);
+        }
+    }, [pivotMode, columns]);
+
     const columnsWithHeadersAndConfigs = useMemo(() => {
         if (columns.length === 0) return [];
         const configuredColumns = applyColumnConfigs(columns);
         const withHeaders = addHeadersToColumns(configuredColumns);
-        return withHeaders;
-    }, [columns, configReloadTrigger]);
+        return createColumns(withHeaders, currency, locale);
+    }, [columns, configReloadTrigger, currency, locale]);
 
     // Create a manual pagination model for the table
     const paginationState = useMemo(() => ({
@@ -354,8 +429,10 @@ const DynamicDataGrid = () => {
             columnOrder,
             columnSizing,
             columnPinning,
+            rowPinning,
             expanded,
             grouping,
+            pivotMode, // N5
             pagination: paginationState
         },
         enableRowSelection: true,
@@ -367,6 +444,8 @@ const DynamicDataGrid = () => {
         enableMultiSort: true,
         enableFilters: true,
         enablePinning: true,
+        enableRowPinning: true,
+        keepPinnedRows: true,
         enableExpanding: metadata?.hasNestedData || false,
         enableGrouping: true,
         manualPagination: true,
@@ -380,6 +459,7 @@ const DynamicDataGrid = () => {
         onColumnOrderChange: setColumnOrder,
         onColumnSizingChange: setColumnSizing,
         onColumnPinningChange: setColumnPinning,
+        onRowPinningChange: setRowPinning,
         onExpandedChange: setExpanded,
         onGroupingChange: setGrouping,
         onPaginationChange: (updater) => {
@@ -397,6 +477,7 @@ const DynamicDataGrid = () => {
             minSize: 50,
             maxSize: 600,
         },
+        getRowId: (row) => row.id,
     });
 
     const scrollColumnIntoView = (column, direction, isWrapping = false) => {
@@ -532,9 +613,44 @@ const DynamicDataGrid = () => {
     }, { enableOnFormTags: false });
 
     useHotkeys('esc', (e) => {
+        // ESC layered close: close most recent overlay first
+        // Priority: search input blur > dropdowns > modals > fullscreen
         if (document.activeElement === searchInputRef.current) {
             searchInputRef.current?.blur();
-        } else if (isFullscreen) {
+            return;
+        }
+        // Check if any dropdown menus are open
+        if (viewMenuOpen) {
+            setViewMenuOpen(false);
+            return;
+        }
+        if (columnsMenuOpen) {
+            setColumnsMenuOpen(false);
+            return;
+        }
+        if (groupMenuOpen) {
+            setGroupMenuOpen(false);
+            return;
+        }
+        if (exportMenuOpen) {
+            setExportMenuOpen(false);
+            return;
+        }
+        // Check if modals are open
+        if (showShortcutsModal) {
+            setShowShortcutsModal(false);
+            return;
+        }
+        if (showStatusModal) {
+            setShowStatusModal(false);
+            return;
+        }
+        if (showUpload) {
+            setShowUpload(false);
+            return;
+        }
+        // Finally close fullscreen if nothing else is open
+        if (isFullscreen) {
             setIsFullscreen(false);
         }
     }, { enableOnFormTags: true });
@@ -592,37 +708,19 @@ const DynamicDataGrid = () => {
         });
     }, { enableOnFormTags: false });
 
-    const handleExport = useCallback(async (format) => {
-        const cols = table.getVisibleLeafColumns()
-            .filter(col => col.id !== 'select' && col.id !== 'expand')
-            .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
-
+    const handleExport = useCallback((format, rows, columns) => {
         try {
             if (format === 'csv') {
-                const csvData = await processData('EXPORT_CSV', rawData, { columns: cols });
-                const blob = new Blob([csvData], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'export.csv';
-                a.click();
-                URL.revokeObjectURL(url);
+                exportToCSV(table, rows, columns);
             } else if (format === 'json') {
-                const jsonData = await processData('EXPORT_JSON', rawData, { columns: cols });
-                const blob = new Blob([jsonData], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'export.json';
-                a.click();
-                URL.revokeObjectURL(url);
+                exportToJSON(table, rows, columns);
             } else if (format === 'excel') {
-                exportToExcel(rawData, cols);
+                exportToExcel(table, rows, columns);
             }
         } catch (error) {
             console.error('Export error:', error);
         }
-    }, [rawData, table, processData]);
+    }, [table]);
 
     const handleResetPreferences = useCallback(() => {
         resetPreferences();
@@ -729,24 +827,52 @@ const DynamicDataGrid = () => {
                         )}
                     </AnimatePresence>
                     {!isFullscreen && (
-                        <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
+                        <>
+                            <div className="absolute top-0 left-0 m-4 z-50">
+                                <GridToggle isDynamic={isDynamic} onToggle={onToggle} />
+                            </div>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Show shortcuts</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </>
                     )}
 
                     {rawData.length > 0 && !isFullscreen && (
-                        <Button
-                            onClick={() => setShowUpload(true)}
-                            variant="outline"
-                            className="absolute top-0 right-12 m-4 border-2"
-                        >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Upload New File
-                        </Button>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={() => setShowUpload(true)}
+                                        variant="outline"
+                                        className="absolute top-0 right-12 m-4 border-2 shadow-none hover:bg-muted font-normal"
+                                        style={{
+                                            borderColor: "var(--color-border)",
+                                            backgroundColor: "var(--color-background)",
+                                            color: "var(--color-foreground)"
+                                        }}
+                                    >
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        Upload New File
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Upload new file</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
 
                     {rawData.length > 0 && (
                         <motion.div
                             layout="position"
-                            className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                            className="border-2 rounded-xl overflow-hidden flex flex-col"
                             style={{
                                 backgroundColor: "var(--color-card)",
                                 borderColor: "var(--color-border)",
@@ -795,26 +921,36 @@ const DynamicDataGrid = () => {
                                 exportMenuOpen={exportMenuOpen}
                                 setExportMenuOpen={setExportMenuOpen}
                                 clearAllFilters={clearAllFilters}
+                                pivotMode={pivotMode}
+                                setPivotMode={setPivotMode}
                                 extraButtons={
                                     <>
                                         <ColumnConfigurationMenu
                                             columns={columnsWithHeadersAndConfigs}
                                             onConfigChange={handleConfigChange}
                                         />
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => setIsFullscreen(!isFullscreen)}
-                                            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                                            className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
-                                            style={{ color: "var(--color-muted-foreground)" }}
-                                        >
-                                            {isFullscreen ? (
-                                                <Minimize2 className="h-4 w-4" />
-                                            ) : (
-                                                <Maximize2 className="h-4 w-4" />
-                                            )}
-                                        </Button>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => setIsFullscreen(!isFullscreen)}
+                                                        className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
+                                                        style={{ color: "var(--color-muted-foreground)" }}
+                                                    >
+                                                        {isFullscreen ? (
+                                                            <Minimize2 className="h-4 w-4" />
+                                                        ) : (
+                                                            <Maximize2 className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>{isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </>
                                 }
                             />
@@ -831,7 +967,7 @@ const DynamicDataGrid = () => {
                                 role="grid"
                             >
                                 <table
-                                    className="w-full text-sm border-collapse font-medium"  // add font-medium
+                                    className="w-full text-sm border-separate border-spacing-0 font-medium"
                                     style={{
                                         width: 'max-content',
                                         minWidth: '100%',
@@ -857,6 +993,8 @@ const DynamicDataGrid = () => {
                                         getCellBorderClasses={getCellBorderClasses}
                                         getLeftPosition={getLeftPos}
                                         getRightPosition={getRightPos}
+                                        minRows={pageSize}
+                                        onRowReorder={handleRowReorder}
                                     />
                                 </table>
                             </div>
@@ -866,7 +1004,11 @@ const DynamicDataGrid = () => {
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <DataGridPagination table={table} />
+                                <DataGridPagination
+                                    table={table}
+                                    totalRows={filteredCount}
+                                    totalSelectedRows={Object.keys(rowSelection).length}
+                                />
                             </motion.div>
                         </motion.div>
                     )}
@@ -875,8 +1017,7 @@ const DynamicDataGrid = () => {
                         <div className="text-center mt-6 text-sm text-muted-foreground bottom-0">
                             Built with ❤️ by {" "}
                             <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
-                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts • {" "}
-                            <Link to="/">Regular Grid</Link>
+                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
                         </div>
                     )}
                 </div>
@@ -886,6 +1027,6 @@ const DynamicDataGrid = () => {
             <KeyboardShortcutsModal open={showShortcutsModal} onOpenChange={setShowShortcutsModal} />
         </div>
     );
-};
+}
 
-export default DynamicDataGrid;
+export default DynamicDataGrid

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { getColumnConfig } from "../../src/columnConfigSystem";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +49,13 @@ const DATE_OPERATORS = [
   { value: "between", label: "Between" },
   { value: "isEmpty", label: "Is empty" },
   { value: "isNotEmpty", label: "Is not empty" },
+];
+
+const BOOLEAN_OPERATORS = [
+  { value: "isTrue", label: "Is True" },
+  { value: "isFalse", label: "Is False" },
+  { value: "isEmpty", label: "Is null" },
+  { value: "isNotEmpty", label: "Is not null" },
 ];
 
 // Filter function implementations - FIXED
@@ -195,7 +203,10 @@ export const filterFunctions = {
   },
 };
 
-export function AdvancedColumnFilter({ column, dataType = "text" }) {
+export function AdvancedColumnFilter({ column, dataType: propDataType = "text" }) {
+  // Check if user has overridden the data type in column config
+  const columnConfig = getColumnConfig(column.id);
+  const dataType = columnConfig?.dataType || propDataType;
   const [operator, setOperator] = useState(
     dataType === "text" ? "contains" : "equals"
   );
@@ -207,7 +218,9 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
       ? NUMBER_OPERATORS
       : dataType === "date"
         ? DATE_OPERATORS
-        : TEXT_OPERATORS;
+        : dataType === "boolean"
+          ? BOOLEAN_OPERATORS
+          : TEXT_OPERATORS;
 
   useEffect(() => {
     const currentFilter = column.getFilterValue();
@@ -257,7 +270,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
 
   const hasFilter = column.getFilterValue() !== undefined;
   const needsSecondInput = operator === "between";
-  const needsNoInput = operator === "isEmpty" || operator === "isNotEmpty";
+  const needsNoInput = operator === "isEmpty" || operator === "isNotEmpty" || operator === "isTrue" || operator === "isFalse";
   const [open, setOpen] = useState(false);
 
   return (
@@ -269,7 +282,7 @@ export function AdvancedColumnFilter({ column, dataType = "text" }) {
           className={`h-7 w-7 ${hasFilter ? "bg-blue-600 hover:bg-blue-700" : ""
             }`}
         >
-          <Filter className="h-3.5 w-3.5" />
+          <Filter className="h-4 w-4" style={{ color: hasFilter ? "white" : "var(--color-foreground)" }} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
@@ -399,8 +412,8 @@ export function ActiveFilters({ table, columns }) {
     <div className="flex flex-wrap gap-2 px-4 pb-3">
       <span className="text-xs font-semibold flex items-center"
         style={{
-          color:"var(--color-muted-foreground)"
-      }}
+          color: "var(--color-muted-foreground)"
+        }}
       >
         Active filters:
       </span>
@@ -454,7 +467,7 @@ export function ActiveFilters({ table, columns }) {
                 className="ml-1 hover:opacity-70"
                 style={{ color: "var(--color-primary-foreground)" }}
               >
-                <X className="h-3 w-3" />
+                <X className="h-3 w-3" style={{ color: "var(--color-primary-foreground)" }} />
               </button>
             </motion.div>
           );

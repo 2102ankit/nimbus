@@ -36,10 +36,17 @@ import {
   Rows,
   Search,
   Sun,
-  Sigma
+  Sigma,
+  Type
 } from "lucide-react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
 import { HotkeyLabel } from "./HotkeyLabel";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function DataGridToolbar({
   table,
@@ -62,6 +69,8 @@ export function DataGridToolbar({
   extraButtons,
   searchInputValue,
   onSearchInputChange,
+  pivotMode,
+  setPivotMode,
 }) {
   const {
     density,
@@ -73,18 +82,22 @@ export function DataGridToolbar({
     toggleHeaderLines,
     showRowLines,
     toggleRowLines,
+    showStripedColumns,
+    toggleStripedColumns,
+    fontFamily,
+    setFontFamily,
   } = useTheme();
 
   const getColumnHeaderText = (col) => {
     const columnId = col.id;
     const config = getColumnConfig(columnId);
     if (config?.headerText) return config.headerText;
+    if (col.columnDef?.meta?.headerText) return col.columnDef.meta.headerText;
 
-    const header = col.columnDef?.header || col.columnDef?.meta?.headerText || col.id;
-    if (typeof header === 'function' || typeof header === 'object') {
-      return col.columnDef?.meta?.headerText || col.columnDef?.meta?.originalKey || col.id;
-    }
-    return String(header);
+    const header = col.columnDef?.header;
+    if (typeof header === 'string') return header;
+
+    return col.columnDef?.meta?.originalKey || col.id;
   };
 
   const hasFilters =
@@ -94,7 +107,11 @@ export function DataGridToolbar({
     globalFilter;
 
   const exportData = (format) => {
-    const rows = table.getFilteredRowModel().rows.map((row) => row.original);
+    const selectedRowModel = table.getSelectedRowModel();
+    const hasSelectedRows = selectedRowModel.rows.length > 0;
+    const rows = hasSelectedRows
+      ? selectedRowModel.rows.map((row) => row.original)
+      : table.getFilteredRowModel().rows.map((row) => row.original);
     const visibleColumns = table
       .getVisibleLeafColumns()
       .filter(
@@ -244,6 +261,51 @@ export function DataGridToolbar({
                   <Rows className="h-4 w-4 mr-2" />
                   Row Lines
                 </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel
+                  className="text-xs font-bold"
+                  style={{ color: "var(--color-muted-foreground)" }}
+                >
+                  APPEARANCE
+                </DropdownMenuLabel>
+                <DropdownMenuCheckboxItem
+                  checked={pivotMode}
+                  onCheckedChange={setPivotMode}
+                >
+                  <Columns className="h-4 w-4 mr-2" />
+                  Pivot Mode
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={showStripedColumns}
+                  onCheckedChange={toggleStripedColumns}
+                >
+                  <Columns className="h-4 w-4 mr-2" />
+                  Striped Columns
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel
+                  className="text-xs font-bold"
+                  style={{ color: "var(--color-muted-foreground)" }}
+                >
+                  TYPOGRAPHY
+                </DropdownMenuLabel>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Type className="h-4 w-4 mr-2" />
+                    Font Family
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuRadioGroup value={fontFamily} onValueChange={setFontFamily}>
+                      <DropdownMenuRadioItem value="Inter">Inter</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Roboto">Roboto</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Geist Mono">Geist Mono</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="Google Sans Flex">Google Sans Flex</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="JetBrains Mono">JetBrains Mono</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="system-ui">System UI</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="monospace">Monospace</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -283,38 +345,54 @@ export function DataGridToolbar({
                             <Checkbox
                               checked={col.getIsVisible()}
                               onCheckedChange={() => col.toggleVisibility()}
-                              className="h-4 w-4"
+                              className="h-4 w-4 border-foreground/20"
                             />
-                            <span className="text-sm font-medium text-foreground truncate">
+                            <span className="text-sm font-medium text-foreground whitespace-normal break-words">
                               {getColumnHeaderText(col)}
                             </span>
                           </label>
                           {col.getCanPin() && (
                             <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  col.pin(isPinned === "left" ? false : "left");
-                                }}
-                                title={isPinned === "left" ? "Unpin from left" : "Pin to left"}
-                              >
-                                <Pin className={`h-3.5 w-3.5 ${isPinned === "left" ? "text-primary" : ""}`} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  col.pin(isPinned === "right" ? false : "right");
-                                }}
-                                title={isPinned === "right" ? "Unpin from right" : "Pin to right"}
-                              >
-                                <Pin className={`h-3.5 w-3.5 rotate-90 ${isPinned === "right" ? "text-primary" : ""}`} />
-                              </Button>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        col.pin(isPinned === "left" ? false : "left");
+                                      }}
+                                    >
+                                      <Pin className={`h-4 w-4 ${isPinned === "left" ? "text-primary" : ""}`} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{isPinned === "left" ? "Unpin from left" : "Pin to left"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        col.pin(isPinned === "right" ? false : "right");
+                                      }}
+                                    >
+                                      <Pin className={`h-4 w-4 rotate-90 ${isPinned === "right" ? "text-primary" : ""}`} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{isPinned === "right" ? "Unpin from right" : "Pin to right"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           )}
                         </div>
@@ -445,7 +523,7 @@ export function DataGridToolbar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 border-2 shadow-sm bg-background"
+                  className="h-11 border-2 bg-background"
                   style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
                 >
                   <Download className="h-4 w-4 mr-2" />
@@ -488,32 +566,36 @@ export function DataGridToolbar({
 
 
             {/* Theme Toggle */}
-            <Button
-              onClick={toggleTheme}
-              variant="outline"
-              size="icon"
-              className="h-11 w-11 border-2 shadow-sm transition-all bg-background ml-4"
-              style={{
-                borderColor: "var(--color-border)",
-              }}
-              title={
-                theme === "dark"
-                  ? "Switch to Light Mode"
-                  : "Switch to Dark Mode"
-              }
-            >
-              {theme === "dark" ? (
-                <Sun
-                  className="h-5 w-5"
-                  style={{ color: "var(--color-chart-3)" }}
-                />
-              ) : (
-                <Moon
-                  className="h-5 w-5"
-                  style={{ color: "var(--color-foreground)" }}
-                />
-              )}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={toggleTheme}
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11 border-2 transition-all bg-background ml-4"
+                    style={{
+                      borderColor: "var(--color-border)",
+                    }}
+                  >
+                    {theme === "dark" ? (
+                      <Sun
+                        className="h-5 w-5"
+                        style={{ color: "var(--color-chart-3)" }}
+                      />
+                    ) : (
+                      <Moon
+                        className="h-5 w-5"
+                        style={{ color: "var(--color-foreground)" }}
+                      />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {extraButtons}
           </div>
         </div>
@@ -521,6 +603,7 @@ export function DataGridToolbar({
         {/* Active Filters */}
         <ActiveFilters table={table} columns={columns} />
       </div>
+
     </div>
   );
 }

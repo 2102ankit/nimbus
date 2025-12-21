@@ -46,16 +46,11 @@ function SortableHeaderCell({ header, isPinned, leftPos, rightPos, getDensityPad
         right: rightPos !== undefined ? `${rightPos}px` : undefined,
         borderBottom: "2px solid var(--color-border)",
         borderRight: isBeforeRightPinned ? 'none' : undefined, // Remove border if before right-pinned
-        boxShadow: isPinned
-          ? isPinned === "left"
-            ? "2px 0 8px rgba(0,0,0,0.1)"
-            : "-2px 0 8px rgba(0,0,0,0.1)"
-          : isFocused
-            ? "inset 0 0 0 2px var(--color-primary)"
-            : "none",
+        boxShadow: isFocused
+          ? "inset 0 0 0 2px var(--color-primary)"
+          : "none",
       }}
       className={`text-left align-middle font-bold relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getHeaderBorderClasses() : ''
-        } ${isPinned === "left" ? "pinned-left-border" : isPinned === "right" ? "pinned-right-border" : ""
         } ${isBeforeRightPinned ? 'before-right-pinned' : ''}`}
     >
       {

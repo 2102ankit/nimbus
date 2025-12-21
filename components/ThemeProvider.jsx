@@ -2,15 +2,23 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext({
   theme: "light",
-  toggleTheme: () => {},
+  toggleTheme: () => { },
   density: "normal",
-  setDensity: () => {},
+  setDensity: () => { },
   showGridLines: true,
-  toggleGridLines: () => {},
+  toggleGridLines: () => { },
   showHeaderLines: true,
-  toggleHeaderLines: () => {},
+  toggleHeaderLines: () => { },
   showRowLines: true,
-  toggleRowLines: () => {},
+  toggleRowLines: () => { },
+  currency: "USD",
+  setCurrency: () => { },
+  locale: "en-US",
+  setLocale: () => { },
+  showStripedColumns: false,
+  toggleStripedColumns: () => { },
+  fontFamily: "Inter",
+  setFontFamily: () => { },
 });
 
 export const useTheme = () => {
@@ -42,6 +50,19 @@ export function ThemeProvider({ children }) {
     const stored = localStorage.getItem("datagrid-rowlines");
     return stored !== "false";
   });
+  const [showStripedColumns, setShowStripedColumns] = useState(() => {
+    const stored = localStorage.getItem("datagrid-stripedcolumns");
+    return stored === "true";
+  });
+  const [fontFamily, setFontFamily] = useState(() => {
+    return localStorage.getItem("datagrid-font") || "Inter";
+  });
+  const [currency, setCurrency] = useState(() => {
+    return localStorage.getItem("datagrid-currency") || "USD";
+  });
+  const [locale, setLocale] = useState(() => {
+    return localStorage.getItem("datagrid-locale") || "en-US";
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -49,26 +70,20 @@ export function ThemeProvider({ children }) {
     root.classList.add(theme);
     localStorage.setItem("datagrid-theme", theme);
 
-    if (theme === "dark") {
-      root.style.setProperty("--bg-primary", "#1e293b");
-      root.style.setProperty("--bg-secondary", "#0f172a");
-      root.style.setProperty("--bg-tertiary", "#334155");
-      root.style.setProperty("--text-primary", "#f1f5f9");
-      root.style.setProperty("--text-secondary", "#cbd5e1");
-      root.style.setProperty("--text-muted", "#94a3b8");
-      root.style.setProperty("--border-color", "#334155");
-      root.style.setProperty("--hover-bg", "#334155");
-    } else {
-      root.style.setProperty("--bg-primary", "#ffffff");
-      root.style.setProperty("--bg-secondary", "#f8fafc");
-      root.style.setProperty("--bg-tertiary", "#f1f5f9");
-      root.style.setProperty("--text-primary", "#0f172a");
-      root.style.setProperty("--text-secondary", "#334155");
-      root.style.setProperty("--text-muted", "#64748b");
-      root.style.setProperty("--border-color", "#e2e8f0");
-      root.style.setProperty("--hover-bg", "#f8fafc");
-    }
-  }, [theme]);
+    // Apply font family
+    const fontMap = {
+      'Inter': 'var(--font-inter)',
+      'Roboto': 'var(--font-roboto)',
+      'JetBrains Mono': 'var(--font-jetbrains)',
+      'Geist Mono': 'var(--font-geist)',
+      'Google Sans Flex': 'var(--font-google)',
+      'system-ui': 'system-ui',
+      'monospace': 'monospace'
+    };
+    const fontValue = fontMap[fontFamily] || 'var(--font-inter)';
+    root.style.setProperty("--font-sans", fontValue);
+    root.style.fontFamily = fontValue;
+  }, [theme, fontFamily]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
@@ -93,6 +108,39 @@ export function ThemeProvider({ children }) {
     });
   };
 
+  const toggleStripedColumns = () => {
+    setShowStripedColumns((prev) => {
+      const newValue = !prev;
+      localStorage.setItem("datagrid-stripedcolumns", String(newValue));
+      return newValue;
+    });
+  };
+
+  // Effect to sync striped state with a global class/attribute for potential CSS usage
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (showStripedColumns) {
+      root.setAttribute("data-striped", "true");
+    } else {
+      root.removeAttribute("data-striped");
+    }
+  }, [showStripedColumns]);
+
+  const handleSetFont = (font) => {
+    localStorage.setItem("datagrid-font", font);
+    setFontFamily(font);
+  };
+
+  const handleSetCurrency = (curr) => {
+    localStorage.setItem("datagrid-currency", curr);
+    setCurrency(curr);
+  };
+
+  const handleSetLocale = (loc) => {
+    localStorage.setItem("datagrid-locale", loc);
+    setLocale(loc);
+  };
+
   const toggleRowLines = () => {
     setShowRowLines((prev) => {
       localStorage.setItem("datagrid-rowlines", String(!prev));
@@ -113,6 +161,14 @@ export function ThemeProvider({ children }) {
         toggleHeaderLines,
         showRowLines,
         toggleRowLines,
+        showStripedColumns,
+        toggleStripedColumns,
+        fontFamily,
+        setFontFamily: handleSetFont,
+        currency,
+        setCurrency: handleSetCurrency,
+        locale,
+        setLocale: handleSetLocale,
       }}
     >
       {children}

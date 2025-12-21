@@ -18,6 +18,13 @@ import {
   Pin,
   PinOff,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export function ColumnHeader({
   header,
@@ -83,8 +90,6 @@ export function ColumnHeader({
     <div
       className="flex items-center justify-between w-full gap-1 group relative"
       ref={setNodeRef}
-      {...attributes}
-      {...listeners}
       style={{
         opacity: isDragging ? 0.5 : 1,
         cursor: isDragging ? "grabbing" : "default",
@@ -93,10 +98,13 @@ export function ColumnHeader({
     >
       {/* Column Title & Sort */}
       <div className="flex items-center flex-1 min-w-0"
-      >
+        {...attributes}
+        {...listeners}>
         {/* Drag Handle */}
         {enableDrag && (
-          <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity shrink-0 px-2 py-1 rounded">
+          <div
+            className="cursor-grab active:cursor-grabbing opacity-30 group-hover:opacity-60 transition-opacity shrink-0 px-1.5 py-1 rounded hover:bg-muted/50"
+          >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
         )}
@@ -107,32 +115,33 @@ export function ColumnHeader({
               const isMulti = e.shiftKey;
               column.toggleSorting(undefined, isMulti);
             }}
-            className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-foreground transition-colors"
-            title="Click to sort, Shift+Click for multi-sort"
+            className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-foreground transition-colors py-1"
           >
             <span className="font-semibold truncate">{title}</span>
             <div className="flex items-center gap-1 shrink-0">
               <SortIcon
-                className={`h-4 w-4 ${isSorted ? "text-primary" : "text-muted-foreground"
+                className={`h-4 w-4 transition-colors ${isSorted ? "text-primary" : "text-muted-foreground/30 group-hover:text-muted-foreground/60"
                   }`}
               />
               {showSortIndex && (
-                <span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full w-3.5 h-3.5 flex items-center justify-center">
                   {sortIndex + 1}
                 </span>
               )}
             </div>
           </button>
         ) : (
-          <span className="font-semibold truncate">{title}</span>
+          <span className="font-semibold truncate py-1">{title}</span>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 shrink-0 pr-1">
         {/* Filter */}
         {enableFilter && (
-          <AdvancedColumnFilter column={column} dataType={dataType} />
+          <div className="opacity-30 group-hover:opacity-70 transition-opacity">
+            <AdvancedColumnFilter column={column} dataType={dataType} />
+          </div>
         )}
 
         {/* Column Menu */}
@@ -142,7 +151,7 @@ export function ColumnHeader({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity  mr-2"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <span className="sr-only">Column menu</span>
                 <svg
@@ -222,25 +231,28 @@ export function ColumnHeader({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </div >
+      </div>
 
-      {
-        enableResize && column.getCanResize() && (
-          <div
-            onMouseDown={handleResizeMouseDown}
-            onTouchStart={handleResizeMouseDown}
-            onDoubleClick={() => column.resetSize()}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-            }}
-            data-dnd-kit-disabled="true"
-            className={`absolute -right-1 -top-2 h-10 w-2 cursor-col-resize touch-none 
-            select-none transition-colors ${column.getIsResizing() ? "bg-primary" : "hover:bg-primary/50"}`}
-            style={{ userSelect: "none" }}
-          />
-        )
-      }
-    </div >
+      {/* Resize Handle */}
+      {enableResize && column.getCanResize() && (
+        <div
+          onMouseDown={handleResizeMouseDown}
+          onTouchStart={handleResizeMouseDown}
+          onDoubleClick={() => column.resetSize()}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          data-dnd-kit-disabled="true"
+          className={cn(
+            "absolute -right-1 -top-2 h-10 w-2 cursor-col-resize touch-none select-none z-30 group/resizer transition-colors",
+            column.getIsResizing() ? "bg-primary" : "hover:bg-primary/50"
+          )}
+          style={{ userSelect: "none" }}
+        >
+          <div className="absolute right-0 top-0 h-full w-[1px] bg-border group-hover/resizer:bg-primary/50 transition-colors" />
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -1,17 +1,26 @@
-// ============ EXPORT FUNCTIONS ============
-export const exportToCSV = (data, columns) => {
+export const exportToCSV = (table, dataRows, dataColumns) => {
+  const columns = dataColumns || table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
+  const rows = dataRows || table.getRowModel().rows;
+
   const headers = columns
-    .map((c) => (typeof c.header === "string" ? c.header : c.id))
+    .map((c) => {
+      const header = c.header || c.columnDef?.header;
+      return typeof header === "string" ? header : c.id;
+    })
     .join(",");
-  const rows = data
+
+  const csvRows = rows
     .map((row) =>
       columns
-        .map((c) => `"${String(row[c.id] || "").replace(/"/g, '""')}"`)
+        .map((c) => {
+          const val = row.getValue ? row.getValue(c.id) : row[c.id];
+          return `"${String(val || "").replace(/"/g, '""')}"`;
+        })
         .join(",")
     )
     .join("\n");
 
-  const csv = `${headers}\n${rows}`;
+  const csv = `${headers}\n${csvRows}`;
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -21,11 +30,15 @@ export const exportToCSV = (data, columns) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportToJSON = (data, columns) => {
-  const exportData = data.map((row) => {
+export const exportToJSON = (table, dataRows, dataColumns) => {
+  const columns = dataColumns || table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
+  const rows = dataRows || table.getRowModel().rows;
+
+  const exportData = rows.map((row) => {
     const obj = {};
     columns.forEach((c) => {
-      obj[c.id] = row[c.id];
+      const val = row.getValue ? row.getValue(c.id) : row[c.id];
+      obj[c.id] = val;
     });
     return obj;
   });
@@ -40,16 +53,21 @@ export const exportToJSON = (data, columns) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportToExcel = (data, columns) => {
+export const exportToExcel = (table, dataRows, dataColumns) => {
+  const columns = dataColumns || table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
+  const rows = dataRows || table.getRowModel().rows;
+
   let html = "<table><thead><tr>";
   columns.forEach((c) => {
-    html += `<th>${typeof c.header === "string" ? c.header : c.id}</th>`;
+    const header = c.header || c.columnDef?.header;
+    html += `<th>${typeof header === "string" ? header : c.id}</th>`;
   });
   html += "</tr></thead><tbody>";
-  data.forEach((row) => {
+  rows.forEach((row) => {
     html += "<tr>";
     columns.forEach((c) => {
-      html += `<td>${row[c.id] || ""}</td>`;
+      const val = row.getValue ? row.getValue(c.id) : row[c.id];
+      html += `<td>${val || ""}</td>`;
     });
     html += "</tr>";
   });
@@ -81,7 +99,10 @@ export const loadPreferences = () => {
         columnOrder: [],
         columnSizing: {},
         columnPinning: { left: [], right: [] },
+        rowPinning: { top: [], bottom: [] },
         sorting: [],
+        pageIndex: 0,
+        columnFilters: [],
         pageSize: 20,
       };
   } catch {
@@ -90,7 +111,10 @@ export const loadPreferences = () => {
       columnOrder: [],
       columnSizing: {},
       columnPinning: { left: [], right: [] },
+      rowPinning: { top: [], bottom: [] },
       sorting: [],
+      pageIndex: 0,
+      columnFilters: [],
       pageSize: 20,
     };
   }
@@ -113,7 +137,7 @@ export const savePreferences = (prefs) => {
     } catch (error) {
       console.error("Failed to save preferences:", error);
     }
-  }, 500); // Save after 500ms of inactivity
+  }, 100); // Save after 100ms of inactivity
 };
 
 export const resetPreferences = () => {
@@ -202,8 +226,8 @@ export const advancedFilterFn = (row, columnId, filterValue) => {
           .toLowerCase()
           .endsWith(String(fv).toLowerCase());
       },
-      isEmpty: (v) => !v || String(v).trim() === "",
-      isNotEmpty: (v) => v && String(v).trim() !== "",
+      isEmpty: (v) => v === null || v === undefined || String(v).trim() === "" || v === "-",
+      isNotEmpty: (v) => v !== null && v !== undefined && String(v).trim() !== "" && v !== "-",
     },
     number: {
       equals: (v, fv) => {
@@ -237,8 +261,8 @@ export const advancedFilterFn = (row, columnId, filterValue) => {
         const max = fv.max ? Number(fv.max) : Infinity;
         return num >= min && num <= max;
       },
-      isEmpty: (v) => v === null || v === undefined || v === "",
-      isNotEmpty: (v) => v !== null && v !== undefined && v !== "",
+      isEmpty: (v) => v === null || v === undefined || String(v).trim() === "" || v === "-",
+      isNotEmpty: (v) => v !== null && v !== undefined && String(v).trim() !== "" && v !== "-",
     },
     date: {
       equals: (v, fv) => {
@@ -266,6 +290,20 @@ export const advancedFilterFn = (row, columnId, filterValue) => {
       },
       isEmpty: (v) => !v,
       isNotEmpty: (v) => !!v,
+    },
+    boolean: {
+      isTrue: (v) => {
+        if (typeof v === 'boolean') return v === true;
+        if (typeof v === 'string') return v.toLowerCase() === 'true' || v === '1' || v.toLowerCase() === 'yes';
+        return !!v;
+      },
+      isFalse: (v) => {
+        if (typeof v === 'boolean') return v === false;
+        if (typeof v === 'string') return v.toLowerCase() === 'false' || v === '0' || v.toLowerCase() === 'no';
+        return !v;
+      },
+      isEmpty: (v) => v === null || v === undefined || v === "",
+      isNotEmpty: (v) => v !== null && v !== undefined && v !== "",
     },
   };
 

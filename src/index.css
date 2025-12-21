@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Outfit:wght@100..900&family=Inter:wght@100..900&family=Roboto:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap');
 
 :root {
   --background: oklch(1.0000 0 0);
@@ -33,26 +34,27 @@
   --sidebar-accent-foreground: oklch(0.2101 0.0318 264.6645);
   --sidebar-border: oklch(0.9276 0.0058 264.5313);
   --sidebar-ring: oklch(0.6716 0.1368 48.5130);
-  --font-sans: Geist Mono, ui-monospace, monospace;
+  
+  /* Font Variables */
+  --font-inter: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-roboto: "Roboto", sans-serif;
+  --font-jetbrains: "JetBrains Mono", source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  --font-geist: "Geist Mono", "JetBrains Mono", monospace;
+  --font-google: "Outfit", "Inter", sans-serif;
+  
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist);
   --font-serif: serif;
-  --font-mono: JetBrains Mono, monospace;
+  
   --radius: 0.75rem;
-  --shadow-x: 0px;
-  --shadow-y: 1px;
-  --shadow-blur: 4px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.05;
-  --shadow-color: #000000;
-  --shadow-2xs: 0px 1px 4px 0px hsl(0 0% 0% / 0.03);
-  --shadow-xs: 0px 1px 4px 0px hsl(0 0% 0% / 0.03);
-  --shadow-sm: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05);
-  --shadow: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05);
-  --shadow-md: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 2px 4px -1px hsl(0 0% 0% / 0.05);
-  --shadow-lg: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 4px 6px -1px hsl(0 0% 0% / 0.05);
-  --shadow-xl: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 8px 10px -1px hsl(0 0% 0% / 0.05);
-  --shadow-2xl: 0px 1px 4px 0px hsl(0 0% 0% / 0.13);
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
   --tracking-normal: 0rem;
   --spacing: 0.25rem;
+  --header-height: 0px;
+  
 }
 
 .dark {
@@ -72,14 +74,9 @@
   --accent-foreground: oklch(0.8109 0 0);
   --destructive: oklch(0.5770 0.2450 27.3250);
   --destructive-foreground: oklch(0.1797 0.0043 308.1928);
-  --border: oklch(0.3407 0.00004 271.152);
+  --border: oklch(0.269 0 0 / 0.8);
   --input: oklch(0.2520 0 0);
   --ring: oklch(0.8370 0.1280 66.2900);
-  --chart-1: oklch(0.6270 0.2650 303.9000);
-  --chart-2: oklch(0.7230 0.2190 149.5790);
-  --chart-3: oklch(0.7150 0.1430 215.2210);
-  --chart-4: oklch(0.6850 0.1690 237.3230);
-  --chart-5: oklch(0.6060 0.2500 292.7170);
   --sidebar: oklch(0.1822 0 0);
   --sidebar-foreground: oklch(0.8109 0 0);
   --sidebar-primary: oklch(0.7214 0.1337 49.9802);
@@ -88,24 +85,6 @@
   --sidebar-accent-foreground: oklch(0.8109 0 0);
   --sidebar-border: oklch(0.2520 0 0);
   --sidebar-ring: oklch(0.7214 0.1337 49.9802);
-  --font-sans: Geist Mono, ui-monospace, monospace;
-  --font-serif: serif;
-  --font-mono: JetBrains Mono, monospace;
-  --radius: 0.75rem;
-  --shadow-x: 0px;
-  --shadow-y: 1px;
-  --shadow-blur: 4px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.05;
-  --shadow-color: #000000;
-  --shadow-2xs: 0px 1px 4px 0px hsl(0 0% 0% / 0.03);
-  --shadow-xs: 0px 1px 4px 0px hsl(0 0% 0% / 0.03);
-  --shadow-sm: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05);
-  --shadow: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05);
-  --shadow-md: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 2px 4px -1px hsl(0 0% 0% / 0.05);
-  --shadow-lg: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 4px 6px -1px hsl(0 0% 0% / 0.05);
-  --shadow-xl: 0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 8px 10px -1px hsl(0 0% 0% / 0.05);
-  --shadow-2xl: 0px 1px 4px 0px hsl(0 0% 0% / 0.13);
 }
 
 @theme inline {
@@ -151,14 +130,10 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --shadow-2xs: var(--shadow-2xs);
-  --shadow-xs: var(--shadow-xs);
   --shadow-sm: var(--shadow-sm);
   --shadow: var(--shadow);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
-  --shadow-xl: var(--shadow-xl);
-  --shadow-2xl: var(--shadow-2xl);
 
   --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
   --tracking-tight: calc(var(--tracking-normal) - 0.025em);
@@ -172,16 +147,16 @@ body {
   letter-spacing: var(--tracking-normal);
   min-height: 100vh;
   min-height: 100dvh;
-  /* better on mobile */
   overflow: visible !important;
-  overscroll-behavior-x: none
+  overscroll-behavior-x: none;
+  /* Smooth font transition */
+  transition: font-family 0.05s ease, background-color 0.05s ease, color 0.05s ease, border-color 0.05s ease;
 }
 
 html {
   height: 100%;
   overflow-y: scroll;
   overflow-x: hidden;
-
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -192,29 +167,6 @@ html::-webkit-scrollbar {
   height: 0 !important;
 }
 
-.pinned-left-border::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background-color: var(--color-border);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.pinned-right-border::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 1px;
-  background-color: var(--color-border);
-  pointer-events: none;
-  z-index: 1;
-}
 
 .before-right-pinned {
   border-right: none !important;
@@ -245,12 +197,6 @@ html::-webkit-scrollbar {
   background-color: var(--color-muted-foreground);
 }
 
-
-/* Smooth transitions for rows */
-tbody tr {
-  transition: background-color 0.2s ease;
-}
-
 /* Premium selection style */
 tbody tr[data-state="selected"] {
   background-color: color-mix(in oklch, var(--color-primary), transparent 92%) !important;
@@ -260,14 +206,35 @@ tbody tr[data-state="selected"]:hover {
   background-color: color-mix(in oklch, var(--color-primary), transparent 88%) !important;
 }
 
-/* Cell focus outline */
-td:focus-within {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-  z-index: 10;
-}
-
 /* Empty state styling */
 .empty-state {
   background: radial-gradient(circle at center, var(--color-muted) 0%, transparent 70%);
+}
+
+tr.sticky-pinned-row {
+  position: sticky;
+  z-index: 20;
+  background-color: var(--color-card);
+}
+
+tr.sticky-pinned-row-top {
+  top: var(--header-height);
+}
+
+tr.sticky-pinned-row-bottom {
+  bottom: 0;
+}
+
+.sticky-pinned-td {
+  position: sticky !important;
+  z-index: 20 !important;
+  background-color: var(--color-card) !important;
+}
+
+.sticky-pinned-td-top {
+  top: var(--header-height);
+}
+
+.sticky-pinned-td-bottom {
+  bottom: 0;
 }

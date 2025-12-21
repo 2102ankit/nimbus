@@ -3,16 +3,32 @@ import { flexRender } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, Layers, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import React from "react";
+import { useTheme } from "@/components/ThemeProvider";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { RowDragProvider } from "./RowDragContext";
 
 // Loading State Component
-export function LoadingState() {
+export function LoadingState({ minHeight = 300 }) {
   return (
     <tr>
       <td colSpan={100} className="p-0">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center py-16"
+        <div
+          className="flex flex-col items-center justify-center w-full bg-card/10 z-50 rounded-lg"
+          style={{ height: minHeight }}
         >
           <Loader2
             className="h-10 w-10 animate-spin mb-4"
@@ -24,7 +40,7 @@ export function LoadingState() {
           >
             Loading data...
           </p>
-        </motion.div>
+        </div>
       </td>
     </tr>
   );
@@ -83,24 +99,22 @@ export function EmptyState() {
 }
 
 // Group Row Component
-export function GroupRow({ row, getDensityPadding, table }) {
+export function GroupRow({ row, getDensityPadding, table, getLeftPosition, getRightPosition }) {
   const depth = row.depth || 0;
-  const indentPx = depth * 32 * 0;
+  const indentPx = depth * 32;
 
   return (
     <tr
       className="font-semibold border-b-2 transition-all"
       style={{
-        background: `linear-gradient(to right, 
-          color-mix(in oklch, var(--color-muted), transparent 90%), 
-          color-mix(in oklch, var(--color-muted), transparent 95%))`,
+        backgroundColor: "var(--color-background)",
         borderBottomColor: "var(--color-border)",
       }}
     >
       {row.getVisibleCells().map((cell) => {
         const isPinned = cell.column.getIsPinned();
-        const leftPos = isPinned === "left" ? getLeftPosition(cell.column, table) : undefined;
-        const rightPos = isPinned === "right" ? getRightPosition(cell.column, table) : undefined;
+        const leftPos = isPinned === "left" ? getLeftPosition(cell.column) : undefined;
+        const rightPos = isPinned === "right" ? getRightPosition(cell.column) : undefined;
         const isGroupedCell = cell.getIsGrouped();
 
         return (
@@ -113,6 +127,7 @@ export function GroupRow({ row, getDensityPadding, table }) {
               right: rightPos !== undefined ? `${rightPos}px` : undefined,
               backgroundColor: isPinned ? 'var(--color-muted)' : 'transparent',
               zIndex: isPinned ? 10 : 1,
+              borderBottom: "2px solid var(--color-border)",
             }}
           >
             {isGroupedCell ? (
@@ -173,33 +188,6 @@ export function GroupRow({ row, getDensityPadding, table }) {
   );
 }
 
-// Helper functions for pinned columns
-function getLeftPosition(column, table) {
-  const leftPinnedColumns = table.getState().columnPinning.left || [];
-  const index = leftPinnedColumns.indexOf(column.id);
-  if (index === -1) return 0;
-
-  let left = 0;
-  for (let i = 0; i < index; i++) {
-    const col = table.getAllLeafColumns().find((c) => c.id === leftPinnedColumns[i]);
-    if (col) left += col.getSize();
-  }
-  return left;
-}
-
-function getRightPosition(column, table) {
-  const rightPinnedColumns = table.getState().columnPinning.right || [];
-  const index = rightPinnedColumns.indexOf(column.id);
-  if (index === -1) return 0;
-
-  let right = 0;
-  for (let i = index + 1; i < rightPinnedColumns.length; i++) {
-    const col = table.getAllLeafColumns().find((c) => c.id === rightPinnedColumns[i]);
-    if (col) right += col.getSize();
-  }
-  return right;
-}
-
 // Data Row Component
 export function DataRow({
   row,
@@ -210,204 +198,221 @@ export function DataRow({
   getRightPosition,
   table
 }) {
+  const { showStripedColumns } = useTheme();
   const isGrouped = row.getIsGrouped();
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: row.id,
+    disabled: isGrouped,
+  });
+
+  // Restrict transform to vertical (Y) only
+  const restrictedTransform = transform
+    ? {
+        ...transform,
+        x: 0, // Prevent horizontal movement
+      }
+    : null;
+
+  const style = {
+    transform: restrictedTransform ? CSS.Transform.toString(restrictedTransform) : undefined,
+    transition: isDragging
+      ? undefined // No transition while dragging for immediate response
+      : transition || 'transform 200ms cubic-bezier(0.2, 0, 0.2, 1)', // Smooth transition when not dragging
+    opacity: isDragging ? 1 : 1,
+    position: "relative",
+    zIndex: isDragging ? 50 : 1,
+    backgroundColor: row.getIsSelected()
+      ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
+      : showStripedColumns && idx % 2 === 1
+        ? "var(--color-muted)"
+        : "transparent",
+    borderLeft: row.getIsSelected()
+      ? "4px solid var(--color-primary)"
+      : "none",
+    top: row.getIsPinned() === "top" ? "var(--header-height)" : undefined,
+    bottom: row.getIsPinned() === "bottom" ? "0px" : undefined,
+    boxShadow: isDragging ? "0 4px 12px rgba(0, 0, 0, 0.15)" : "none",
+  };
+
   if (isGrouped) {
-    return <GroupRow row={row} getDensityPadding={getDensityPadding} table={table} />;
+    return <GroupRow row={row} getDensityPadding={getDensityPadding} table={table} getLeftPosition={getLeftPosition} getRightPosition={getRightPosition} />;
   }
 
   return (
-    <React.Fragment>
-      <tr
-        style={{
-          backgroundColor: row.getIsSelected()
-            ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
-            : "transparent",
-          borderLeft: row.getIsSelected()
-            ? `4px solid var(--color-primary)`
-            : "none",
-        }}
-      >
-        {row.getVisibleCells().map((cell) => {
-          const isPinned = cell.column.getIsPinned();
-          const leftPos =
-            isPinned === "left" ? getLeftPosition(cell.column) : undefined;
-          const rightPos =
-            isPinned === "right" ? getRightPosition(cell.column) : undefined;
+    <RowDragProvider value={{ attributes, listeners }}>
+      <React.Fragment>
+        <tr
+          ref={setNodeRef}
+          style={style}
+          className={`${row.getIsPinned() ? `sticky-pinned-row sticky-pinned-row-${row.getIsPinned()}` : ""}`}
+        >
+          {row.getVisibleCells().map((cell) => {
+            const isPinned = cell.column.getIsPinned();
+            const leftPos =
+              isPinned === "left" ? getLeftPosition(cell.column) : undefined;
+            const rightPos =
+              isPinned === "right" ? getRightPosition(cell.column) : undefined;
 
-          const allColumns = table.getVisibleLeafColumns();
-          const currentIndex = allColumns.findIndex(c => c.id === cell.column.id);
-          const nextColumn = allColumns[currentIndex + 1];
-          const isBeforeRightPinned = nextColumn && nextColumn.getIsPinned() === 'right';
+            const allColumns = table.getVisibleLeafColumns();
+            const currentIndex = allColumns.findIndex(c => c.id === cell.column.id);
+            const nextColumn = allColumns[currentIndex + 1];
+            const isBeforeRightPinned = nextColumn && nextColumn.getIsPinned() === 'right';
 
-          return (
-            <motion.td
-              layout="position"
-              transition={{
-                type: "spring",
-                stiffness: 500,
-                damping: 40,
-                mass: 0.8,
-              }}
-              key={cell.id}
-              className={`align-middle relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getCellBorderClasses() : ''
-                } ${isPinned ? "sticky z-10" : ""} ${isPinned === "left" ? "pinned-left-border" : isPinned === "right" ? "pinned-right-border" : ""
-                } ${isBeforeRightPinned ? 'before-right-pinned' : ''}`}
-              style={{
-                color: "var(--color-foreground)",
-                width: cell.column.getSize(),
-                minWidth: cell.column.getSize(),
-                maxWidth: cell.column.getSize(),
-                left: leftPos !== undefined ? `${leftPos}px` : undefined,
-                right: rightPos !== undefined ? `${rightPos}px` : undefined,
-                backgroundColor: isPinned
-                  ? row.getIsSelected()
-                    ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
-                    : "var(--color-card)"
-                  : "inherit",
-                borderBottom: "1px solid var(--color-border)",
-                borderRight: isBeforeRightPinned ? 'none' : undefined,
-                boxShadow: isPinned
-                  ? isPinned === "left"
-                    ? "2px 0 5px rgba(0,0,0,0.05)"
-                    : "-2px 0 5px rgba(0,0,0,0.05)"
-                  : "none",
-              }}
-            >
-              {cell.getIsGrouped() ? (
-                <button
-                  onClick={() => row.toggleExpanded()}
-                  className="flex items-center gap-2 font-semibold transition-colors"
-                  style={{
-                    color: "var(--color-foreground)",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "var(--color-primary)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "var(--color-foreground)")
-                  }
-                >
-                  {row.getIsExpanded() ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())} (
-                  {row.subRows.length})
-                </button>
-              ) : cell.getIsAggregated() ? (
-                flexRender(
-                  cell.column.columnDef.aggregatedCell ??
-                  cell.column.columnDef.cell,
-                  cell.getContext()
-                )
-              ) : cell.getIsPlaceholder() ? null : (
-                flexRender(cell.column.columnDef.cell, cell.getContext())
-              )}
-            </motion.td>
-          );
-        })}
-      </tr>
-
-      {row.getIsExpanded() && !isGrouped && (
-        <tr>
-          <td colSpan={row.getVisibleCells().length} className="p-0">
-            <div
-              className="border-y-2 p-6"
-              style={{
-                background: `linear-gradient(to right, 
-                  color-mix(in oklch, var(--color-muted), transparent 95%), 
-                  color-mix(in oklch, var(--color-primary), transparent 95%))`,
-                borderColor:
-                  "color-mix(in oklch, var(--color-primary), transparent 80%)",
-              }}
-            >
-              <div className="flex gap-92">
-                <div>
-                  <h4
-                    className="font-bold text-sm mb-3 flex items-center gap-2"
-                    style={{ color: "var(--color-foreground)" }}
+            return (
+              <motion.td
+                layout={!isDragging ? "position" : false}
+                transition={
+                  !isDragging
+                    ? {
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                        mass: 0.5,
+                      }
+                    : undefined
+                }
+                key={cell.id}
+                className={`align-middle relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getCellBorderClasses() : ''
+                  } ${isPinned ? "sticky z-10" : ""} ${isBeforeRightPinned ? 'before-right-pinned' : ''} ${row.getIsPinned() ? `sticky z-20 sticky-pinned-td sticky-pinned-td-${row.getIsPinned()}` : ""}`}
+                style={{
+                  color: "var(--color-foreground)",
+                  width: cell.column.getSize(),
+                  minWidth: cell.column.getSize(),
+                  maxWidth: cell.column.getSize(),
+                  left: leftPos !== undefined ? `${leftPos}px` : undefined,
+                  right: rightPos !== undefined ? `${rightPos}px` : undefined,
+                  backgroundColor: isPinned
+                    ? row.getIsSelected()
+                      ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
+                      : showStripedColumns && idx % 2 === 1
+                        ? "var(--color-muted)"
+                        : "var(--color-card)"
+                    : "inherit",
+                  borderBottom: "1px solid var(--color-border)",
+                  borderRight: isBeforeRightPinned ? 'none' : undefined,
+                  boxShadow: "none",
+                }}
+              >
+                {cell.getIsGrouped() ? (
+                  <button
+                    onClick={() => row.toggleExpanded()}
+                    className="flex items-center gap-2 font-semibold transition-colors"
+                    style={{
+                      color: "var(--color-foreground)",
+                    }}
                   >
-                    <svg
-                      className="h-4 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                    {row.getIsExpanded() ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())} (
+                    {row.subRows.length})
+                  </button>
+                ) : cell.getIsAggregated() ? (
+                  flexRender(
+                    cell.column.columnDef.aggregatedCell ??
+                    cell.column.columnDef.cell,
+                    cell.getContext()
+                  )
+                ) : cell.getIsPlaceholder() ? null : (
+                  flexRender(cell.column.columnDef.cell, cell.getContext())
+                )}
+              </motion.td>
+            );
+          })}
+        </tr>
+
+        {row.getIsExpanded() && !isGrouped && (
+          <tr>
+            <td colSpan={row.getVisibleCells().length} className="p-0">
+              <div
+                className="border-y-2 p-6"
+                style={{
+                  background: `linear-gradient(to right,
+                    color-mix(in oklch, var(--color-muted), transparent 95%),
+                    color-mix(in oklch, var(--color-primary), transparent 95%))`,
+                  borderColor:
+                    "color-mix(in oklch, var(--color-primary), transparent 80%)",
+                }}
+              >
+                <div className="flex gap-8">
+                  <div className="flex-1">
+                    <h4
+                      className="font-bold text-sm mb-3 flex items-center gap-2"
+                      style={{ color: "var(--color-foreground)" }}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    <span>Full Details</span>
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    {Object.entries(row.original).map(([key, value]) => (
-                      <div key={key} className="flex">
-                        <span
-                          className="font-semibold w-32"
-                          style={{ color: "var(--color-muted-foreground)" }}
-                        >
-                          {key}:
-                        </span>
-                        <span
-                          className="font-medium"
-                          style={{ color: "var(--color-foreground)" }}
-                        >
-                          {String(value)}
-                        </span>
-                      </div>
-                    ))}
+                      <Layers className="h-4 w-4" />
+                      <span>Full Details</span>
+                    </h4>
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm mt-4">
+                      {table.getAllLeafColumns()
+                        .filter(col => col.id !== 'select' && col.id !== 'expand' && col.id !== 'drag' && col.id !== 'pin')
+                        .map((col) => {
+                          const key = col.id || col.accessorKey;
+                          const label = col.columnDef.meta?.headerText || col.id;
+                          const value = row.original[key];
+
+                          if (value === undefined || value === null) return null;
+
+                          return (
+                            <div key={key} className="flex border-b border-border/30 pb-2">
+                              <span
+                                className="font-bold w-1/3 truncate"
+                                style={{ color: "var(--color-muted-foreground)" }}
+                              >
+                                {label}:
+                              </span>
+                              <span
+                                className="font-medium flex-1"
+                                style={{ color: "var(--color-foreground)" }}
+                              >
+                                {String(value)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h4
-                    className="font-bold text-sm mb-3 flex items-center gap-2"
-                    style={{ color: "var(--color-foreground)" }}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  <div className="w-64">
+                    <h4
+                      className="font-bold text-sm mb-3 flex items-center gap-2"
+                      style={{ color: "var(--color-foreground)" }}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    Actions
-                  </h4>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button size="sm" className="shadow-sm">
-                      View Profile
-                    </Button>
-                    <Button size="sm" variant="secondary" className="shadow-sm">
-                      Edit
-                    </Button>
-                    <Button size="sm" variant="secondary" className="shadow-sm">
-                      Duplicate
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="shadow-sm"
-                    >
-                      Delete
-                    </Button>
+                      <ChevronRight className="h-4 w-4" />
+                      Actions
+                    </h4>
+                    <div className="flex flex-col gap-2">
+                      <Button size="sm" className="w-full shadow-sm">
+                        View Profile
+                      </Button>
+                      <Button size="sm" variant="secondary" className="w-full shadow-sm">
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="w-full shadow-sm"
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </td>
-        </tr>
-      )}
-    </React.Fragment>
+            </td>
+          </tr>
+        )}
+      </React.Fragment>
+    </RowDragProvider>
   );
 }
 
@@ -420,11 +425,31 @@ export function DataGridTableBody({
   getCellBorderClasses,
   getLeftPosition,
   getRightPosition,
+  minRows = 10,
+  onRowReorder,
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts for smoother experience
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active && over && active.id !== over.id) {
+      onRowReorder && onRowReorder(active.id, over.id);
+    }
+  };
+
   if (loading) {
     return (
       <tbody style={{ backgroundColor: "var(--color-card)" }}>
-        <LoadingState />
+        <LoadingState minHeight={minRows * 48} />
       </tbody>
     );
   }
@@ -438,22 +463,66 @@ export function DataGridTableBody({
   }
 
   return (
-    <tbody style={{ backgroundColor: "var(--color-card)" }}>
-      <AnimatePresence mode="popLayout">
-        {table.getRowModel().rows.map((row, idx) => (
-          <DataRow
-            key={row.id}
-            row={row}
-            idx={idx}
-            getDensityPadding={getDensityPadding}
-            getCellBorderClasses={getCellBorderClasses}
-            getLeftPosition={getLeftPosition}
-            getRightPosition={getRightPosition}
-            table={table}
-          />
-        ))}
-      </AnimatePresence>
-    </tbody>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <tbody style={{ backgroundColor: "var(--color-card)" }}>
+        <SortableContext
+          items={(table.getPaginationRowModel()?.rows || table.getRowModel().rows)
+            .filter(r => !r.getIsPinned())
+            .map((r) => r.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <AnimatePresence mode="sync">
+            {/* Top Pinned Rows */}
+            {table.getTopRows().map((row, idx) => (
+              <DataRow
+                key={`top-${row.id}`}
+                row={row}
+                idx={idx}
+                getDensityPadding={getDensityPadding}
+                getCellBorderClasses={getCellBorderClasses}
+                getLeftPosition={getLeftPosition}
+                getRightPosition={getRightPosition}
+                table={table}
+              />
+            ))}
+
+            {/* Center Rows */}
+            {(table.getPaginationRowModel()?.rows || table.getRowModel().rows)
+              .filter(r => !r.getIsPinned())
+              .map((row, idx) => (
+                <DataRow
+                  key={row.id}
+                  row={row}
+                  idx={idx}
+                  getDensityPadding={getDensityPadding}
+                  getCellBorderClasses={getCellBorderClasses}
+                  getLeftPosition={getLeftPosition}
+                  getRightPosition={getRightPosition}
+                  table={table}
+                />
+              ))}
+
+            {/* Bottom Pinned Rows */}
+            {table.getBottomRows().map((row, idx) => (
+              <DataRow
+                key={`bottom-${row.id}`}
+                row={row}
+                idx={idx}
+                getDensityPadding={getDensityPadding}
+                getCellBorderClasses={getCellBorderClasses}
+                getLeftPosition={getLeftPosition}
+                getRightPosition={getRightPosition}
+                table={table}
+              />
+            ))}
+          </AnimatePresence>
+        </SortableContext>
+      </tbody>
+    </DndContext>
   );
 }
 

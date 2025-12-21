@@ -1,7 +1,26 @@
 import { getCellRenderer } from "./dataAnalyzer";
 
-// In-memory storage only - no localStorage blocking
+// Persistence key
+const STORAGE_KEY = 'nimbus-column-configs';
+
+// Initialize from localStorage
 let globalColumnConfig = {};
+try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+        globalColumnConfig = JSON.parse(stored);
+    }
+} catch (e) {
+    console.error('Failed to load column configs from localStorage', e);
+}
+
+function saveToStorage() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(globalColumnConfig));
+    } catch (e) {
+        console.error('Failed to save column configs to localStorage', e);
+    }
+}
 
 export function getColumnConfig(columnId) {
     return globalColumnConfig[columnId];
@@ -12,6 +31,7 @@ export function setColumnConfig(columnId, config) {
         ...globalColumnConfig[columnId],
         ...config
     };
+    saveToStorage();
 }
 
 export function setColumnsConfig(configs) {
@@ -21,10 +41,12 @@ export function setColumnsConfig(configs) {
             ...config
         };
     });
+    saveToStorage();
 }
 
 export function clearColumnConfigs() {
     globalColumnConfig = {};
+    localStorage.removeItem(STORAGE_KEY);
 }
 
 export function applyColumnConfigs(columns) {
@@ -149,6 +171,7 @@ export function exportConfig() {
 export function importConfig(jsonString) {
     try {
         globalColumnConfig = JSON.parse(jsonString);
+        saveToStorage();
         return true;
     } catch (error) {
         console.error('Failed to import config:', error);

@@ -18,7 +18,9 @@ import {
   savePreferences,
 } from "@/components/Datagrid/dataGridUtils";
 import { KeyboardShortcutsModal } from "@/components/Datagrid/KeyboardShortcutsModal";
+import { ColumnConfigurationMenu } from "@/src/ColumnConfigurationMenu";
 import { generateSampleData } from "@/components/Datagrid/sampleDataGenerator";
+import { getColumnConfig, setColumnConfig } from "@/src/columnConfigSystem";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,16 +32,16 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Info, Maximize2, Minimize2 } from "lucide-react";
+import { Info, Maximize2, Minimize2, Layout, Grid3x3 } from "lucide-react";
 import { animate } from "motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import StatusBarModal from "./StatusBarModal";
-import { Link } from "react-router-dom";
+import { GridToggle } from "@/src/GridToggle";
 
-const AdvancedDataGrid = () => {
-  const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines } = useTheme();
+const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
+  const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines, currency, locale } = useTheme();
 
   // State management
   const [data, setData] = useState([]);
@@ -55,11 +57,14 @@ const AdvancedDataGrid = () => {
   const [rowSelection, setRowSelection] = useState({});
   const [expanded, setExpanded] = useState({});
   const [grouping, setGrouping] = useState([]);
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  const triggerUpdate = useCallback(() => setForceUpdate(v => v + 1), []);
 
   // Load preferences
   const [prefs, setPrefs] = useState(loadPreferences);
   const [sorting, setSorting] = useState(prefs.sorting || []);
-  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnFilters, setColumnFilters] = useState(prefs.columnFilters || []);
   const [columnVisibility, setColumnVisibility] = useState(
     prefs.columnVisibility || {}
   );
@@ -68,6 +73,13 @@ const AdvancedDataGrid = () => {
   const [columnPinning, setColumnPinning] = useState(
     prefs.columnPinning || { left: [], right: [] }
   );
+  const [rowPinning, setRowPinning] = useState(
+    prefs.rowPinning || { top: [], bottom: [] }
+  );
+  const [pagination, setPagination] = useState({
+    pageIndex: prefs.pageIndex || 0,
+    pageSize: prefs.pageSize || 20,
+  });
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [exportMode, setExportMode] = useState(null);
   const [focusedColumnIndex, setFocusedColumnIndex] = useState(null);
@@ -103,14 +115,21 @@ const AdvancedDataGrid = () => {
     };
   }, []);
 
+  const columns = useMemo(() => createColumns([], currency, locale), [currency, locale]);
+
   // Save preferences automatically
   const handleSavePrefs = useCallback(
     (newPrefs) => {
-      const merged = { ...prefs, ...newPrefs };
-      savePreferences(merged);
-      setPrefs(merged);
+      setPrefs(prev => {
+        const merged = { ...prev, ...newPrefs };
+        // Only update if something actually changed to avoid "hasn't mounted yet" warnings
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+
+        savePreferences(merged);
+        return merged;
+      });
     },
-    [prefs]
+    []
   );
 
   useEffect(() => {
@@ -128,6 +147,18 @@ const AdvancedDataGrid = () => {
   useEffect(() => {
     handleSavePrefs({ columnPinning });
   }, [columnPinning]);
+  useEffect(() => {
+    handleSavePrefs({ rowPinning });
+  }, [rowPinning]);
+  useEffect(() => {
+    handleSavePrefs({ columnFilters });
+  }, [columnFilters]);
+  useEffect(() => {
+    handleSavePrefs({
+      pageIndex: pagination.pageIndex,
+      pageSize: pagination.pageSize
+    });
+  }, [pagination]);
 
   // Load data
   const loadData = () => {
@@ -142,12 +173,30 @@ const AdvancedDataGrid = () => {
     loadData();
   }, []);
 
-  // Define columns
-  const columns = useMemo(() => createColumns(), []);
-  const columnsWithHeaders = useMemo(
-    () => addHeadersToColumns(columns),
-    [columns]
-  );
+  // Define columns and apply configurations
+  const columnsWithHeaders = useMemo(() => {
+    const baseColumns = createColumns([], currency, locale);
+    const configuredColumns = baseColumns.map(col => {
+      const config = getColumnConfig(col.id || col.accessorKey);
+      if (!config) return col;
+
+      return {
+        ...col,
+        header: config.headerText || col.header,
+        enableSorting: config.sortable !== undefined ? config.sortable : col.enableSorting,
+        enableColumnFilter: config.filterable !== undefined ? config.filterable : col.enableColumnFilter,
+        enableResizing: config.resizable !== undefined ? config.resizable : col.enableResizing,
+        enableHiding: config.hideable !== undefined ? config.hideable : col.enableHiding,
+        enableGrouping: config.forceEnum !== undefined ? config.forceEnum : col.enableGrouping,
+        meta: {
+          ...col.meta,
+          ...config,
+          headerText: config.headerText || col.meta?.headerText || col.header,
+        }
+      };
+    });
+    return addHeadersToColumns(configuredColumns);
+  }, [columns, currency, locale, prefs, forceUpdate]); // forceUpdate as dependency to trigger re-render on save
 
   // Initialize table
   const table = useReactTable({
@@ -162,8 +211,10 @@ const AdvancedDataGrid = () => {
       columnOrder,
       columnSizing,
       columnPinning,
+      rowPinning,
       expanded,
       grouping,
+      pagination,
     },
     enableRowSelection: true,
     enableMultiRowSelection: true,
@@ -173,6 +224,8 @@ const AdvancedDataGrid = () => {
     enableMultiSort: true,
     enableFilters: true,
     enablePinning: true,
+    enableRowPinning: true,
+    keepPinnedRows: true,
     enableExpanding: true,
     enableGrouping: true,
     onSortingChange: setSorting,
@@ -183,8 +236,10 @@ const AdvancedDataGrid = () => {
     onColumnOrderChange: setColumnOrder,
     onColumnSizingChange: setColumnSizing,
     onColumnPinningChange: setColumnPinning,
+    onRowPinningChange: setRowPinning,
     onExpandedChange: setExpanded,
     onGroupingChange: setGrouping,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -199,12 +254,29 @@ const AdvancedDataGrid = () => {
       minSize: 50, // Minimum width to prevent overflow of 3-dot menu and resizer
       maxSize: 600, // Maximum width for columns
     },
-    initialState: {
-      pagination: {
-        pageSize: prefs.pageSize || 20,
-      },
-    },
   });
+
+  // Task 3: Implement persistent row reordering
+  const onRowReorder = useCallback((activeId, overId) => {
+    setData((old) => {
+      const oldIndex = old.findIndex((r) => String(r.id) === String(activeId));
+      const newIndex = old.findIndex((r) => String(r.id) === String(overId));
+      if (oldIndex === -1 || newIndex === -1) return old;
+
+      const newData = [...old];
+      const [movedRow] = newData.splice(oldIndex, 1);
+      newData.splice(newIndex, 0, movedRow);
+      return newData;
+    });
+  }, []);
+
+  // Task 3: Row pinning state (if needed to be persistent beyond session)
+  // Note: TanStack Table's row pinning is usually transient. 
+  // We can track pinned row IDs in preferences if desired.
+  useEffect(() => {
+    // This is a placeholder if we want to persist row pinning
+    // handleSavePrefs({ pinnedRowIds: table.getState().rowPinning });
+  }, [table.getState().rowPinning]);
 
   const scrollColumnIntoView = (column, direction, isWrapping = false) => {
     if (!column) return;
@@ -362,10 +434,19 @@ const AdvancedDataGrid = () => {
 
   useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
-  useHotkeys('esc', () => {
-    // e.preventDefault();
+  useHotkeys('esc', (e) => {
+    const isAnyMenuOpen = viewMenuOpen || columnsMenuOpen || groupMenuOpen || exportMenuOpen || showShortcutsModal || showStatusModal;
+
     if (document.activeElement === searchInputRef.current) {
       searchInputRef.current?.blur();
+    } else if (isAnyMenuOpen) {
+      // Let Radix handle closing the menus/modals
+      setViewMenuOpen(false);
+      setColumnsMenuOpen(false);
+      setGroupMenuOpen(false);
+      setExportMenuOpen(false);
+      setShowShortcutsModal(false);
+      setShowStatusModal(false);
     } else if (isFullscreen) {
       setIsFullscreen(false);
     }
@@ -532,20 +613,14 @@ const AdvancedDataGrid = () => {
               </motion.div>
             )}
           </AnimatePresence>
-          {!isFullscreen && (
 
-            <Info className="absolute top-0 right-0 text-primary m-4" onClick={() => (setShowShortcutsModal((v) => !v))} />
-
-          )}
-          {/* Table Card */}
           <motion.div
-            layout="position"
-            className="border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            className="flex flex-col bg-card border border-border overflow-hidden shadow-none"
             style={{
               backgroundColor: "var(--color-card)",
               borderColor: "var(--color-border)",
               height: isFullscreen ? "100dvh" : "auto",
-              maxHeight: isFullscreen ? "none" : "80vh",
+              maxHeight: isFullscreen ? "100dvh" : "80vh",
             }}
             animate={{
               borderRadius: isFullscreen ? 0 : 12
@@ -558,7 +633,7 @@ const AdvancedDataGrid = () => {
             {/* Toolbar with Fullscreen Toggle */}
             <DataGridToolbar
               table={table}
-              columns={columns}
+              columns={table.getAllLeafColumns().map(c => c.columnDef)}
               onExport={handleExport}
               onResetPreferences={handleResetPreferences}
               onRefresh={loadData}
@@ -581,21 +656,26 @@ const AdvancedDataGrid = () => {
               setExportMenuOpen={setExportMenuOpen}
               clearAllFilters={clearAllFilters}
               extraButtons={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                  className="h-11 border-2 shadow-sm bg-background color-foreground border-border"
-                  style={{ color: "var(--color-muted-foreground)" }}
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="h-4 w-4" />
-                  ) : (
-                    <Maximize2 className="h-4 w-4" />
-                  )}
-                </Button>
-
+                <div className="flex gap-2">
+                  <ColumnConfigurationMenu
+                    columns={table.getAllLeafColumns()}
+                    onConfigChange={triggerUpdate}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                    className="h-11 border-2 bg-background color-foreground border-border"
+                    style={{ color: "var(--color-muted-foreground)" }}
+                  >
+                    {isFullscreen ? (
+                      <Minimize2 className="h-4 w-4" />
+                    ) : (
+                      <Maximize2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               }
             />
 
@@ -628,6 +708,7 @@ const AdvancedDataGrid = () => {
                   getCellBorderClasses={getCellBorderClasses}
                   getLeftPosition={getLeftPos}
                   getRightPosition={getRightPos}
+                  onRowReorder={onRowReorder}
                 />
               </table>
             </div>
@@ -640,13 +721,19 @@ const AdvancedDataGrid = () => {
             </motion.div>
           </motion.div>
 
+          {/* Links moved to top left and hidden in fullscreen */}
+          {!isFullscreen && (
+            <div className="absolute top-4 left-4 z-50">
+              <GridToggle isDynamic={isDynamic} onToggle={onToggle} />
+            </div>
+          )}
+
           {/* Footer Credit */}
           {!isFullscreen && (
             <div className="text-center mt-6 text-sm text-muted-foreground">
               Built with ❤️ by {" "}
               <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
-              • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts • {" "}
-              <Link to="/beta">Dynamic Grid (beta)</Link>
+              • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
             </div>
           )}
         </div>
