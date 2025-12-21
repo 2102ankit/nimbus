@@ -99,6 +99,7 @@ export const loadPreferences = () => {
         columnOrder: [],
         columnSizing: {},
         columnPinning: { left: [], right: [] },
+        rowPinning: { top: [], bottom: [] },
         sorting: [],
         pageIndex: 0,
         columnFilters: [],
@@ -110,9 +111,10 @@ export const loadPreferences = () => {
       columnOrder: [],
       columnSizing: {},
       columnPinning: { left: [], right: [] },
+      rowPinning: { top: [], bottom: [] },
       sorting: [],
-        pageIndex: 0,
-        columnFilters: [],
+      pageIndex: 0,
+      columnFilters: [],
       pageSize: 20,
     };
   }
@@ -288,6 +290,20 @@ export const advancedFilterFn = (row, columnId, filterValue) => {
       },
       isEmpty: (v) => !v,
       isNotEmpty: (v) => !!v,
+    },
+    boolean: {
+      isTrue: (v) => {
+        if (typeof v === 'boolean') return v === true;
+        if (typeof v === 'string') return v.toLowerCase() === 'true' || v === '1' || v.toLowerCase() === 'yes';
+        return !!v;
+      },
+      isFalse: (v) => {
+        if (typeof v === 'boolean') return v === false;
+        if (typeof v === 'string') return v.toLowerCase() === 'false' || v === '0' || v.toLowerCase() === 'no';
+        return !v;
+      },
+      isEmpty: (v) => v === null || v === undefined || v === "",
+      isNotEmpty: (v) => v !== null && v !== undefined && v !== "",
     },
   };
 

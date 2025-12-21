@@ -171,7 +171,13 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
     const handleSaveHeaderEdit = useCallback(() => {
         handleConfigChange('headerText', editedHeaderText);
         setIsEditingHeader(false);
-    }, [editedHeaderText, handleConfigChange]);
+        // Save immediately when header is edited via the "check" button
+        if (selectedColumnId) {
+            const currentConfigs = { ...localConfigs, headerText: editedHeaderText };
+            setColumnConfig(selectedColumnId, currentConfigs);
+            onConfigChange?.();
+        }
+    }, [editedHeaderText, handleConfigChange, selectedColumnId, localConfigs, onConfigChange]);
 
     const handleCancelHeaderEdit = useCallback(() => {
         setIsEditingHeader(false);
@@ -381,7 +387,10 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                             min="0"
                                                             max="10"
                                                             value={localConfigs.precision !== undefined ? localConfigs.precision : ''}
-                                                            onChange={(e) => handleConfigChange('precision', e.target.value === '' ? undefined : parseInt(e.target.value))}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value === '' ? undefined : parseInt(e.target.value);
+                                                                handleConfigChange('precision', val);
+                                                            }}
                                                             className="bg-background border border-border text-foreground"
                                                             placeholder="Default"
                                                         />

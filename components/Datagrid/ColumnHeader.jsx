@@ -103,7 +103,7 @@ export function ColumnHeader({
           <div
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing opacity-40 group-hover:opacity-100 transition-opacity shrink-0 px-1.5 py-1 rounded hover:bg-muted"
+            className="cursor-grab active:cursor-grabbing opacity-30 group-hover:opacity-60 transition-opacity shrink-0 px-1.5 py-1 rounded hover:bg-muted/50"
           >
             <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
@@ -139,7 +139,7 @@ export function ColumnHeader({
       <div className="flex items-center gap-0.5 shrink-0 pr-1">
         {/* Filter */}
         {enableFilter && (
-          <div className="opacity-40 group-hover:opacity-100 transition-opacity">
+          <div className="opacity-30 group-hover:opacity-70 transition-opacity">
             <AdvancedColumnFilter column={column} dataType={dataType} />
           </div>
         )}

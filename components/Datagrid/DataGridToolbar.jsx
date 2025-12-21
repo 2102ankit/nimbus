@@ -344,7 +344,7 @@ export function DataGridToolbar({
                               onCheckedChange={() => col.toggleVisibility()}
                               className="h-4 w-4"
                             />
-                            <span className="text-sm font-medium text-foreground break-words">
+                            <span className="text-sm font-medium text-foreground whitespace-normal break-words">
                               {getColumnHeaderText(col)}
                             </span>
                           </label>

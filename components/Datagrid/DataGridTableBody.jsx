@@ -450,9 +450,38 @@ export function DataGridTableBody({
           strategy={verticalListSortingStrategy}
         >
           <AnimatePresence mode="popLayout">
-            {table.getRowModel().rows.map((row, idx) => (
+            {/* Top Pinned Rows */}
+            {table.getTopRows().map((row, idx) => (
+              <DataRow
+                key={`top-${row.id}`}
+                row={row}
+                idx={idx}
+                getDensityPadding={getDensityPadding}
+                getCellBorderClasses={getCellBorderClasses}
+                getLeftPosition={getLeftPosition}
+                getRightPosition={getRightPosition}
+                table={table}
+              />
+            ))}
+
+            {/* Center Rows */}
+            {(table.getPaginationRowModel()?.rows || table.getRowModel().rows).map((row, idx) => (
               <DataRow
                 key={row.id}
+                row={row}
+                idx={idx}
+                getDensityPadding={getDensityPadding}
+                getCellBorderClasses={getCellBorderClasses}
+                getLeftPosition={getLeftPosition}
+                getRightPosition={getRightPosition}
+                table={table}
+              />
+            ))}
+
+            {/* Bottom Pinned Rows */}
+            {table.getBottomRows().map((row, idx) => (
+              <DataRow
+                key={`bottom-${row.id}`}
                 row={row}
                 idx={idx}
                 getDensityPadding={getDensityPadding}

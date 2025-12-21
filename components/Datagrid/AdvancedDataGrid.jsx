@@ -61,7 +61,7 @@ const AdvancedDataGrid = () => {
   // Load preferences
   const [prefs, setPrefs] = useState(loadPreferences);
   const [sorting, setSorting] = useState(prefs.sorting || []);
-  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnFilters, setColumnFilters] = useState(prefs.columnFilters || []);
   const [columnVisibility, setColumnVisibility] = useState(
     prefs.columnVisibility || {}
   );
@@ -70,6 +70,13 @@ const AdvancedDataGrid = () => {
   const [columnPinning, setColumnPinning] = useState(
     prefs.columnPinning || { left: [], right: [] }
   );
+  const [rowPinning, setRowPinning] = useState(
+    prefs.rowPinning || { top: [], bottom: [] }
+  );
+  const [pagination, setPagination] = useState({
+    pageIndex: prefs.pageIndex || 0,
+    pageSize: prefs.pageSize || 20,
+  });
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [exportMode, setExportMode] = useState(null);
   const [focusedColumnIndex, setFocusedColumnIndex] = useState(null);
@@ -137,6 +144,18 @@ const AdvancedDataGrid = () => {
   useEffect(() => {
     handleSavePrefs({ columnPinning });
   }, [columnPinning]);
+  useEffect(() => {
+    handleSavePrefs({ rowPinning });
+  }, [rowPinning]);
+  useEffect(() => {
+    handleSavePrefs({ columnFilters });
+  }, [columnFilters]);
+  useEffect(() => {
+    handleSavePrefs({
+      pageIndex: pagination.pageIndex,
+      pageSize: pagination.pageSize
+    });
+  }, [pagination]);
 
   // Load data
   const loadData = () => {
@@ -188,8 +207,10 @@ const AdvancedDataGrid = () => {
       columnOrder,
       columnSizing,
       columnPinning,
+      rowPinning,
       expanded,
       grouping,
+      pagination,
     },
     enableRowSelection: true,
     enableMultiRowSelection: true,
@@ -199,6 +220,8 @@ const AdvancedDataGrid = () => {
     enableMultiSort: true,
     enableFilters: true,
     enablePinning: true,
+    enableRowPinning: true,
+    keepPinnedRows: true,
     enableExpanding: true,
     enableGrouping: true,
     onSortingChange: setSorting,
@@ -209,8 +232,10 @@ const AdvancedDataGrid = () => {
     onColumnOrderChange: setColumnOrder,
     onColumnSizingChange: setColumnSizing,
     onColumnPinningChange: setColumnPinning,
+    onRowPinningChange: setRowPinning,
     onExpandedChange: setExpanded,
     onGroupingChange: setGrouping,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -224,11 +249,6 @@ const AdvancedDataGrid = () => {
     defaultColumn: {
       minSize: 50, // Minimum width to prevent overflow of 3-dot menu and resizer
       maxSize: 600, // Maximum width for columns
-    },
-    initialState: {
-      pagination: {
-        pageSize: prefs.pageSize || 20,
-      },
     },
   });
 
@@ -410,10 +430,19 @@ const AdvancedDataGrid = () => {
 
   useHotkeys('s', () => setShowStatusModal((v) => !v), { enableOnFormTags: false });
 
-  useHotkeys('esc', () => {
-    // e.preventDefault();
+  useHotkeys('esc', (e) => {
+    const isAnyMenuOpen = viewMenuOpen || columnsMenuOpen || groupMenuOpen || exportMenuOpen || showShortcutsModal || showStatusModal;
+
     if (document.activeElement === searchInputRef.current) {
       searchInputRef.current?.blur();
+    } else if (isAnyMenuOpen) {
+      // Let Radix handle closing the menus/modals
+      setViewMenuOpen(false);
+      setColumnsMenuOpen(false);
+      setGroupMenuOpen(false);
+      setExportMenuOpen(false);
+      setShowShortcutsModal(false);
+      setShowStatusModal(false);
     } else if (isFullscreen) {
       setIsFullscreen(false);
     }
@@ -582,12 +611,12 @@ const AdvancedDataGrid = () => {
           </AnimatePresence>
 
           <motion.div
-            className="flex flex-col bg-card border border-border shadow-sm overflow-hidden"
+            className="flex flex-col bg-card border border-border overflow-hidden"
             style={{
               backgroundColor: "var(--color-card)",
               borderColor: "var(--color-border)",
               height: isFullscreen ? "100dvh" : "auto",
-              maxHeight: isFullscreen ? "none" : "80vh",
+              maxHeight: isFullscreen ? "100dvh" : "80vh",
             }}
             animate={{
               borderRadius: isFullscreen ? 0 : 12
@@ -691,13 +720,32 @@ const AdvancedDataGrid = () => {
             </motion.div>
           </motion.div>
 
+          {/* Links moved to top left and hidden in fullscreen */}
+          {!isFullscreen && (
+            <div className="absolute top-4 left-4 flex gap-4 text-sm font-medium z-50">
+              <Link
+                to="/"
+                className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-background/50 backdrop-blur-sm border border-border"
+              >
+                <Layout className="h-4 w-4" />
+                Regular Grid
+              </Link>
+              <Link
+                to="/beta"
+                className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-background/50 backdrop-blur-sm border border-border"
+              >
+                <Grid3x3 className="h-4 w-4" />
+                Dynamic Grid
+              </Link>
+            </div>
+          )}
+
           {/* Footer Credit */}
           {!isFullscreen && (
             <div className="text-center mt-6 text-sm text-muted-foreground">
               Built with ❤️ by {" "}
               <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
-              • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts • {" "}
-              <Link to="/beta">Dynamic Grid (beta)</Link>
+              • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
             </div>
           )}
         </div>

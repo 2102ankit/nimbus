@@ -337,17 +337,28 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
     }
 
     if (dataType === 'currency') {
-        return ({ getValue }) => {
+        return ({ getValue, column }) => {
             const value = getValue();
+            const config = getColumnConfig(column.id);
+            const currencySymbol = config?.currencySymbol || "$";
+
             const numValue = typeof value === 'string'
                 ? parseFloat(value.replace(/[^0-9.-]/g, ''))
                 : value;
+
+            if (numValue === null || numValue === undefined) return <span className="text-muted-foreground">-</span>;
+
+            // Use precision from config if available
+            const precision = config?.precision !== undefined ? config.precision : 2;
+
+            const formatted = new Intl.NumberFormat("en-US", {
+                minimumFractionDigits: precision,
+                maximumFractionDigits: precision,
+            }).format(numValue);
+
             return (
-                <span className="text-foreground">
-                    {new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                    }).format(numValue)}
+                <span className="text-foreground font-mono text-sm">
+                    {currencySymbol}{formatted}
                 </span>
             );
         };

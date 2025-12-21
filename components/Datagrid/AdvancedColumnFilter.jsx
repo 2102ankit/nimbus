@@ -51,6 +51,13 @@ const DATE_OPERATORS = [
   { value: "isNotEmpty", label: "Is not empty" },
 ];
 
+const BOOLEAN_OPERATORS = [
+  { value: "isTrue", label: "Is True" },
+  { value: "isFalse", label: "Is False" },
+  { value: "isEmpty", label: "Is null" },
+  { value: "isNotEmpty", label: "Is not null" },
+];
+
 // Filter function implementations - FIXED
 export const filterFunctions = {
   text: {
@@ -211,7 +218,9 @@ export function AdvancedColumnFilter({ column, dataType: propDataType = "text" }
       ? NUMBER_OPERATORS
       : dataType === "date"
         ? DATE_OPERATORS
-        : TEXT_OPERATORS;
+        : dataType === "boolean"
+          ? BOOLEAN_OPERATORS
+          : TEXT_OPERATORS;
 
   useEffect(() => {
     const currentFilter = column.getFilterValue();
@@ -261,7 +270,7 @@ export function AdvancedColumnFilter({ column, dataType: propDataType = "text" }
 
   const hasFilter = column.getFilterValue() !== undefined;
   const needsSecondInput = operator === "between";
-  const needsNoInput = operator === "isEmpty" || operator === "isNotEmpty";
+  const needsNoInput = operator === "isEmpty" || operator === "isNotEmpty" || operator === "isTrue" || operator === "isFalse";
   const [open, setOpen] = useState(false);
 
   return (
@@ -403,8 +412,8 @@ export function ActiveFilters({ table, columns }) {
     <div className="flex flex-wrap gap-2 px-4 pb-3">
       <span className="text-xs font-semibold flex items-center"
         style={{
-          color:"var(--color-muted-foreground)"
-      }}
+          color: "var(--color-muted-foreground)"
+        }}
       >
         Active filters:
       </span>

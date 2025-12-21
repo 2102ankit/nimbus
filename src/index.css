@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Outfit:wght@100..900&family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap');
 
 :root {
   --background: oklch(1.0000 0 0);
@@ -35,13 +36,13 @@
   --sidebar-ring: oklch(0.6716 0.1368 48.5130);
   
   /* Font Variables */
-  --font-inter: "Inter", sans-serif;
-  --font-jetbrains: "JetBrains Mono", monospace;
-  --font-geist: "Geist Mono", monospace;
-  --font-google: "Outfit", sans-serif;
+  --font-inter: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-jetbrains: "JetBrains Mono", source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  --font-geist: "Geist Mono", "JetBrains Mono", monospace;
+  --font-google: "Outfit", "Inter", sans-serif;
   
   --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains);
+  --font-mono: var(--font-geist);
   --font-serif: serif;
   
   --radius: 0.75rem;
