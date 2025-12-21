@@ -1,9 +1,55 @@
 import { ColumnHeader } from "@/components/Datagrid/ColumnHeader";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Pin, PinOff, GripVertical } from "lucide-react";
+import { useRowDrag } from "./RowDragContext";
 
 export const createColumns = () => [
+  {
+    id: "drag",
+    header: "",
+    cell: ({ row }) => {
+      const { attributes, listeners } = useRowDrag();
+      return (
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground flex justify-center"
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      );
+    },
+    size: 40,
+    enableSorting: false,
+    enableHiding: false,
+    enableResizing: false,
+    enablePinning: false,
+    enableReordering: false,
+    enableColumnFilter: false,
+    enableDrag: false,
+  },
+  {
+    id: "pin",
+    header: "",
+    cell: ({ row }) => (
+      <button
+        onClick={() => row.pin(row.getIsPinned() ? false : 'top')}
+        className="p-1 rounded-md transition-colors hover:bg-muted text-muted-foreground hover:text-foreground"
+        title={row.getIsPinned() ? "Unpin row" : "Pin row to top"}
+      >
+        {row.getIsPinned() ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+      </button>
+    ),
+    size: 40,
+    enableSorting: false,
+    enableHiding: false,
+    enableResizing: false,
+    enablePinning: false,
+    enableReordering: false,
+    enableColumnFilter: false,
+    enableDrag: false,
+  },
   {
     id: "select",
     header: ({ table }) => (

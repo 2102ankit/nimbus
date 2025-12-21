@@ -2,15 +2,15 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext({
   theme: "light",
-  toggleTheme: () => {},
+  toggleTheme: () => { },
   density: "normal",
-  setDensity: () => {},
+  setDensity: () => { },
   showGridLines: true,
-  toggleGridLines: () => {},
+  toggleGridLines: () => { },
   showHeaderLines: true,
-  toggleHeaderLines: () => {},
+  toggleHeaderLines: () => { },
   showRowLines: true,
-  toggleRowLines: () => {},
+  toggleRowLines: () => { },
 });
 
 export const useTheme = () => {
@@ -39,15 +39,15 @@ export function ThemeProvider({ children }) {
     return stored !== "false";
   });
   const [showRowLines, setShowRowLines] = useState(() => {
-  const [showStripedColumns, setShowStripedColumns] = useState(() => {
-  const [fontFamily, setFontFamily] = useState(() => {
-    return localStorage.getItem("datagrid-font") || "Inter";
+    const stored = localStorage.getItem("datagrid-rowlines");
+    return stored !== "false";
   });
+  const [showStripedColumns, setShowStripedColumns] = useState(() => {
     const stored = localStorage.getItem("datagrid-stripedcolumns");
     return stored === "true";
   });
-    const stored = localStorage.getItem("datagrid-rowlines");
-    return stored !== "false";
+  const [fontFamily, setFontFamily] = useState(() => {
+    return localStorage.getItem("datagrid-font") || "Inter";
   });
 
   useEffect(() => {
@@ -74,8 +74,13 @@ export function ThemeProvider({ children }) {
       root.style.setProperty("--text-muted", "#64748b");
       root.style.setProperty("--border-color", "#e2e8f0");
       root.style.setProperty("--hover-bg", "#f8fafc");
+      root.style.setProperty("--hover-bg", "#f8fafc");
     }
-  }, [theme]);
+
+    // Apply font family
+    root.style.setProperty("--font-family", fontFamily);
+    root.style.fontFamily = fontFamily;
+  }, [theme, fontFamily]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
@@ -101,15 +106,28 @@ export function ThemeProvider({ children }) {
   };
 
   const toggleStripedColumns = () => {
+    setShowStripedColumns((prev) => {
+      const newValue = !prev;
+      localStorage.setItem("datagrid-stripedcolumns", String(newValue));
+      // Update CSS variable or attribute for instant feedback if possible, 
+      // but since we use inline styles in DataRow, we might need to refactor DataRow to use CSS classes.
+      return newValue;
+    });
+  };
+
+  // Effect to sync striped state with a global class/attribute for potential CSS usage
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (showStripedColumns) {
+      root.setAttribute("data-striped", "true");
+    } else {
+      root.removeAttribute("data-striped");
+    }
+  }, [showStripedColumns]);
+
   const handleSetFont = (font) => {
     localStorage.setItem("datagrid-font", font);
     setFontFamily(font);
-  };
-
-    setShowStripedColumns((prev) => {
-      localStorage.setItem("datagrid-stripedcolumns", String(!prev));
-      return !prev;
-    });
   };
 
   const toggleRowLines = () => {

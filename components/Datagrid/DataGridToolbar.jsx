@@ -69,6 +69,8 @@ export function DataGridToolbar({
   extraButtons,
   searchInputValue,
   onSearchInputChange,
+  pivotMode,
+  setPivotMode,
 }) {
   const {
     density,
@@ -266,6 +268,13 @@ export function DataGridToolbar({
                 >
                   APPEARANCE
                 </DropdownMenuLabel>
+                <DropdownMenuCheckboxItem
+                  checked={pivotMode}
+                  onCheckedChange={setPivotMode}
+                >
+                  <Columns className="h-4 w-4 mr-2" />
+                  Pivot Mode
+                </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   checked={showStripedColumns}
                   onCheckedChange={toggleStripedColumns}

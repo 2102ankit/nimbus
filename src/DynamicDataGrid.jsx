@@ -5,6 +5,8 @@ import { DataGridTableHeader } from "@/components/Datagrid/DataGridTableHeader";
 import { DataGridToolbar } from "@/components/Datagrid/DataGridToolbar";
 import {
     exportToExcel,
+    exportToCSV,
+    exportToJSON,
     getLeftPosition,
     getRightPosition,
     loadPreferences,
@@ -26,7 +28,8 @@ import {
     getGroupedRowModel,
     useReactTable,
 } from "@tanstack/react-table";
-import { Info, Maximize2, Minimize2, Upload } from "lucide-react";
+import { arrayMove } from "@dnd-kit/sortable";
+import { Info, Maximize2, Minimize2, Upload, ArrowRight } from "lucide-react";
 import { animate } from "motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -61,6 +64,7 @@ const DynamicDataGrid = () => {
     const [rowSelection, setRowSelection] = useState({});
     const [expanded, setExpanded] = useState({});
     const [grouping, setGrouping] = useState([]);
+    const [pivotMode, setPivotMode] = useState(false);
 
     const [prefs, setPrefs] = useState(loadPreferences);
     const [sorting, setSorting] = useState(prefs.sorting || []);
@@ -299,7 +303,6 @@ const DynamicDataGrid = () => {
                 columnOrder,
                 columnSizing,
                 columnPinning,
-                columnPinning,
                 pageSize,
                 pageIndex,
                 columnFilters
@@ -363,8 +366,10 @@ const DynamicDataGrid = () => {
             columnOrder,
             columnSizing,
             columnPinning,
+            rowPinning,
             expanded,
             grouping,
+            pivotMode, // N5
             pagination: paginationState
         },
         enableRowSelection: true,
@@ -376,6 +381,8 @@ const DynamicDataGrid = () => {
         enableMultiSort: true,
         enableFilters: true,
         enablePinning: true,
+        enableRowPinning: true,
+        keepPinnedRows: true,
         enableExpanding: metadata?.hasNestedData || false,
         enableGrouping: true,
         manualPagination: true,
@@ -389,6 +396,7 @@ const DynamicDataGrid = () => {
         onColumnOrderChange: setColumnOrder,
         onColumnSizingChange: setColumnSizing,
         onColumnPinningChange: setColumnPinning,
+        onRowPinningChange: setRowPinning,
         onExpandedChange: setExpanded,
         onGroupingChange: setGrouping,
         onPaginationChange: (updater) => {
@@ -636,37 +644,19 @@ const DynamicDataGrid = () => {
         });
     }, { enableOnFormTags: false });
 
-    const handleExport = useCallback(async (format) => {
-        const cols = table.getVisibleLeafColumns()
-            .filter(col => col.id !== 'select' && col.id !== 'expand')
-            .map(col => ({ id: col.id, header: col.columnDef.meta?.headerText || col.id }));
-
+    const handleExport = useCallback((format) => {
         try {
             if (format === 'csv') {
-                const csvData = await processData('EXPORT_CSV', rawData, { columns: cols });
-                const blob = new Blob([csvData], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'export.csv';
-                a.click();
-                URL.revokeObjectURL(url);
+                exportToCSV(table);
             } else if (format === 'json') {
-                const jsonData = await processData('EXPORT_JSON', rawData, { columns: cols });
-                const blob = new Blob([jsonData], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'export.json';
-                a.click();
-                URL.revokeObjectURL(url);
+                exportToJSON(table);
             } else if (format === 'excel') {
-                exportToExcel(rawData, cols);
+                exportToExcel(table);
             }
         } catch (error) {
             console.error('Export error:', error);
         }
-    }, [rawData, table, processData]);
+    }, [table]);
 
     const handleResetPreferences = useCallback(() => {
         resetPreferences();
@@ -773,16 +763,25 @@ const DynamicDataGrid = () => {
                         )}
                     </AnimatePresence>
                     {!isFullscreen && (
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Show shortcuts</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                        <>
+                            <Link
+                                to="/"
+                                className="absolute top-0 left-0 m-4 text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                            >
+                                <ArrowRight className="h-4 w-4 rotate-180" />
+                                Regular Grid
+                            </Link>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Info className="absolute top-0 right-0 text-primary m-4 cursor-pointer" onClick={() => (setShowShortcutsModal((v) => !v))} />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Show shortcuts</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </>
                     )}
 
                     {rawData.length > 0 && !isFullscreen && (
@@ -950,8 +949,7 @@ const DynamicDataGrid = () => {
                         <div className="text-center mt-6 text-sm text-muted-foreground bottom-0">
                             Built with ❤️ by {" "}
                             <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
-                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts • {" "}
-                            <Link to="/">Regular Grid</Link>
+                            • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
                         </div>
                     )}
                 </div>

@@ -89,18 +89,19 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                 }
             }
         };
-        // Task 8: Reset configs when closing without save
-        useEffect(() => {
-            if (!isOpen && selectedColumnId) {
-                // Reset to saved config when modal closes
-                const savedConfig = getColumnConfig(selectedColumnId);
-                setLocalConfigs(savedConfig || {});
-            }
-        }, [isOpen, selectedColumnId]);
 
         window.addEventListener('keydown', handleEscape);
         return () => window.removeEventListener('keydown', handleEscape);
     }, [isOpen, isEditingHeader]);
+
+    // Task 8: Reset configs when closing without save
+    useEffect(() => {
+        if (!isOpen && selectedColumnId) {
+            // Reset to saved config when modal closes
+            const savedConfig = getColumnConfig(selectedColumnId);
+            setLocalConfigs(savedConfig || {});
+        }
+    }, [isOpen, selectedColumnId]);
 
     useEffect(() => {
         if (isEditingHeader && headerInputRef.current) {
@@ -381,6 +382,32 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
                                                             className="bg-background border border-border text-foreground"
                                                             placeholder="Default"
                                                         />
+                                                    </div>
+                                                )}
+
+                                                {/* Currency Symbol (F4) */}
+                                                {(localConfigs.dataType || getColumnType(selectedColumn)) === 'currency' && (
+                                                    <div className="bg-card border border-border rounded-lg p-4">
+                                                        <Label htmlFor="currency-symbol" className="text-sm font-semibold text-foreground mb-2 block">
+                                                            Currency Symbol
+                                                        </Label>
+                                                        <Select
+                                                            value={localConfigs.currencySymbol || '$'}
+                                                            onValueChange={(value) => handleConfigChange('currencySymbol', value)}
+                                                        >
+                                                            <SelectTrigger id="currency-symbol" className="w-full bg-background border border-border text-foreground">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-card border border-border">
+                                                                <SelectItem value="$" className="text-foreground hover:bg-muted">$ (USD)</SelectItem>
+                                                                <SelectItem value="€" className="text-foreground hover:bg-muted">€ (EUR)</SelectItem>
+                                                                <SelectItem value="£" className="text-foreground hover:bg-muted">£ (GBP)</SelectItem>
+                                                                <SelectItem value="¥" className="text-foreground hover:bg-muted">¥ (JPY)</SelectItem>
+                                                                <SelectItem value="₹" className="text-foreground hover:bg-muted">₹ (INR)</SelectItem>
+                                                                <SelectItem value="₽" className="text-foreground hover:bg-muted">₽ (RUB)</SelectItem>
+                                                                <SelectItem value="kr" className="text-foreground hover:bg-muted">kr (SEK/NOK)</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
                                                     </div>
                                                 )}
 

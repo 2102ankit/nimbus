@@ -1,17 +1,28 @@
 // ============ EXPORT FUNCTIONS ============
-export const exportToCSV = (data, columns) => {
+// ============ EXPORT FUNCTIONS ============
+export const exportToCSV = (table) => {
+  const columns = table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
+  const rows = table.getRowModel().rows;
+
   const headers = columns
-    .map((c) => (typeof c.header === "string" ? c.header : c.id))
+    .map((c) => {
+      const header = c.columnDef.header;
+      return typeof header === "string" ? header : c.id;
+    })
     .join(",");
-  const rows = data
+
+  const csvRows = rows
     .map((row) =>
       columns
-        .map((c) => `"${String(row[c.id] || "").replace(/"/g, '""')}"`)
+        .map((c) => {
+          const val = row.getValue(c.id);
+          return `"${String(val || "").replace(/"/g, '""')}"`;
+        })
         .join(",")
     )
     .join("\n");
 
-  const csv = `${headers}\n${rows}`;
+  const csv = `${headers}\n${csvRows}`;
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -21,11 +32,14 @@ export const exportToCSV = (data, columns) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportToJSON = (data, columns) => {
-  const exportData = data.map((row) => {
+export const exportToJSON = (table) => {
+  const columns = table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
+  const rows = table.getRowModel().rows;
+
+  const exportData = rows.map((row) => {
     const obj = {};
     columns.forEach((c) => {
-      obj[c.id] = row[c.id];
+      obj[c.id] = row.getValue(c.id);
     });
     return obj;
   });
@@ -40,16 +54,20 @@ export const exportToJSON = (data, columns) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportToExcel = (data, columns) => {
+export const exportToExcel = (table) => {
+  const columns = table.getVisibleLeafColumns().filter(c => c.id !== 'select' && c.id !== 'expand');
+  const rows = table.getRowModel().rows;
+
   let html = "<table><thead><tr>";
   columns.forEach((c) => {
-    html += `<th>${typeof c.header === "string" ? c.header : c.id}</th>`;
+    const header = c.columnDef.header;
+    html += `<th>${typeof header === "string" ? header : c.id}</th>`;
   });
   html += "</tr></thead><tbody>";
-  data.forEach((row) => {
+  rows.forEach((row) => {
     html += "<tr>";
     columns.forEach((c) => {
-      html += `<td>${row[c.id] || ""}</td>`;
+      html += `<td>${row.getValue(c.id) || ""}</td>`;
     });
     html += "</tr>";
   });
