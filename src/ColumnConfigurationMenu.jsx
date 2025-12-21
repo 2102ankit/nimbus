@@ -67,11 +67,16 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({ c
         const config = getColumnConfig(colId);
         if (config?.headerText) return config.headerText;
 
-        const header = col.header || col.columnDef?.header || col.meta?.headerText || col.accessorKey;
-        if (typeof header === 'function' || typeof header === 'object') {
-            return col.meta?.headerText || col.meta?.originalKey || col.accessorKey || col.id;
-        }
-        return String(header);
+        // Check meta.headerText first (most reliable)
+        if (col.meta?.headerText) return col.meta.headerText;
+        if (col.columnDef?.meta?.headerText) return col.columnDef.meta.headerText;
+
+        // Check columnDef.header if it's a string
+        const header = col.columnDef?.header || col.header;
+        if (typeof header === 'string') return header;
+
+        // Fallback to originalKey or accessorKey
+        return col.meta?.originalKey || col.columnDef?.meta?.originalKey || col.accessorKey || col.id;
     }, []);
 
     const getColumnType = useCallback((col) => {

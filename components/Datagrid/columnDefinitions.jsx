@@ -128,15 +128,15 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
     // Check if we need the expand column
     const needsExpand = dynamicColumns.some(c => c.id === 'expand');
 
-    const result = [selectCol, dragCol, pinCol];
+    const result = [dragCol, selectCol, pinCol];
     if (needsExpand) result.push(expandCol);
     return [...result, ...dataCols];
   }
 
   // Fallback to default columns
   return [
-    selectCol,
     dragCol,
+    selectCol,
     pinCol,
     expandCol,
     {

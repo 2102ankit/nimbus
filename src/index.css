@@ -150,7 +150,7 @@ body {
   overflow: visible !important;
   overscroll-behavior-x: none;
   /* Smooth font transition */
-  transition: font-family 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  transition: font-family 0.05s ease, background-color 0.05s ease, color 0.05s ease, border-color 0.05s ease;
 }
 
 html {

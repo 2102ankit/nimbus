@@ -213,12 +213,22 @@ export function DataRow({
     disabled: isGrouped,
   });
 
+  // Restrict transform to vertical (Y) only
+  const restrictedTransform = transform
+    ? {
+        ...transform,
+        x: 0, // Prevent horizontal movement
+      }
+    : null;
+
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transform: restrictedTransform ? CSS.Transform.toString(restrictedTransform) : undefined,
+    transition: isDragging
+      ? undefined // No transition while dragging for immediate response
+      : transition || 'transform 200ms cubic-bezier(0.2, 0, 0.2, 1)', // Smooth transition when not dragging
+    opacity: isDragging ? 1 : 1,
     position: "relative",
-    zIndex: isDragging ? 20 : 1,
+    zIndex: isDragging ? 50 : 1,
     backgroundColor: row.getIsSelected()
       ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
       : showStripedColumns && idx % 2 === 1
@@ -229,6 +239,7 @@ export function DataRow({
       : "none",
     top: row.getIsPinned() === "top" ? "var(--header-height)" : undefined,
     bottom: row.getIsPinned() === "bottom" ? "0px" : undefined,
+    boxShadow: isDragging ? "0 4px 12px rgba(0, 0, 0, 0.15)" : "none",
   };
 
   if (isGrouped) {
@@ -257,13 +268,17 @@ export function DataRow({
 
             return (
               <motion.td
-                layout="position"
-                transition={{
-                  type: "spring",
-                  stiffness: 500,
-                  damping: 40,
-                  mass: 0.8,
-                }}
+                layout={!isDragging ? "position" : false}
+                transition={
+                  !isDragging
+                    ? {
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                        mass: 0.5,
+                      }
+                    : undefined
+                }
                 key={cell.id}
                 className={`align-middle relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getCellBorderClasses() : ''
                   } ${isPinned ? "sticky z-10" : ""} ${isBeforeRightPinned ? 'before-right-pinned' : ''} ${row.getIsPinned() ? `sticky z-20 sticky-pinned-td sticky-pinned-td-${row.getIsPinned()}` : ""}`}
@@ -414,7 +429,11 @@ export function DataGridTableBody({
   onRowReorder,
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts for smoother experience
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -451,10 +470,12 @@ export function DataGridTableBody({
     >
       <tbody style={{ backgroundColor: "var(--color-card)" }}>
         <SortableContext
-          items={table.getRowModel().rows.map((r) => r.id)}
+          items={(table.getPaginationRowModel()?.rows || table.getRowModel().rows)
+            .filter(r => !r.getIsPinned())
+            .map((r) => r.id)}
           strategy={verticalListSortingStrategy}
         >
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode="sync">
             {/* Top Pinned Rows */}
             {table.getTopRows().map((row, idx) => (
               <DataRow
