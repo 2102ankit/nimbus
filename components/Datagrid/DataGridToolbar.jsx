@@ -151,9 +151,9 @@ export function DataGridToolbar({
         borderBottomColor: "var(--color-border)",
       }}
     >
-      <div className="flex flex-col gap-4 p-2">
+      <div className="flex flex-col gap-3 p-2">
         {/* Top Row - Search and Actions */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
           {/* Global Search */}
           <div className="relative flex-1 min-w-[250px] max-w-md">
             <Search
@@ -163,9 +163,9 @@ export function DataGridToolbar({
             <Input
               ref={searchInputRef}
               placeholder="(/) Search all columns..."
-              value={searchInputValue} // Live value (instant)
+              value={searchInputValue}
               onChange={onSearchInputChange}
-              className="pl-10 h-11 border-2 shadow-sm focus:ring-2"
+              className="pl-10 h-10 sm:h-11 border-2 shadow-sm focus:ring-2"
               style={{
                 backgroundColor: "var(--color-card)",
                 borderColor: "var(--color-border)",
@@ -175,7 +175,7 @@ export function DataGridToolbar({
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2">
             {/* Refresh */}
             {/* {onRefresh && (
               <Button
@@ -196,14 +196,17 @@ export function DataGridToolbar({
                 onClick={clearAllFilters}
                 variant="outline"
                 size="sm"
-                className="h-11 border-2 shadow-sm bg-background"
+                className="h-10 sm:h-11 px-2 sm:px-3 border-2 shadow-sm bg-background text-xs sm:text-sm"
                 style={{
                   borderColor: "var(--color-border)",
                   color: "var(--color-foreground)",
                 }}
               >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                <HotkeyLabel hotkey={"R"}>Reset All</HotkeyLabel>
+                <RotateCcw className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  <HotkeyLabel hotkey={"R"}>Reset All</HotkeyLabel>
+                </span>
+                <span className="sm:hidden">Reset</span>
               </Button>
             )}
 
@@ -213,14 +216,17 @@ export function DataGridToolbar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 border-2 shadow-sm bg-background"
+                  className="h-10 sm:h-11 px-2 sm:px-3 border-2 shadow-sm bg-background text-xs sm:text-sm"
                   style={{
                     borderColor: "var(--color-border)",
                     color: "var(--color-foreground)",
                   }}
                 >
-                  <Layout className="h-4 w-4 mr-2" />
-                  <HotkeyLabel hotkey={"V"}>View</HotkeyLabel>
+                  <Layout className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    <HotkeyLabel hotkey={"V"}>View</HotkeyLabel>
+                  </span>
+                  <span className="sm:hidden">View</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 shadow-lg">
@@ -371,14 +377,17 @@ export function DataGridToolbar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 border-2 shadow-sm bg-background"
+                  className="h-10 sm:h-11 px-2 sm:px-3 border-2 shadow-sm bg-background text-xs sm:text-sm"
                   style={{
                     borderColor: "var(--color-border)",
                     color: "var(--color-foreground)",
                   }}
                 >
-                  <Eye className="h-4 w-4 mr-2" />
-                  <HotkeyLabel hotkey={"C"}>Columns</HotkeyLabel>
+                  <Eye className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    <HotkeyLabel hotkey={"C"}>Columns</HotkeyLabel>
+                  </span>
+                  <span className="sm:hidden">Cols</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -497,16 +506,22 @@ export function DataGridToolbar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 border-2 shadow-sm bg-background"
+                  className="h-10 sm:h-11 px-2 sm:px-3 border-2 shadow-sm bg-background text-xs sm:text-sm"
                   style={{
                     borderColor: "var(--color-border)",
                     color: "var(--color-foreground)",
                   }}
                 >
-                  <Layers className="h-4 w-4 mr-2" />
-                  <HotkeyLabel hotkey={"G"}>Group</HotkeyLabel>
-                  {table.getState().grouping.length > 0 &&
-                    ` (${table.getState().grouping.length})`}
+                  <Layers className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    <HotkeyLabel hotkey={"G"}>Group</HotkeyLabel>
+                  </span>
+                  <span className="sm:hidden">Grp</span>
+                  {table.getState().grouping.length > 0 && (
+                    <span className="ml-1">
+                      ({table.getState().grouping.length})
+                    </span>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -633,14 +648,17 @@ export function DataGridToolbar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 border-2 bg-background"
+                  className="h-10 sm:h-11 px-2 sm:px-3 border-2 shadow-sm bg-background text-xs sm:text-sm"
                   style={{
                     borderColor: "var(--color-border)",
                     color: "var(--color-foreground)",
                   }}
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  <HotkeyLabel hotkey={"E"}>Export</HotkeyLabel>
+                  <Download className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    <HotkeyLabel hotkey={"E"}>Export</HotkeyLabel>
+                  </span>
+                  <span className="sm:hidden">Exp</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 shadow-lg">
@@ -685,19 +703,19 @@ export function DataGridToolbar({
                     onClick={toggleTheme}
                     variant="outline"
                     size="icon"
-                    className="h-11 w-11 border-2 transition-all bg-background ml-4"
+                    className="h-10 sm:h-11 w-10 sm:w-11 border-2 transition-all bg-background ml-0 sm:ml-4"
                     style={{
                       borderColor: "var(--color-border)",
                     }}
                   >
                     {theme === "dark" ? (
                       <Sun
-                        className="h-5 w-5"
+                        className="h-4 w-4 sm:h-5 sm:w-5"
                         style={{ color: "var(--color-chart-3)" }}
                       />
                     ) : (
                       <Moon
-                        className="h-5 w-5"
+                        className="h-4 w-4 sm:h-5 sm:w-5"
                         style={{ color: "var(--color-foreground)" }}
                       />
                     )}

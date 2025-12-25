@@ -934,7 +934,7 @@ const DynamicDataGrid = () => {
       <div
         className="w-full relative z-10"
         style={{
-          padding: isFullscreen ? "0" : "0.5rem 2rem",
+          padding: isFullscreen ? "0" : "0.5rem 1rem",
           marginTop: isFullscreen ? "0" : "0",
         }}
       >
@@ -944,20 +944,20 @@ const DynamicDataGrid = () => {
           {/* <AnimatePresence> */}
           {!isFullscreen && (
             <motion.div
-              initial={{ opacity: 0, y: -50 }} // Start from hidden and above
-              animate={{ opacity: 1, y: 0 }} // Animate to visible and in position
-              exit={{ opacity: 0, y: -50 }} // Exit by fading and sliding up
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
               transition={{
                 duration: 0.3,
-                ease: [0.25, 1, 0.5, 1], // Matches your other smooth easings
+                ease: [0.25, 1, 0.5, 1],
               }}
-              className="mb-4 w-full text-center"
+              className="mb-3 sm:mb-4 w-full text-center"
             >
-              <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
+              <h1 className="text-2xl sm:text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
                 Nimbus<span className="text-white!">☁️</span>- Enterprise
                 DataGrid
               </h1>
-              <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
+              <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground hidden sm:block">
                 Complete table with Advanced Filters, Multi-Column Sort, Column
                 Reordering, Pinning, Resizing, Row Expansion, Grouping
                 Aggregation & More
@@ -990,15 +990,16 @@ const DynamicDataGrid = () => {
                   <Button
                     onClick={() => setShowUpload(true)}
                     variant="outline"
-                    className="absolute top-0 right-12 m-4 border-2 shadow-none hover:bg-muted font-normal"
+                    className="absolute top-0 right-8 sm:right-12 m-3 sm:m-4 border-2 shadow-none hover:bg-muted font-normal text-xs sm:text-sm h-8 sm:h-auto px-2 sm:px-4"
                     style={{
                       borderColor: "var(--color-border)",
                       backgroundColor: "var(--color-background)",
                       color: "var(--color-foreground)",
                     }}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload New File
+                    <Upload className="h-4 sm:w-4 mr-2" />
+                    <span className="hidden sm:inline">Upload New File</span>
+                    <span className="sm:hidden">Upload</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1011,12 +1012,15 @@ const DynamicDataGrid = () => {
           {rawData.length > 0 && (
             <motion.div
               layout="position"
-              className="border-2 rounded-xl overflow-hidden flex flex-col"
+              className="border-2 rounded-xl sm:rounded-xl overflow-hidden flex flex-col"
               style={{
                 backgroundColor: "var(--color-card)",
                 borderColor: "var(--color-border)",
-                height: isFullscreen ? "100dvh" : "auto",
-                maxHeight: isFullscreen ? "none" : "80vh",
+                height: isFullscreen
+                  ? "100dvh"
+                  : window.innerWidth >= 640
+                    ? "80vh"
+                    : "70vh",
               }}
               animate={{
                 borderRadius: isFullscreen ? "0" : "12px",
@@ -1076,7 +1080,7 @@ const DynamicDataGrid = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => setIsFullscreen(!isFullscreen)}
-                            className="h-11 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
+                            className="h-10 sm:h-11 w-10 sm:w-11 px-2 sm:px-3 border-2 shadow-sm bg-background color-foreground border-border transition-all duration-150 hover:scale-105"
                             style={{ color: "var(--color-muted-foreground)" }}
                           >
                             {isFullscreen ? (
@@ -1158,7 +1162,7 @@ const DynamicDataGrid = () => {
           )}
 
           {!isFullscreen && (
-            <div className="text-center mt-6 text-sm text-muted-foreground bottom-0">
+            <div className="text-center mt-4 sm:mt-6 text-xs sm:text-sm text-muted-foreground bottom-0">
               Built with ❤️ by{" "}
               <a
                 href="https://x.com/2102ankit"
@@ -1168,11 +1172,13 @@ const DynamicDataGrid = () => {
                 {" "}
                 Ankit Mishra
               </a>{" "}
-              • Press{" "}
-              <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">
-                i
-              </kbd>{" "}
-              for shortcuts
+              <span className="hidden sm:inline">
+                • Press{" "}
+                <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">
+                  i
+                </kbd>{" "}
+                for shortcuts
+              </span>
             </div>
           )}
         </div>

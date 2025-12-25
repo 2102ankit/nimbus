@@ -247,7 +247,7 @@ export const ColumnConfigurationMenu = memo(function ColumnConfigurationMenu({
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(true)}
-              className="h-11 border-2 bg-background text-foreground hover:bg-muted"
+              className="h-10 sm:h-11 w-10 sm:w-11 px-2 sm:px-3 border-2 bg-background text-foreground hover:bg-muted"
               style={{
                 borderColor: "var(--color-border)",
               }}
