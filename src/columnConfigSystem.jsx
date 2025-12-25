@@ -49,6 +49,25 @@ export function clearColumnConfigs() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+// Helper function to parse numeric values from various formats
+function parseNumericValue(value) {
+  if (value === null || value === undefined) return null;
+
+  // If already a number, return it
+  if (typeof value === 'number') return value;
+
+  // Convert to string and clean
+  const strValue = String(value);
+
+  // Remove currency symbols, commas, and percentage signs
+  const cleaned = strValue.replace(/[$€£¥,\s%]/g, '');
+
+  // Parse the cleaned value
+  const parsed = parseFloat(cleaned);
+
+  return isNaN(parsed) ? null : parsed;
+}
+
 export function applyColumnConfigs(columns) {
   return columns.map((column) => {
     const columnId = column.id || column.accessorKey;
@@ -105,27 +124,74 @@ export function applyColumnConfigs(columns) {
       };
     }
 
+    // Set aggregation based on data type
     if (effectiveIsEnum) {
       updatedColumn.aggregationFn = "count";
       updatedColumn.aggregatedCell = ({ getValue }) => (
         <span className="font-bold text-primary">{getValue()} items</span>
       );
     } else if (effectiveDataType === "currency") {
-      updatedColumn.aggregationFn = "sum";
-      updatedColumn.aggregatedCell = ({ getValue }) => (
-        <span className="font-bold text-chart-2">
-          Total:{" "}
-          {new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-          }).format(getValue())}
-        </span>
-      );
+      updatedColumn.aggregationFn = (columnId, leafRows, childRows) => {
+        let sum = 0;
+        leafRows.forEach((row) => {
+          const value = row.getValue(columnId);
+          const numValue = parseNumericValue(value);
+          if (numValue !== null) {
+            sum += numValue;
+          }
+        });
+        return sum;
+      };
+      updatedColumn.aggregatedCell = ({ getValue, column }) => {
+        const value = getValue();
+        const config = getColumnConfig(column.id);
+        const currencySymbol = config?.currencySymbol || "$";
+
+        return (
+          <span className="font-bold text-chart-2">
+            Total:{" "}
+            {currencySymbol}
+            {new Intl.NumberFormat("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(value || 0)}
+          </span>
+        );
+      };
     } else if (effectiveDataType === "percentage") {
-      updatedColumn.aggregationFn = "mean";
+      updatedColumn.aggregationFn = (columnId, leafRows, childRows) => {
+        let sum = 0;
+        let count = 0;
+        leafRows.forEach((row) => {
+          const value = row.getValue(columnId);
+          const numValue = parseNumericValue(value);
+          if (numValue !== null) {
+            sum += numValue;
+            count++;
+          }
+        });
+        return count > 0 ? sum / count : 0;
+      };
       updatedColumn.aggregatedCell = ({ getValue }) => (
         <span className="font-bold text-primary">
-          Avg: {Math.round(getValue())}%
+          Avg: {Math.round(getValue() || 0)}%
+        </span>
+      );
+    } else if (effectiveDataType === "number") {
+      updatedColumn.aggregationFn = (columnId, leafRows, childRows) => {
+        let sum = 0;
+        leafRows.forEach((row) => {
+          const value = row.getValue(columnId);
+          const numValue = parseNumericValue(value);
+          if (numValue !== null) {
+            sum += numValue;
+          }
+        });
+        return sum;
+      };
+      updatedColumn.aggregatedCell = ({ getValue }) => (
+        <span className="font-bold text-primary">
+          Sum: {(getValue() || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}
         </span>
       );
     } else {

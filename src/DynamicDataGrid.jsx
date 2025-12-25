@@ -42,9 +42,8 @@ import { applyColumnConfigs } from "./columnConfigSystem";
 import { ColumnConfigurationMenu } from "./ColumnConfigurationMenu";
 import { useDataWorker } from "./useDataWorker";
 import { createColumns } from "@/components/Datagrid/columnDefinitions";
-import { GridToggle } from "./GridToggle";
 
-const DynamicDataGrid = ({ isDynamic, onToggle }) => {
+const DynamicDataGrid = () => {
   const {
     theme,
     toggleTheme,
@@ -383,8 +382,6 @@ const DynamicDataGrid = ({ isDynamic, onToggle }) => {
 
   const handleRowReorder = useCallback((activeId, overId) => {
     setRawData((currentData) => {
-      // Assuming rows have 'id' property. If not, we might need to use index or generate ID.
-      // But dnd-kit uses IDs.
       const oldIndex = currentData.findIndex((item) => item.id === activeId);
       const newIndex = currentData.findIndex((item) => item.id === overId);
 
@@ -499,7 +496,7 @@ const DynamicDataGrid = ({ isDynamic, onToggle }) => {
       rowPinning,
       expanded,
       grouping,
-      pivotMode, // N5
+      pivotMode,
       pagination: paginationState,
     },
     enableRowSelection: true,
@@ -922,9 +919,8 @@ const DynamicDataGrid = ({ isDynamic, onToggle }) => {
       className="w-full min-h-screen transition-colors relative scrollbar-hide"
       style={{
         backgroundColor: "var(--color-background)",
-        willChange: isFullscreen ? "padding, margin" : "auto",
-        textSizeAdjust: "none", // Add this
-        WebkitTextSizeAdjust: "none", // Add this (for Safari)
+        textSizeAdjust: "none",
+        WebkitTextSizeAdjust: "none",
       }}
     >
       <AnimatePresence>
@@ -936,23 +932,17 @@ const DynamicDataGrid = ({ isDynamic, onToggle }) => {
         )}
       </AnimatePresence>
 
-      <motion.div
-        layout="position"
+      <div
         className="w-full relative z-10"
-        animate={{
+        style={{
           padding: isFullscreen ? "0" : "0.5rem 2rem",
           marginTop: isFullscreen ? "0" : "0",
-        }}
-        transition={{
-          type: "tween",
-          duration: 0.3,
-          ease: [0.25, 1, 0.5, 1],
         }}
       >
         <div
           className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}
         >
-          <AnimatePresence>
+          {/* <AnimatePresence> */}
             {!isFullscreen && (
               <motion.div
                 initial={{ opacity: 0, y: -50 }} // Start from hidden and above
@@ -975,12 +965,9 @@ const DynamicDataGrid = ({ isDynamic, onToggle }) => {
                 </p>
               </motion.div>
             )}
-          </AnimatePresence>
+          {/* </AnimatePresence> */}
           {!isFullscreen && (
             <>
-              <div className="absolute top-0 left-0 m-4 z-50">
-                <GridToggle isDynamic={isDynamic} onToggle={onToggle} />
-              </div>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1189,7 +1176,7 @@ const DynamicDataGrid = ({ isDynamic, onToggle }) => {
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
 
       <StatusBarModal
         open={showStatusModal}

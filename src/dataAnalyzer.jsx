@@ -12,6 +12,25 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+// Helper function to parse numeric values from various formats
+function parseNumericValue(value) {
+    if (value === null || value === undefined) return null;
+
+    // If already a number, return it
+    if (typeof value === 'number') return value;
+
+    // Convert to string and clean
+    const strValue = String(value);
+
+    // Remove currency symbols, commas, and percentage signs
+    const cleaned = strValue.replace(/[$€£¥,\s%]/g, '');
+
+    // Parse the cleaned value
+    const parsed = parseFloat(cleaned);
+
+    return isNaN(parsed) ? null : parsed;
+}
+
 export function UrlCell({ value }) {
     const [showWarning, setShowWarning] = useState(false);
 
@@ -19,7 +38,7 @@ export function UrlCell({ value }) {
 
     const handleClick = (e) => {
         e.preventDefault();
-        const dontShowAgain = localStorage.getItem("datagrid-url-warning-dismissed");
+        const dontShowAgain = sessionStorage.getItem("datagrid-url-warning-dismissed");
         if (dontShowAgain === "true") {
             window.open(value, '_blank', 'noopener,noreferrer');
         } else {
@@ -34,9 +53,9 @@ export function UrlCell({ value }) {
 
     const handleDismiss = (checked) => {
         if (checked) {
-            localStorage.setItem("datagrid-url-warning-dismissed", "true");
+            sessionStorage.setItem("datagrid-url-warning-dismissed", "true");
         } else {
-            localStorage.removeItem("datagrid-url-warning-dismissed");
+            sessionStorage.removeItem("datagrid-url-warning-dismissed");
         }
     };
 
@@ -342,11 +361,9 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
             const config = getColumnConfig(column.id);
             const currencySymbol = config?.currencySymbol || "$";
 
-            const numValue = typeof value === 'string'
-                ? parseFloat(value.replace(/[^0-9.-]/g, ''))
-                : value;
+            const numValue = parseNumericValue(value);
 
-            if (numValue === null || numValue === undefined) return <span className="text-muted-foreground">-</span>;
+            if (numValue === null) return <span className="text-muted-foreground">-</span>;
 
             // Use precision from config if available
             const precision = config?.precision !== undefined ? config.precision : 2;
@@ -367,9 +384,9 @@ export function getCellRenderer(dataType, isEnum, uniqueValues = []) {
     if (dataType === 'percentage') {
         return ({ getValue }) => {
             const value = getValue();
-            const numValue = typeof value === 'string'
-                ? parseFloat(value.replace('%', ''))
-                : value;
+            const numValue = parseNumericValue(value);
+
+            if (numValue === null) return <span className="text-muted-foreground">-</span>;
 
             return (
                 <div className="flex items-center gap-2">
@@ -633,16 +650,16 @@ function mapDataType(dataType) {
 function calculateColumnWidth(analysis, columnName) {
     const CHAR_WIDTH = 10;
     const HEADER_PADDING = 60;
-    const MIN_WIDTH = 120;
+    const MIN_WIDTH = 200;
     const MAX_WIDTH = 600;
 
     const headerText = formatHeaderName(columnName);
-    const headerLength = Math.min(headerText.length, 50); // Cap at 50 for calculation
+    const headerLength = Math.min(headerText.length, 50);
     const headerBasedWidth = (headerLength * CHAR_WIDTH) + HEADER_PADDING;
 
     const typeMinWidths = {
         'date': 150,
-        'number': 130,
+        'number': 150,
         'currency': 150,
         'percentage': 160,
         'boolean': 110,
