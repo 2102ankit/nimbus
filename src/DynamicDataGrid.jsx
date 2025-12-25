@@ -63,6 +63,7 @@ const DynamicDataGrid = () => {
   const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const skipWorkerProcessingRef = useRef(false);
   const [showUpload, setShowUpload] = useState(false);
   const [filename, setFilename] = useState("");
 
@@ -96,6 +97,8 @@ const DynamicDataGrid = () => {
   const [pageSize, setPageSize] = useState(prefs.pageSize || 20);
 
   const searchInputRef = useRef(null);
+  const tbodyHeightRef = useRef(null);
+  const [savedTbodyHeight, setSavedTbodyHeight] = useState(null);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
   const [groupMenuOpen, setGroupMenuOpen] = useState(false);
@@ -309,15 +312,23 @@ const DynamicDataGrid = () => {
 
   // Trigger data processing when dependencies change
   useEffect(() => {
-    if (rawData.length > 0) {
+    if (rawData.length > 0 && !skipWorkerProcessingRef.current) {
       processDataWithWorker();
     }
+    skipWorkerProcessingRef.current = false;
   }, [processDataWithWorker, rawData.length]);
 
   // Reset page index when filters change
   useEffect(() => {
     setPageIndex(0);
   }, [columnFilters, globalFilter, sorting]);
+
+  // Save tbody height when not loading to prevent collapse during loading
+  useEffect(() => {
+    if (!loading && !processing && tbodyHeightRef.current) {
+      setSavedTbodyHeight(tbodyHeightRef.current.offsetHeight);
+    }
+  }, [loading, processing]);
 
   useEffect(() => {
     setLoading(true);
@@ -383,17 +394,28 @@ const DynamicDataGrid = () => {
     }
   }, [pivotMode, columns]);
 
-  const handleRowReorder = useCallback((activeId, overId) => {
-    setRawData((currentData) => {
-      const oldIndex = currentData.findIndex((item) => item.id === activeId);
-      const newIndex = currentData.findIndex((item) => item.id === overId);
+  const handleRowReorder = useCallback(
+    (activeId, overId) => {
+      skipWorkerProcessingRef.current = true;
+      setRawData((currentData) => {
+        const oldIndex = currentData.findIndex((item) => item.id === activeId);
+        const newIndex = currentData.findIndex((item) => item.id === overId);
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        return arrayMove(currentData, oldIndex, newIndex);
-      }
-      return currentData;
-    });
-  }, []);
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const reordered = arrayMove(currentData, oldIndex, newIndex);
+          setFilteredCount(reordered.length);
+          const paginated = reordered.slice(
+            pageIndex * pageSize,
+            (pageIndex + 1) * pageSize,
+          );
+          setDisplayData(paginated);
+          return reordered;
+        }
+        return currentData;
+      });
+    },
+    [pageIndex, pageSize],
+  );
 
   const handleDataLoaded = useCallback((rawData, name = "Uploaded File") => {
     setLoading(true);
@@ -1143,6 +1165,8 @@ const DynamicDataGrid = () => {
                     getRightPosition={getRightPos}
                     minRows={pageSize}
                     onRowReorder={handleRowReorder}
+                    tbodyRef={tbodyHeightRef}
+                    savedTbodyHeight={savedTbodyHeight}
                   />
                 </table>
               </div>

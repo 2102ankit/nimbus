@@ -276,12 +276,13 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
     },
   });
 
-  // Task 3: Implement persistent row reordering
+  // Task 3: Implement persistent row reordering with optimized UX
   const onRowReorder = useCallback((activeId, overId) => {
     setData((old) => {
       const oldIndex = old.findIndex((r) => String(r.id) === String(activeId));
       const newIndex = old.findIndex((r) => String(r.id) === String(overId));
-      if (oldIndex === -1 || newIndex === -1) return old;
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex)
+        return old;
 
       const newData = [...old];
       const [movedRow] = newData.splice(oldIndex, 1);

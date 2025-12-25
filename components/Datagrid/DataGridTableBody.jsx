@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { flexRender } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, Layers, Loader2 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import React from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import {
@@ -51,11 +51,7 @@ export function EmptyState() {
   return (
     <tr>
       <td colSpan={100} className="p-0">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center justify-center py-16"
-        >
+        <div className="flex flex-col items-center justify-center py-16">
           <div
             className="rounded-full p-5 mb-4 border-2"
             style={{
@@ -92,14 +88,20 @@ export function EmptyState() {
           >
             Try adjusting your filters or search
           </p>
-        </motion.div>
+        </div>
       </td>
     </tr>
   );
 }
 
 // Group Row Component
-export function GroupRow({ row, getDensityPadding, table, getLeftPosition, getRightPosition }) {
+export function GroupRow({
+  row,
+  getDensityPadding,
+  table,
+  getLeftPosition,
+  getRightPosition,
+}) {
   const depth = row.depth || 0;
   const indentPx = depth * 32 * 0;
 
@@ -113,8 +115,10 @@ export function GroupRow({ row, getDensityPadding, table, getLeftPosition, getRi
     >
       {row.getVisibleCells().map((cell) => {
         const isPinned = cell.column.getIsPinned();
-        const leftPos = isPinned === "left" ? getLeftPosition(cell.column) : undefined;
-        const rightPos = isPinned === "right" ? getRightPosition(cell.column) : undefined;
+        const leftPos =
+          isPinned === "left" ? getLeftPosition(cell.column) : undefined;
+        const rightPos =
+          isPinned === "right" ? getRightPosition(cell.column) : undefined;
         const isGroupedCell = cell.getIsGrouped();
 
         return (
@@ -122,16 +126,19 @@ export function GroupRow({ row, getDensityPadding, table, getLeftPosition, getRi
             key={cell.id}
             className={getDensityPadding()}
             style={{
-              position: isPinned ? 'sticky' : 'relative',
+              position: isPinned ? "sticky" : "relative",
               left: leftPos !== undefined ? `${leftPos}px` : undefined,
               right: rightPos !== undefined ? `${rightPos}px` : undefined,
-              backgroundColor: isPinned ? 'var(--color-muted)' : 'transparent',
+              backgroundColor: isPinned ? "var(--color-muted)" : "transparent",
               zIndex: isPinned ? 10 : 1,
               borderBottom: "2px solid var(--color-border)",
             }}
           >
             {isGroupedCell ? (
-              <div className="flex items-center gap-3" style={{ paddingLeft: `${indentPx}px` }}>
+              <div
+                className="flex items-center gap-3"
+                style={{ paddingLeft: `${indentPx}px` }}
+              >
                 <button
                   onClick={() => row.toggleExpanded()}
                   className="p-1.5 rounded-md transition-colors"
@@ -168,14 +175,16 @@ export function GroupRow({ row, getDensityPadding, table, getLeftPosition, getRi
                     color: "var(--color-muted-foreground)",
                   }}
                 >
-                  {row.subRows.length} {row.subRows.length === 1 ? "item" : "items"}
+                  {row.subRows.length}{" "}
+                  {row.subRows.length === 1 ? "item" : "items"}
                 </span>
               </div>
             ) : cell.getIsAggregated() ? (
               <div>
                 {flexRender(
-                  cell.column.columnDef.aggregatedCell ?? cell.column.columnDef.cell,
-                  cell.getContext()
+                  cell.column.columnDef.aggregatedCell ??
+                    cell.column.columnDef.cell,
+                  cell.getContext(),
                 )}
               </div>
             ) : cell.getIsPlaceholder() ? null : (
@@ -196,7 +205,7 @@ export function DataRow({
   getCellBorderClasses,
   getLeftPosition,
   getRightPosition,
-  table
+  table,
 }) {
   const { showStripedColumns } = useTheme();
   const isGrouped = row.getIsGrouped();
@@ -213,37 +222,45 @@ export function DataRow({
     disabled: isGrouped,
   });
 
-  // Restrict transform to vertical (Y) only
-  const restrictedTransform = transform
-    ? {
-        ...transform,
-        x: 0, // Prevent horizontal movement
-      }
-    : null;
+  const restrictedTransform = transform ? { ...transform, x: 0 } : null;
+
+  const dndStyle = {
+    transform: restrictedTransform
+      ? CSS.Transform.toString(restrictedTransform)
+      : CSS.Transform.toString(transform),
+    transition: isDragging
+      ? "none"
+      : "transform 100ms cubic-bezier(0.2, 0, 0, 1)",
+  };
 
   const style = {
-    transform: restrictedTransform ? CSS.Transform.toString(restrictedTransform) : undefined,
-    transition: isDragging
-      ? undefined // No transition while dragging for immediate response
-      : transition || 'transform 200ms cubic-bezier(0.2, 0, 0.2, 1)', // Smooth transition when not dragging
-    opacity: isDragging ? 1 : 1,
+    opacity: isDragging ? 0.5 : 1,
     position: "relative",
-    zIndex: isDragging ? 50 : 1,
+    zIndex: isDragging ? 100 : 1,
     backgroundColor: row.getIsSelected()
       ? "color-mix(in oklch, var(--color-primary), transparent 95%)"
       : showStripedColumns && idx % 2 === 1
         ? "var(--color-muted)"
         : "transparent",
-    borderLeft: row.getIsSelected()
-      ? "4px solid var(--color-primary)"
-      : "none",
+    borderLeft: row.getIsSelected() ? "4px solid var(--color-primary)" : "none",
     top: row.getIsPinned() === "top" ? "var(--header-height)" : undefined,
     bottom: row.getIsPinned() === "bottom" ? "0px" : undefined,
-    boxShadow: isDragging ? "0 4px 12px rgba(0, 0, 0, 0.15)" : "none",
+    boxShadow: isDragging
+      ? "0 10px 25px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--color-primary)"
+      : "none",
+    ...dndStyle,
   };
 
   if (isGrouped) {
-    return <GroupRow row={row} getDensityPadding={getDensityPadding} table={table} getLeftPosition={getLeftPosition} getRightPosition={getRightPosition} />;
+    return (
+      <GroupRow
+        row={row}
+        getDensityPadding={getDensityPadding}
+        table={table}
+        getLeftPosition={getLeftPosition}
+        getRightPosition={getRightPosition}
+      />
+    );
   }
 
   return (
@@ -262,26 +279,21 @@ export function DataRow({
               isPinned === "right" ? getRightPosition(cell.column) : undefined;
 
             const allColumns = table.getVisibleLeafColumns();
-            const currentIndex = allColumns.findIndex(c => c.id === cell.column.id);
+            const currentIndex = allColumns.findIndex(
+              (c) => c.id === cell.column.id,
+            );
             const nextColumn = allColumns[currentIndex + 1];
-            const isBeforeRightPinned = nextColumn && nextColumn.getIsPinned() === 'right';
+            const isBeforeRightPinned =
+              nextColumn && nextColumn.getIsPinned() === "right";
 
             return (
-              <motion.td
-                layout={!isDragging ? "position" : false}
-                transition={
-                  !isDragging
-                    ? {
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 30,
-                        mass: 0.5,
-                      }
-                    : undefined
-                }
+              <td
                 key={cell.id}
-                className={`align-middle relative ${getDensityPadding()} ${!isPinned && !isBeforeRightPinned ? getCellBorderClasses() : ''
-                  } ${isPinned ? "sticky z-10" : ""} ${isPinned === "left" ? "pinned-left-cell" : ""} ${isPinned === "right" ? "pinned-right-cell" : ""} ${isBeforeRightPinned ? 'before-right-pinned' : ''} ${row.getIsPinned() ? `sticky z-20 sticky-pinned-td sticky-pinned-td-${row.getIsPinned()}` : ""}`}
+                className={`align-middle relative ${getDensityPadding()} ${
+                  !isPinned && !isBeforeRightPinned
+                    ? getCellBorderClasses()
+                    : ""
+                } ${isPinned ? "sticky z-10" : ""} ${isPinned === "left" ? "pinned-left-cell" : ""} ${isPinned === "right" ? "pinned-right-cell" : ""} ${isBeforeRightPinned ? "before-right-pinned" : ""} ${row.getIsPinned() ? `sticky z-20 sticky-pinned-td sticky-pinned-td-${row.getIsPinned()}` : ""}`}
                 style={{
                   color: "var(--color-foreground)",
                   width: cell.column.getSize(),
@@ -297,7 +309,7 @@ export function DataRow({
                         : "var(--color-card)"
                     : "inherit",
                   borderBottom: "1px solid var(--color-border)",
-                  borderRight: isBeforeRightPinned ? 'none' : undefined,
+                  borderRight: isBeforeRightPinned ? "none" : undefined,
                   boxShadow: "none",
                 }}
               >
@@ -314,19 +326,19 @@ export function DataRow({
                     ) : (
                       <ChevronRight className="h-4 w-4" />
                     )}
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())} (
-                    {row.subRows.length})
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}{" "}
+                    ({row.subRows.length})
                   </button>
                 ) : cell.getIsAggregated() ? (
                   flexRender(
                     cell.column.columnDef.aggregatedCell ??
-                    cell.column.columnDef.cell,
-                    cell.getContext()
+                      cell.column.columnDef.cell,
+                    cell.getContext(),
                   )
                 ) : cell.getIsPlaceholder() ? null : (
                   flexRender(cell.column.columnDef.cell, cell.getContext())
                 )}
-              </motion.td>
+              </td>
             );
           })}
         </tr>
@@ -354,20 +366,34 @@ export function DataRow({
                       <span>Full Details</span>
                     </h4>
                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm mt-4">
-                      {table.getAllLeafColumns()
-                        .filter(col => col.id !== 'select' && col.id !== 'expand' && col.id !== 'drag' && col.id !== 'pin')
+                      {table
+                        .getAllLeafColumns()
+                        .filter(
+                          (col) =>
+                            col.id !== "select" &&
+                            col.id !== "expand" &&
+                            col.id !== "drag" &&
+                            col.id !== "pin",
+                        )
                         .map((col) => {
                           const key = col.id || col.accessorKey;
-                          const label = col.columnDef.meta?.headerText || col.id;
+                          const label =
+                            col.columnDef.meta?.headerText || col.id;
                           const value = row.original[key];
 
-                          if (value === undefined || value === null) return null;
+                          if (value === undefined || value === null)
+                            return null;
 
                           return (
-                            <div key={key} className="flex border-b border-border/30 pb-2">
+                            <div
+                              key={key}
+                              className="flex border-b border-border/30 pb-2"
+                            >
                               <span
                                 className="font-bold w-1/3 truncate"
-                                style={{ color: "var(--color-muted-foreground)" }}
+                                style={{
+                                  color: "var(--color-muted-foreground)",
+                                }}
                               >
                                 {label}:
                               </span>
@@ -394,7 +420,11 @@ export function DataRow({
                       <Button size="sm" className="w-full shadow-sm">
                         View Profile
                       </Button>
-                      <Button size="sm" variant="secondary" className="w-full shadow-sm">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="w-full shadow-sm"
+                      >
                         Edit
                       </Button>
                       <Button
@@ -427,16 +457,14 @@ export function DataGridTableBody({
   getRightPosition,
   minRows = 10,
   onRowReorder,
+  tbodyRef,
+  savedTbodyHeight,
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts for smoother experience
-      },
-    }),
+    useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragEnd = (event) => {
@@ -448,7 +476,15 @@ export function DataGridTableBody({
 
   if (loading) {
     return (
-      <tbody style={{ backgroundColor: "var(--color-card)" }}>
+      <tbody
+        ref={tbodyRef}
+        style={{
+          backgroundColor: "var(--color-card)",
+          minHeight: savedTbodyHeight
+            ? `${savedTbodyHeight}px`
+            : `${minRows * 48}px`,
+        }}
+      >
         <LoadingState minHeight={minRows * 48} />
       </tbody>
     );
@@ -468,18 +504,35 @@ export function DataGridTableBody({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <tbody style={{ backgroundColor: "var(--color-card)" }}>
+      <tbody ref={tbodyRef} style={{ backgroundColor: "var(--color-card)" }}>
         <SortableContext
-          items={(table.getPaginationRowModel()?.rows || table.getRowModel().rows)
-            .filter(r => !r.getIsPinned())
+          items={(
+            table.getPaginationRowModel()?.rows || table.getRowModel().rows
+          )
+            .filter((r) => !r.getIsPinned())
             .map((r) => r.id)}
           strategy={verticalListSortingStrategy}
         >
-          <AnimatePresence mode="sync">
-            {/* Top Pinned Rows */}
-            {table.getTopRows().map((row, idx) => (
+          {/* Top Pinned Rows */}
+          {table.getTopRows().map((row, idx) => (
+            <DataRow
+              key={`top-${row.id}`}
+              row={row}
+              idx={idx}
+              getDensityPadding={getDensityPadding}
+              getCellBorderClasses={getCellBorderClasses}
+              getLeftPosition={getLeftPosition}
+              getRightPosition={getRightPosition}
+              table={table}
+            />
+          ))}
+
+          {/* Center Rows */}
+          {(table.getPaginationRowModel()?.rows || table.getRowModel().rows)
+            .filter((r) => !r.getIsPinned())
+            .map((row, idx) => (
               <DataRow
-                key={`top-${row.id}`}
+                key={row.id}
                 row={row}
                 idx={idx}
                 getDensityPadding={getDensityPadding}
@@ -490,36 +543,19 @@ export function DataGridTableBody({
               />
             ))}
 
-            {/* Center Rows */}
-            {(table.getPaginationRowModel()?.rows || table.getRowModel().rows)
-              .filter(r => !r.getIsPinned())
-              .map((row, idx) => (
-                <DataRow
-                  key={row.id}
-                  row={row}
-                  idx={idx}
-                  getDensityPadding={getDensityPadding}
-                  getCellBorderClasses={getCellBorderClasses}
-                  getLeftPosition={getLeftPosition}
-                  getRightPosition={getRightPosition}
-                  table={table}
-                />
-              ))}
-
-            {/* Bottom Pinned Rows */}
-            {table.getBottomRows().map((row, idx) => (
-              <DataRow
-                key={`bottom-${row.id}`}
-                row={row}
-                idx={idx}
-                getDensityPadding={getDensityPadding}
-                getCellBorderClasses={getCellBorderClasses}
-                getLeftPosition={getLeftPosition}
-                getRightPosition={getRightPosition}
-                table={table}
-              />
-            ))}
-          </AnimatePresence>
+          {/* Bottom Pinned Rows */}
+          {table.getBottomRows().map((row, idx) => (
+            <DataRow
+              key={`bottom-${row.id}`}
+              row={row}
+              idx={idx}
+              getDensityPadding={getDensityPadding}
+              getCellBorderClasses={getCellBorderClasses}
+              getLeftPosition={getLeftPosition}
+              getRightPosition={getRightPosition}
+              table={table}
+            />
+          ))}
         </SortableContext>
       </tbody>
     </DndContext>
