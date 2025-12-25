@@ -1,5 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
-import { getColumnConfig } from "../../src/columnConfigSystem";
+import { getColumnConfig, setColumnConfig } from "../../src/columnConfigSystem";
 
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ import {
   Search,
   Sun,
   Sigma,
-  Type
+  Type,
 } from "lucide-react";
 import { ActiveFilters } from "./AdvancedColumnFilter";
 import { HotkeyLabel } from "./HotkeyLabel";
@@ -71,10 +71,12 @@ export function DataGridToolbar({
   onSearchInputChange,
   pivotMode,
   setPivotMode,
+  onConfigChange,
 }) {
   const {
     density,
-    theme, toggleTheme,
+    theme,
+    toggleTheme,
     setDensity,
     showGridLines,
     toggleGridLines,
@@ -95,7 +97,7 @@ export function DataGridToolbar({
     if (col.columnDef?.meta?.headerText) return col.columnDef.meta.headerText;
 
     const header = col.columnDef?.header;
-    if (typeof header === 'string') return header;
+    if (typeof header === "string") return header;
 
     return col.columnDef?.meta?.originalKey || col.id;
   };
@@ -116,7 +118,7 @@ export function DataGridToolbar({
       .getVisibleLeafColumns()
       .filter(
         (col) =>
-          col.id !== "select" && col.id !== "actions" && col.id !== "expand"
+          col.id !== "select" && col.id !== "actions" && col.id !== "expand",
       )
       .map((col) => ({
         id: col.id,
@@ -127,15 +129,16 @@ export function DataGridToolbar({
   };
 
   const handleAggregationChange = (columnId, aggregationFn) => {
-    const column = table.getAllColumns().find(c => c.id === columnId);
-    if (column) {
-      column.columnDef.aggregationFn = aggregationFn === 'none' ? undefined : aggregationFn;
-      table.resetColumnFilters(); // Trigger a re-render
-    }
+    setColumnConfig(columnId, {
+      aggregationFn: aggregationFn,
+    });
+    onConfigChange?.();
   };
 
   const getColumnAggregation = (col) => {
-    return col.columnDef?.aggregationFn || 'none';
+    const config = getColumnConfig(col.id);
+    if (config?.aggregationFn !== undefined) return config.aggregationFn;
+    return col.columnDef?.aggregationFn || "none";
   };
 
   return (
@@ -160,7 +163,7 @@ export function DataGridToolbar({
             <Input
               ref={searchInputRef}
               placeholder="(/) Search all columns..."
-              value={searchInputValue}           // Live value (instant)
+              value={searchInputValue} // Live value (instant)
               onChange={onSearchInputChange}
               className="pl-10 h-11 border-2 shadow-sm focus:ring-2"
               style={{
@@ -194,7 +197,10 @@ export function DataGridToolbar({
                 variant="outline"
                 size="sm"
                 className="h-11 border-2 shadow-sm bg-background"
-                style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
+                style={{
+                  borderColor: "var(--color-border)",
+                  color: "var(--color-foreground)",
+                }}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 <HotkeyLabel hotkey={"R"}>Reset All</HotkeyLabel>
@@ -208,7 +214,10 @@ export function DataGridToolbar({
                   variant="outline"
                   size="sm"
                   className="h-11 border-2 shadow-sm bg-background"
-                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
+                  style={{
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-foreground)",
+                  }}
                 >
                   <Layout className="h-4 w-4 mr-2" />
                   <HotkeyLabel hotkey={"V"}>View</HotkeyLabel>
@@ -221,16 +230,22 @@ export function DataGridToolbar({
                 >
                   DENSITY
                 </DropdownMenuLabel>
-                <DropdownMenuRadioGroup value={density} onValueChange={setDensity}>
+                <DropdownMenuRadioGroup
+                  value={density}
+                  onValueChange={setDensity}
+                >
                   <DropdownMenuRadioItem value="compact">
                     <Minimize className="h-4 w-4 mr-2" />
-                    Compact</DropdownMenuRadioItem>
+                    Compact
+                  </DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="normal">
                     <Rows className="h-4 w-4 mr-2" />
-                    Normal</DropdownMenuRadioItem>
+                    Normal
+                  </DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="comfortable">
                     <Maximize className="h-4 w-4 mr-2" />
-                    Comfortable</DropdownMenuRadioItem>
+                    Comfortable
+                  </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
                 <DropdownMenuSeparator />
 
@@ -295,14 +310,52 @@ export function DataGridToolbar({
                     Font Family
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    <DropdownMenuRadioGroup value={fontFamily} onValueChange={setFontFamily}>
-                      <DropdownMenuRadioItem value="Inter" style={{ fontFamily: 'var(--font-inter)' }}>Inter</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="Roboto" style={{ fontFamily: 'var(--font-roboto)' }}>Roboto</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="Geist Mono" style={{ fontFamily: 'var(--font-geist)' }}>Geist Mono</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="Google Sans Flex" style={{ fontFamily: 'var(--font-google)' }}>Google Sans Flex</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="JetBrains Mono" style={{ fontFamily: 'var(--font-jetbrains)' }}>JetBrains Mono</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="system-ui" style={{ fontFamily: 'system-ui' }}>System UI</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="monospace" style={{ fontFamily: 'monospace' }}>Monospace</DropdownMenuRadioItem>
+                    <DropdownMenuRadioGroup
+                      value={fontFamily}
+                      onValueChange={setFontFamily}
+                    >
+                      <DropdownMenuRadioItem
+                        value="Inter"
+                        style={{ fontFamily: "var(--font-inter)" }}
+                      >
+                        Inter
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem
+                        value="Roboto"
+                        style={{ fontFamily: "var(--font-roboto)" }}
+                      >
+                        Roboto
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem
+                        value="Geist Mono"
+                        style={{ fontFamily: "var(--font-geist)" }}
+                      >
+                        Geist Mono
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem
+                        value="Google Sans Flex"
+                        style={{ fontFamily: "var(--font-google)" }}
+                      >
+                        Google Sans Flex
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem
+                        value="JetBrains Mono"
+                        style={{ fontFamily: "var(--font-jetbrains)" }}
+                      >
+                        JetBrains Mono
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem
+                        value="system-ui"
+                        style={{ fontFamily: "system-ui" }}
+                      >
+                        System UI
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem
+                        value="monospace"
+                        style={{ fontFamily: "monospace" }}
+                      >
+                        Monospace
+                      </DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
@@ -310,19 +363,28 @@ export function DataGridToolbar({
             </DropdownMenu>
 
             {/* Column Visibility & Pinning */}
-            <DropdownMenu open={columnsMenuOpen} onOpenChange={setColumnsMenuOpen}>
+            <DropdownMenu
+              open={columnsMenuOpen}
+              onOpenChange={setColumnsMenuOpen}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-11 border-2 shadow-sm bg-background"
-                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
+                  style={{
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-foreground)",
+                  }}
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   <HotkeyLabel hotkey={"C"}>Columns</HotkeyLabel>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72 shadow-lg overflow-hidden">
+              <DropdownMenuContent
+                align="end"
+                className="w-72 shadow-lg overflow-hidden"
+              >
                 <DropdownMenuLabel
                   className="text-xs font-bold"
                   style={{ color: "var(--color-muted-foreground)" }}
@@ -362,14 +424,22 @@ export function DataGridToolbar({
                                       className="h-7 w-7"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        col.pin(isPinned === "left" ? false : "left");
+                                        col.pin(
+                                          isPinned === "left" ? false : "left",
+                                        );
                                       }}
                                     >
-                                      <Pin className={`h-4 w-4 ${isPinned === "left" ? "text-primary" : ""}`} />
+                                      <Pin
+                                        className={`h-4 w-4 ${isPinned === "left" ? "text-primary" : ""}`}
+                                      />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>{isPinned === "left" ? "Unpin from left" : "Pin to left"}</p>
+                                    <p>
+                                      {isPinned === "left"
+                                        ? "Unpin from left"
+                                        : "Pin to left"}
+                                    </p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -382,14 +452,24 @@ export function DataGridToolbar({
                                       className="h-7 w-7"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        col.pin(isPinned === "right" ? false : "right");
+                                        col.pin(
+                                          isPinned === "right"
+                                            ? false
+                                            : "right",
+                                        );
                                       }}
                                     >
-                                      <Pin className={`h-4 w-4 rotate-90 ${isPinned === "right" ? "text-primary" : ""}`} />
+                                      <Pin
+                                        className={`h-4 w-4 rotate-90 ${isPinned === "right" ? "text-primary" : ""}`}
+                                      />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>{isPinned === "right" ? "Unpin from right" : "Pin to right"}</p>
+                                    <p>
+                                      {isPinned === "right"
+                                        ? "Unpin from right"
+                                        : "Pin to right"}
+                                    </p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -418,7 +498,10 @@ export function DataGridToolbar({
                   variant="outline"
                   size="sm"
                   className="h-11 border-2 shadow-sm bg-background"
-                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
+                  style={{
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-foreground)",
+                  }}
                 >
                   <Layers className="h-4 w-4 mr-2" />
                   <HotkeyLabel hotkey={"G"}>Group</HotkeyLabel>
@@ -426,7 +509,10 @@ export function DataGridToolbar({
                     ` (${table.getState().grouping.length})`}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 max-h-96 shadow-lg overflow-auto">
+              <DropdownMenuContent
+                align="end"
+                className="w-64 max-h-96 shadow-lg overflow-auto"
+              >
                 <DropdownMenuLabel
                   className="text-xs font-bold"
                   style={{ color: "var(--color-muted-foreground)" }}
@@ -452,7 +538,7 @@ export function DataGridToolbar({
                           table.setGrouping(
                             isGrouped
                               ? grouping.filter((g) => g !== col.id)
-                              : [...grouping, col.id]
+                              : [...grouping, col.id],
                           );
                         }}
                       >
@@ -472,8 +558,12 @@ export function DataGridToolbar({
                 {table
                   .getAllColumns()
                   .filter((col) => {
-                    const dataType = col.columnDef?.meta?.dataType;
-                    return ['number', 'currency', 'percentage'].includes(dataType);
+                    const config = getColumnConfig(col.id);
+                    const dataType =
+                      config?.dataType || col.columnDef?.meta?.dataType;
+                    return ["number", "currency", "percentage"].includes(
+                      dataType,
+                    );
                   })
                   .map((col) => {
                     const currentAgg = getColumnAggregation(col);
@@ -481,20 +571,38 @@ export function DataGridToolbar({
                       <DropdownMenuSub key={col.id}>
                         <DropdownMenuSubTrigger>
                           <Sigma className="h-4 w-4 mr-2" />
-                          <span className="truncate">{getColumnHeaderText(col)}</span>
+                          <span className="truncate">
+                            {getColumnHeaderText(col)}
+                          </span>
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent>
                           <DropdownMenuRadioGroup
                             value={currentAgg}
-                            onValueChange={(value) => handleAggregationChange(col.id, value)}
+                            onValueChange={(value) =>
+                              handleAggregationChange(col.id, value)
+                            }
                           >
-                            <DropdownMenuRadioItem value="none">None</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="sum">Sum</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="mean">Average</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="median">Median</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="min">Minimum</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="max">Maximum</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="count">Count</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="none">
+                              None
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="sum">
+                              Sum
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="mean">
+                              Average
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="median">
+                              Median
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="min">
+                              Minimum
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="max">
+                              Maximum
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="count">
+                              Count
+                            </DropdownMenuRadioItem>
                           </DropdownMenuRadioGroup>
                         </DropdownMenuSubContent>
                       </DropdownMenuSub>
@@ -516,15 +624,20 @@ export function DataGridToolbar({
               </DropdownMenuContent>
             </DropdownMenu>
 
-
             {/* Export Menu */}
-            <DropdownMenu open={exportMenuOpen} onOpenChange={setExportMenuOpen}>
+            <DropdownMenu
+              open={exportMenuOpen}
+              onOpenChange={setExportMenuOpen}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-11 border-2 bg-background"
-                  style={{ borderColor: "var(--color-border)", color: "var(--color-foreground)" }}
+                  style={{
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-foreground)",
+                  }}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   <HotkeyLabel hotkey={"E"}>Export</HotkeyLabel>
@@ -564,7 +677,6 @@ export function DataGridToolbar({
               </DropdownMenuContent>
             </DropdownMenu>
 
-
             {/* Theme Toggle */}
             <TooltipProvider>
               <Tooltip>
@@ -592,7 +704,11 @@ export function DataGridToolbar({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}</p>
+                  <p>
+                    {theme === "dark"
+                      ? "Switch to Light Mode"
+                      : "Switch to Dark Mode"}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -603,7 +719,6 @@ export function DataGridToolbar({
         {/* Active Filters */}
         <ActiveFilters table={table} columns={columns} />
       </div>
-
     </div>
   );
 }

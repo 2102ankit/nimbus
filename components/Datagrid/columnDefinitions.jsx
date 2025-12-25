@@ -10,7 +10,11 @@ import {
 } from "lucide-react";
 import { useRowDrag } from "./RowDragContext";
 
-export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US") => {
+export const createColumns = (
+  dynamicColumns,
+  currency = "USD",
+  locale = "en-US",
+) => {
   const dragCol = {
     id: "drag",
     header: "",
@@ -41,11 +45,15 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
     header: null,
     cell: ({ row }) => (
       <button
-        onClick={() => row.pin(row.getIsPinned() ? false : 'top')}
+        onClick={() => row.pin(row.getIsPinned() ? false : "top")}
         className="p-1 rounded-md transition-colors hover:bg-muted text-muted-foreground hover:text-foreground"
         title={row.getIsPinned() ? "Unpin row" : "Pin row to top"}
       >
-        {row.getIsPinned() ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+        {row.getIsPinned() ? (
+          <PinOff className="h-3 w-3" />
+        ) : (
+          <Pin className="h-3 w-3" />
+        )}
       </button>
     ),
     size: 40,
@@ -135,10 +143,12 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
   // If dynamicColumns are provided, use them and add special columns
   if (dynamicColumns && dynamicColumns.length > 0) {
     // Filter out any existing special columns to avoid duplicates
-    const dataCols = dynamicColumns.filter(c => !['select', 'drag', 'pin', 'expand'].includes(c.id));
+    const dataCols = dynamicColumns.filter(
+      (c) => !["select", "drag", "pin", "expand"].includes(c.id),
+    );
 
     // Check if we need the expand column
-    const needsExpand = dynamicColumns.some(c => c.id === 'expand');
+    const needsExpand = dynamicColumns.some((c) => c.id === "expand");
 
     const result = [dragCol, selectCol, pinCol];
     if (needsExpand) result.push(expandCol);
@@ -188,7 +198,8 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
           Active: {
             bg: "color-mix(in oklch, var(--color-chart-2), transparent 90%)",
             text: "var(--color-chart-2)",
-            border: "color-mix(in oklch, var(--color-chart-2), transparent 70%)",
+            border:
+              "color-mix(in oklch, var(--color-chart-2), transparent 70%)",
           },
           Inactive: {
             bg: "var(--color-muted)",
@@ -198,7 +209,8 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
           Pending: {
             bg: "color-mix(in oklch, var(--color-chart-3), transparent 90%)",
             text: "var(--color-chart-3)",
-            border: "color-mix(in oklch, var(--color-chart-3), transparent 70%)",
+            border:
+              "color-mix(in oklch, var(--color-chart-3), transparent 70%)",
           },
           Suspended: {
             bg: "color-mix(in oklch, var(--color-destructive), transparent 90%)",
@@ -328,6 +340,13 @@ export const createColumns = (dynamicColumns, currency = "USD", locale = "en-US"
       size: 250,
       meta: { dataType: "date", headerText: "Join Date" },
       enableColumnFilter: true,
+      sortingFn: (rowA, rowB, columnId) => {
+        const dateA = new Date(rowA.getValue(columnId));
+        const dateB = new Date(rowB.getValue(columnId));
+        if (isNaN(dateA.getTime())) return 1;
+        if (isNaN(dateB.getTime())) return -1;
+        return dateA.getTime() - dateB.getTime();
+      },
     },
   ];
 };

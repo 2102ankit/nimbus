@@ -54,13 +54,13 @@ function parseNumericValue(value) {
   if (value === null || value === undefined) return null;
 
   // If already a number, return it
-  if (typeof value === 'number') return value;
+  if (typeof value === "number") return value;
 
   // Convert to string and clean
   const strValue = String(value);
 
   // Remove currency symbols, commas, and percentage signs
-  const cleaned = strValue.replace(/[$€£¥,\s%]/g, '');
+  const cleaned = strValue.replace(/[$€£¥,\s%]/g, "");
 
   // Parse the cleaned value
   const parsed = parseFloat(cleaned);
@@ -106,97 +106,18 @@ export function applyColumnConfigs(columns) {
     const newRenderer = getCellRenderer(
       effectiveDataType,
       effectiveIsEnum,
-      uniqueValues
+      uniqueValues,
     );
     if (newRenderer) {
       updatedColumn.cell = newRenderer;
     }
 
-    if (
-      config.headerText &&
-      typeof config.headerText === "string" &&
-      config.headerText !== "[object Object]"
-    ) {
+    if (config.headerText) {
       updatedColumn.header = config.headerText;
       updatedColumn.meta = {
         ...updatedColumn.meta,
         headerText: config.headerText,
       };
-    }
-
-    // Set aggregation based on data type
-    if (effectiveIsEnum) {
-      updatedColumn.aggregationFn = "count";
-      updatedColumn.aggregatedCell = ({ getValue }) => (
-        <span className="font-bold text-primary">{getValue()} items</span>
-      );
-    } else if (effectiveDataType === "currency") {
-      updatedColumn.aggregationFn = (columnId, leafRows, childRows) => {
-        let sum = 0;
-        leafRows.forEach((row) => {
-          const value = row.getValue(columnId);
-          const numValue = parseNumericValue(value);
-          if (numValue !== null) {
-            sum += numValue;
-          }
-        });
-        return sum;
-      };
-      updatedColumn.aggregatedCell = ({ getValue, column }) => {
-        const value = getValue();
-        const config = getColumnConfig(column.id);
-        const currencySymbol = config?.currencySymbol || "$";
-
-        return (
-          <span className="font-bold text-chart-2">
-            Total:{" "}
-            {currencySymbol}
-            {new Intl.NumberFormat("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }).format(value || 0)}
-          </span>
-        );
-      };
-    } else if (effectiveDataType === "percentage") {
-      updatedColumn.aggregationFn = (columnId, leafRows, childRows) => {
-        let sum = 0;
-        let count = 0;
-        leafRows.forEach((row) => {
-          const value = row.getValue(columnId);
-          const numValue = parseNumericValue(value);
-          if (numValue !== null) {
-            sum += numValue;
-            count++;
-          }
-        });
-        return count > 0 ? sum / count : 0;
-      };
-      updatedColumn.aggregatedCell = ({ getValue }) => (
-        <span className="font-bold text-primary">
-          Avg: {Math.round(getValue() || 0)}%
-        </span>
-      );
-    } else if (effectiveDataType === "number") {
-      updatedColumn.aggregationFn = (columnId, leafRows, childRows) => {
-        let sum = 0;
-        leafRows.forEach((row) => {
-          const value = row.getValue(columnId);
-          const numValue = parseNumericValue(value);
-          if (numValue !== null) {
-            sum += numValue;
-          }
-        });
-        return sum;
-      };
-      updatedColumn.aggregatedCell = ({ getValue }) => (
-        <span className="font-bold text-primary">
-          Sum: {(getValue() || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}
-        </span>
-      );
-    } else {
-      updatedColumn.aggregationFn = undefined;
-      updatedColumn.aggregatedCell = undefined;
     }
 
     if (config.hideInGrid !== undefined) {
@@ -218,9 +139,283 @@ export function applyColumnConfigs(columns) {
       updatedColumn.enableResizing = config.resizable;
     }
 
-    if (config.aggregationFn !== undefined) {
-      updatedColumn.aggregationFn =
-        config.aggregationFn === "none" ? undefined : config.aggregationFn;
+    if (config.dateFormat) {
+      updatedColumn.meta = {
+        ...updatedColumn.meta,
+        dateFormat: config.dateFormat,
+      };
+    }
+
+    if (effectiveDataType === "date") {
+      updatedColumn.sortingFn = (rowA, rowB, columnId) => {
+        const dateA = new Date(rowA.getValue(columnId));
+        const dateB = new Date(rowB.getValue(columnId));
+        if (isNaN(dateA.getTime())) return 1;
+        if (isNaN(dateB.getTime())) return -1;
+        return dateA.getTime() - dateB.getTime();
+      };
+    }
+
+    const effectiveAggFn =
+      config.aggregationFn !== undefined
+        ? config.aggregationFn
+        : effectiveIsEnum
+          ? "count"
+          : effectiveDataType === "currency"
+            ? "sum"
+            : effectiveDataType === "percentage"
+              ? "mean"
+              : effectiveDataType === "number"
+                ? "sum"
+                : undefined;
+
+    if (effectiveAggFn && effectiveAggFn !== "none") {
+      if (effectiveIsEnum) {
+        updatedColumn.aggregationFn = "count";
+        updatedColumn.aggregatedCell = ({ getValue }) => (
+          <span className="font-bold text-primary">{getValue()} items</span>
+        );
+      } else if (effectiveDataType === "currency") {
+        const aggFunctions = {
+          sum: (columnId, leafRows, childRows) => {
+            let sum = 0;
+            leafRows.forEach((row) => {
+              const value = row.getValue(columnId);
+              const numValue = parseNumericValue(value);
+              if (numValue !== null) sum += numValue;
+            });
+            return sum;
+          },
+          mean: (columnId, leafRows, childRows) => {
+            let sum = 0;
+            let count = 0;
+            leafRows.forEach((row) => {
+              const value = row.getValue(columnId);
+              const numValue = parseNumericValue(value);
+              if (numValue !== null) {
+                sum += numValue;
+                count++;
+              }
+            });
+            return count > 0 ? sum / count : 0;
+          },
+          median: (columnId, leafRows, childRows) => {
+            const values = leafRows
+              .map((row) => parseNumericValue(row.getValue(columnId)))
+              .filter((v) => v !== null)
+              .sort((a, b) => a - b);
+            if (values.length === 0) return 0;
+            const mid = Math.floor(values.length / 2);
+            return values.length % 2
+              ? values[mid]
+              : (values[mid - 1] + values[mid]) / 2;
+          },
+          min: (columnId, leafRows, childRows) => {
+            let min = Infinity;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null && value < min) min = value;
+            });
+            return min === Infinity ? 0 : min;
+          },
+          max: (columnId, leafRows, childRows) => {
+            let max = -Infinity;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null && value > max) max = value;
+            });
+            return max === -Infinity ? 0 : max;
+          },
+          count: (columnId, leafRows, childRows) => leafRows.length,
+        };
+
+        updatedColumn.aggregationFn =
+          aggFunctions[effectiveAggFn] || aggFunctions.sum;
+        updatedColumn.aggregatedCell = ({ getValue, column }) => {
+          const value = getValue();
+          const config = getColumnConfig(column.id);
+          const currencySymbol = config?.currencySymbol || "$";
+          const currentAggFn =
+            config?.aggregationFn !== undefined
+              ? config.aggregationFn
+              : effectiveAggFn;
+
+          const labels = {
+            sum: "Total",
+            mean: "Avg",
+            median: "Median",
+            min: "Min",
+            max: "Max",
+            count: "Count",
+          };
+
+          return (
+            <span className="font-bold text-chart-2">
+              {labels[currentAggFn] || "Total"}: {currencySymbol}
+              {new Intl.NumberFormat("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(value || 0)}
+            </span>
+          );
+        };
+      } else if (effectiveDataType === "percentage") {
+        const aggFunctions = {
+          sum: (columnId, leafRows, childRows) => {
+            let sum = 0;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null) sum += value;
+            });
+            return sum;
+          },
+          mean: (columnId, leafRows, childRows) => {
+            let sum = 0;
+            let count = 0;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null) {
+                sum += value;
+                count++;
+              }
+            });
+            return count > 0 ? sum / count : 0;
+          },
+          median: (columnId, leafRows, childRows) => {
+            const values = leafRows
+              .map((row) => parseNumericValue(row.getValue(columnId)))
+              .filter((v) => v !== null)
+              .sort((a, b) => a - b);
+            if (values.length === 0) return 0;
+            const mid = Math.floor(values.length / 2);
+            return values.length % 2
+              ? values[mid]
+              : (values[mid - 1] + values[mid]) / 2;
+          },
+          min: (columnId, leafRows, childRows) => {
+            let min = Infinity;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null && value < min) min = value;
+            });
+            return min === Infinity ? 0 : min;
+          },
+          max: (columnId, leafRows, childRows) => {
+            let max = -Infinity;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null && value > max) max = value;
+            });
+            return max === -Infinity ? 0 : max;
+          },
+          count: (columnId, leafRows, childRows) => leafRows.length,
+        };
+
+        updatedColumn.aggregationFn =
+          aggFunctions[effectiveAggFn] || aggFunctions.mean;
+        updatedColumn.aggregatedCell = ({ getValue, column }) => {
+          const config = getColumnConfig(column.id);
+          const currentAggFn =
+            config?.aggregationFn !== undefined
+              ? config.aggregationFn
+              : effectiveAggFn;
+          const labels = {
+            sum: "Total",
+            mean: "Avg",
+            median: "Median",
+            min: "Min",
+            max: "Max",
+            count: "Count",
+          };
+          return (
+            <span className="font-bold text-primary">
+              {labels[currentAggFn] || "Avg"}: {Math.round(getValue() || 0)}%
+            </span>
+          );
+        };
+      } else if (effectiveDataType === "number") {
+        const aggFunctions = {
+          sum: (columnId, leafRows, childRows) => {
+            let sum = 0;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null) sum += value;
+            });
+            return sum;
+          },
+          mean: (columnId, leafRows, childRows) => {
+            let sum = 0;
+            let count = 0;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null) {
+                sum += value;
+                count++;
+              }
+            });
+            return count > 0 ? sum / count : 0;
+          },
+          median: (columnId, leafRows, childRows) => {
+            const values = leafRows
+              .map((row) => parseNumericValue(row.getValue(columnId)))
+              .filter((v) => v !== null)
+              .sort((a, b) => a - b);
+            if (values.length === 0) return 0;
+            const mid = Math.floor(values.length / 2);
+            return values.length % 2
+              ? values[mid]
+              : (values[mid - 1] + values[mid]) / 2;
+          },
+          min: (columnId, leafRows, childRows) => {
+            let min = Infinity;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null && value < min) min = value;
+            });
+            return min === Infinity ? 0 : min;
+          },
+          max: (columnId, leafRows, childRows) => {
+            let max = -Infinity;
+            leafRows.forEach((row) => {
+              const value = parseNumericValue(row.getValue(columnId));
+              if (value !== null && value > max) max = value;
+            });
+            return max === -Infinity ? 0 : max;
+          },
+          count: (columnId, leafRows, childRows) => leafRows.length,
+        };
+
+        updatedColumn.aggregationFn =
+          aggFunctions[effectiveAggFn] || aggFunctions.sum;
+        const precision =
+          config?.precision !== undefined ? config.precision : 2;
+        updatedColumn.aggregatedCell = ({ getValue, column }) => {
+          const colConfig = getColumnConfig(column.id);
+          const currentAggFn =
+            colConfig?.aggregationFn !== undefined
+              ? colConfig.aggregationFn
+              : effectiveAggFn;
+          const labels = {
+            sum: "Sum",
+            mean: "Avg",
+            median: "Median",
+            min: "Min",
+            max: "Max",
+            count: "Count",
+          };
+          return (
+            <span className="font-bold text-primary">
+              {labels[currentAggFn] || "Sum"}:{" "}
+              {(getValue() || 0).toLocaleString("en-US", {
+                maximumFractionDigits: precision,
+              })}
+            </span>
+          );
+        };
+      }
+    } else {
+      updatedColumn.aggregationFn = undefined;
+      updatedColumn.aggregatedCell = undefined;
     }
 
     return updatedColumn;

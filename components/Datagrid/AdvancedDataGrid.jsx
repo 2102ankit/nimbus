@@ -41,7 +41,16 @@ import StatusBarModal from "./StatusBarModal";
 import { GridToggle } from "@/src/GridToggle";
 
 const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
-  const { theme, toggleTheme, density, showGridLines, showHeaderLines, showRowLines, currency, locale } = useTheme();
+  const {
+    theme,
+    toggleTheme,
+    density,
+    showGridLines,
+    showHeaderLines,
+    showRowLines,
+    currency,
+    locale,
+  } = useTheme();
 
   // State management
   const [data, setData] = useState([]);
@@ -59,22 +68,22 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
   const [grouping, setGrouping] = useState([]);
   const [forceUpdate, setForceUpdate] = useState(0);
 
-  const triggerUpdate = useCallback(() => setForceUpdate(v => v + 1), []);
+  const triggerUpdate = useCallback(() => setForceUpdate((v) => v + 1), []);
 
   // Load preferences
   const [prefs, setPrefs] = useState(loadPreferences);
   const [sorting, setSorting] = useState(prefs.sorting || []);
   const [columnFilters, setColumnFilters] = useState(prefs.columnFilters || []);
   const [columnVisibility, setColumnVisibility] = useState(
-    prefs.columnVisibility || {}
+    prefs.columnVisibility || {},
   );
   const [columnOrder, setColumnOrder] = useState(prefs.columnOrder || []);
   const [columnSizing, setColumnSizing] = useState(prefs.columnSizing || {});
   const [columnPinning, setColumnPinning] = useState(
-    prefs.columnPinning || { left: [], right: [] }
+    prefs.columnPinning || { left: [], right: [] },
   );
   const [rowPinning, setRowPinning] = useState(
-    prefs.rowPinning || { top: [], bottom: [] }
+    prefs.rowPinning || { top: [], bottom: [] },
   );
   const [pagination, setPagination] = useState({
     pageIndex: prefs.pageIndex || 0,
@@ -115,22 +124,22 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
     };
   }, []);
 
-  const columns = useMemo(() => createColumns([], currency, locale), [currency, locale]);
+  const columns = useMemo(
+    () => createColumns([], currency, locale),
+    [currency, locale],
+  );
 
   // Save preferences automatically
-  const handleSavePrefs = useCallback(
-    (newPrefs) => {
-      setPrefs(prev => {
-        const merged = { ...prev, ...newPrefs };
-        // Only update if something actually changed to avoid "hasn't mounted yet" warnings
-        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+  const handleSavePrefs = useCallback((newPrefs) => {
+    setPrefs((prev) => {
+      const merged = { ...prev, ...newPrefs };
+      // Only update if something actually changed to avoid "hasn't mounted yet" warnings
+      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
 
-        savePreferences(merged);
-        return merged;
-      });
-    },
-    []
-  );
+      savePreferences(merged);
+      return merged;
+    });
+  }, []);
 
   useEffect(() => {
     handleSavePrefs({ sorting });
@@ -156,7 +165,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
   useEffect(() => {
     handleSavePrefs({
       pageIndex: pagination.pageIndex,
-      pageSize: pagination.pageSize
+      pageSize: pagination.pageSize,
     });
   }, [pagination]);
 
@@ -176,23 +185,34 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
   // Define columns and apply configurations
   const columnsWithHeaders = useMemo(() => {
     const baseColumns = createColumns([], currency, locale);
-    const configuredColumns = baseColumns.map(col => {
+    const configuredColumns = baseColumns.map((col) => {
       const config = getColumnConfig(col.id || col.accessorKey);
       if (!config) return col;
 
       return {
         ...col,
         header: config.headerText || col.header,
-        enableSorting: config.sortable !== undefined ? config.sortable : col.enableSorting,
-        enableColumnFilter: config.filterable !== undefined ? config.filterable : col.enableColumnFilter,
-        enableResizing: config.resizable !== undefined ? config.resizable : col.enableResizing,
-        enableHiding: config.hideable !== undefined ? config.hideable : col.enableHiding,
-        enableGrouping: config.forceEnum !== undefined ? config.forceEnum : col.enableGrouping,
+        enableSorting:
+          config.sortable !== undefined ? config.sortable : col.enableSorting,
+        enableColumnFilter:
+          config.filterable !== undefined
+            ? config.filterable
+            : col.enableColumnFilter,
+        enableResizing:
+          config.resizable !== undefined
+            ? config.resizable
+            : col.enableResizing,
+        enableHiding:
+          config.hideable !== undefined ? config.hideable : col.enableHiding,
+        enableGrouping:
+          config.forceEnum !== undefined
+            ? config.forceEnum
+            : col.enableGrouping,
         meta: {
           ...col.meta,
           ...config,
           headerText: config.headerText || col.meta?.headerText || col.header,
-        }
+        },
       };
     });
     return addHeadersToColumns(configuredColumns);
@@ -271,7 +291,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
   }, []);
 
   // Task 3: Row pinning state (if needed to be persistent beyond session)
-  // Note: TanStack Table's row pinning is usually transient. 
+  // Note: TanStack Table's row pinning is usually transient.
   // We can track pinned row IDs in preferences if desired.
   useEffect(() => {
     // This is a placeholder if we want to persist row pinning
@@ -287,7 +307,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
 
       const columnId = column.id;
       const headerCell = document.querySelector(
-        `[data-column-id="${columnId}"]`
+        `[data-column-id="${columnId}"]`,
       );
       if (!headerCell) return;
 
@@ -360,7 +380,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
       e.preventDefault();
       searchInputRef.current?.focus();
     },
-    { enableOnFormTags: true }
+    { enableOnFormTags: true },
   );
 
   useHotkeys(
@@ -369,7 +389,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
       e.preventDefault();
       clearAllFilters();
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -378,7 +398,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
       e.preventDefault();
       clearAllFilters();
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -387,7 +407,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
       e.preventDefault();
       setViewMenuOpen((v) => !v);
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -396,7 +416,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
       e.preventDefault();
       setGroupMenuOpen((v) => !v);
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -413,7 +433,9 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
           .getVisibleLeafColumns()
           .filter(
             (col) =>
-              col.id !== "select" && col.id !== "actions" && col.id !== "expand"
+              col.id !== "select" &&
+              col.id !== "actions" &&
+              col.id !== "expand",
           )
           .map((col) => ({
             id: col.id,
@@ -432,7 +454,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
         }, 3000);
       }
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -448,7 +470,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
               (col) =>
                 col.id !== "select" &&
                 col.id !== "actions" &&
-                col.id !== "expand"
+                col.id !== "expand",
             )
             .map((col) => ({
               id: col.id,
@@ -461,7 +483,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
         }
       }
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -473,7 +495,9 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
           .getVisibleLeafColumns()
           .filter(
             (col) =>
-              col.id !== "select" && col.id !== "actions" && col.id !== "expand"
+              col.id !== "select" &&
+              col.id !== "actions" &&
+              col.id !== "expand",
           )
           .map((col) => ({
             id: col.id,
@@ -483,7 +507,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
         setExportMode(null);
       }
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys("d", () => toggleTheme(), { enableOnFormTags: false });
@@ -500,23 +524,33 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
     enableOnFormTags: false,
   });
 
-  useHotkeys('esc', (e) => {
-    const isAnyMenuOpen = viewMenuOpen || columnsMenuOpen || groupMenuOpen || exportMenuOpen || showShortcutsModal || showStatusModal;
+  useHotkeys(
+    "esc",
+    (e) => {
+      const isAnyMenuOpen =
+        viewMenuOpen ||
+        columnsMenuOpen ||
+        groupMenuOpen ||
+        exportMenuOpen ||
+        showShortcutsModal ||
+        showStatusModal;
 
-    if (document.activeElement === searchInputRef.current) {
-      searchInputRef.current?.blur();
-    } else if (isAnyMenuOpen) {
-      // Let Radix handle closing the menus/modals
-      setViewMenuOpen(false);
-      setColumnsMenuOpen(false);
-      setGroupMenuOpen(false);
-      setExportMenuOpen(false);
-      setShowShortcutsModal(false);
-      setShowStatusModal(false);
-    } else if (isFullscreen) {
-      setIsFullscreen(false);
-    }
-  }, { enableOnFormTags: true });
+      if (document.activeElement === searchInputRef.current) {
+        searchInputRef.current?.blur();
+      } else if (isAnyMenuOpen) {
+        // Let Radix handle closing the menus/modals
+        setViewMenuOpen(false);
+        setColumnsMenuOpen(false);
+        setGroupMenuOpen(false);
+        setExportMenuOpen(false);
+        setShowShortcutsModal(false);
+        setShowStatusModal(false);
+      } else if (isFullscreen) {
+        setIsFullscreen(false);
+      }
+    },
+    { enableOnFormTags: true },
+  );
 
   useHotkeys(
     "pageup",
@@ -524,7 +558,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
       e.preventDefault();
       if (table.getCanPreviousPage()) table.previousPage();
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -533,7 +567,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
       e.preventDefault();
       if (table.getCanNextPage()) table.nextPage();
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -546,7 +580,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
         .getVisibleLeafColumns()
         .filter(
           (col) =>
-            col.id !== "select" && col.id !== "expand" && !col.getIsPinned()
+            col.id !== "select" && col.id !== "expand" && !col.getIsPinned(),
         );
 
       if (visibleColumns.length === 0) return;
@@ -565,7 +599,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
         return newIndex;
       });
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -578,7 +612,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
         .getVisibleLeafColumns()
         .filter(
           (col) =>
-            col.id !== "select" && col.id !== "expand" && !col.getIsPinned()
+            col.id !== "select" && col.id !== "expand" && !col.getIsPinned(),
         );
 
       if (visibleColumns.length === 0) return;
@@ -596,7 +630,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
         return newIndex;
       });
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   // Handle export
@@ -695,10 +729,13 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
                 className="mb-4 w-full text-center"
               >
                 <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
-                  Nimbus<span className="text-white!">☁️</span>- Enterprise DataGrid
+                  Nimbus<span className="text-white!">☁️</span>- Enterprise
+                  DataGrid
                 </h1>
                 <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
-                  Complete table with Advanced Filters, Multi-Column Sort, Column Reordering, Pinning, Resizing, Row Expansion, Grouping Aggregation & More
+                  Complete table with Advanced Filters, Multi-Column Sort,
+                  Column Reordering, Pinning, Resizing, Row Expansion, Grouping
+                  Aggregation & More
                 </p>
               </motion.div>
             )}
@@ -723,7 +760,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
             {/* Toolbar with Fullscreen Toggle */}
             <DataGridToolbar
               table={table}
-              columns={table.getAllLeafColumns().map(c => c.columnDef)}
+              columns={table.getAllLeafColumns().map((c) => c.columnDef)}
               onExport={handleExport}
               onResetPreferences={handleResetPreferences}
               onRefresh={loadData}
@@ -745,6 +782,7 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
               exportMenuOpen={exportMenuOpen}
               setExportMenuOpen={setExportMenuOpen}
               clearAllFilters={clearAllFilters}
+              onConfigChange={triggerUpdate}
               extraButtons={
                 <div className="flex gap-2">
                   <ColumnConfigurationMenu
@@ -755,7 +793,9 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsFullscreen(!isFullscreen)}
-                    title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                    title={
+                      isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                    }
                     className="h-11 border-2 bg-background color-foreground border-border"
                     style={{ color: "var(--color-muted-foreground)" }}
                   >
@@ -822,9 +862,20 @@ const AdvancedDataGrid = ({ isDynamic, onToggle }) => {
           {/* Footer Credit */}
           {!isFullscreen && (
             <div className="text-center mt-6 text-sm text-muted-foreground">
-              Built with ❤️ by {" "}
-              <a href="https://x.com/2102ankit" target="_blank" className="underline px-0" > Ankit Mishra</a> {" "}
-              • Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">i</kbd> for shortcuts
+              Built with ❤️ by{" "}
+              <a
+                href="https://x.com/2102ankit"
+                target="_blank"
+                className="underline px-0"
+              >
+                {" "}
+                Ankit Mishra
+              </a>{" "}
+              • Press{" "}
+              <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono shadow-sm">
+                i
+              </kbd>{" "}
+              for shortcuts
             </div>
           )}
         </div>

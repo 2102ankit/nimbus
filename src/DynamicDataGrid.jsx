@@ -79,12 +79,12 @@ const DynamicDataGrid = () => {
   const [sorting, setSorting] = useState(prefs.sorting || []);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState(
-    prefs.columnVisibility || {}
+    prefs.columnVisibility || {},
   );
   const [columnOrder, setColumnOrder] = useState(prefs.columnOrder || []);
   const [columnSizing, setColumnSizing] = useState(prefs.columnSizing || {});
   const [columnPinning, setColumnPinning] = useState(
-    prefs.columnPinning || { left: [], right: [] }
+    prefs.columnPinning || { left: [], right: [] },
   );
   const [rowPinning, setRowPinning] = useState({ top: [], bottom: [] });
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
@@ -121,7 +121,10 @@ const DynamicDataGrid = () => {
 
   const handleConfigChange = useCallback(() => {
     setConfigReloadTrigger((t) => t + 1);
-  }, []);
+    if (grouping.length > 0) {
+      setGrouping((g) => [...g]);
+    }
+  }, [grouping]);
 
   // Process data with worker
   const processDataWithWorker = useCallback(async () => {
@@ -179,7 +182,7 @@ const DynamicDataGrid = () => {
             if (cellValue === undefined) {
               const keys = Object.keys(row);
               const matchingKey = keys.find(
-                (k) => k.replace(/[^a-zA-Z0-9_]/g, "_") === id
+                (k) => k.replace(/[^a-zA-Z0-9_]/g, "_") === id,
               );
               if (matchingKey) cellValue = row[matchingKey];
             }
@@ -230,14 +233,14 @@ const DynamicDataGrid = () => {
             if (aVal === undefined) {
               const keys = Object.keys(a);
               const matchingKey = keys.find(
-                (k) => k.replace(/[^a-zA-Z0-9_]/g, "_") === id
+                (k) => k.replace(/[^a-zA-Z0-9_]/g, "_") === id,
               );
               if (matchingKey) aVal = a[matchingKey];
             }
             if (bVal === undefined) {
               const keys = Object.keys(b);
               const matchingKey = keys.find(
-                (k) => k.replace(/[^a-zA-Z0-9_]/g, "_") === id
+                (k) => k.replace(/[^a-zA-Z0-9_]/g, "_") === id,
               );
               if (matchingKey) bVal = b[matchingKey];
             }
@@ -272,7 +275,7 @@ const DynamicDataGrid = () => {
 
       setFilteredCount(processed.length);
       setDisplayData(
-        processed.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)
+        processed.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize),
       );
     } finally {
       setProcessing(false);
@@ -369,8 +372,8 @@ const DynamicDataGrid = () => {
       // Try to find a good grouping column
       const candidate = columns.find((c) =>
         ["category", "status", "role", "department", "country"].includes(
-          c.accessorKey?.toLowerCase()
-        )
+          c.accessorKey?.toLowerCase(),
+        ),
       );
       if (candidate) {
         setGrouping([candidate.id || candidate.accessorKey]);
@@ -429,7 +432,7 @@ const DynamicDataGrid = () => {
         (col) =>
           col.meta?.isEnum ||
           (col.meta?.uniqueValues && col.meta.uniqueValues.length < 20) ||
-          col.meta?.dataType === "text"
+          col.meta?.dataType === "text",
       );
 
       if (categoricalColumns.length > 0) {
@@ -451,7 +454,7 @@ const DynamicDataGrid = () => {
       } else if (columns.length > 0) {
         // Fallback to first non-select/expand column
         const firstDataCol = columns.find(
-          (c) => c.id !== "select" && c.id !== "expand"
+          (c) => c.id !== "select" && c.id !== "expand",
         );
         if (firstDataCol) setGrouping([firstDataCol.id]);
       }
@@ -466,7 +469,7 @@ const DynamicDataGrid = () => {
     const withSpecialColumns = createColumns(
       configuredColumns,
       currency,
-      locale
+      locale,
     );
     return addHeadersToColumns(withSpecialColumns);
   }, [columns, configReloadTrigger, currency, locale]);
@@ -477,7 +480,7 @@ const DynamicDataGrid = () => {
       pageIndex,
       pageSize,
     }),
-    [pageIndex, pageSize]
+    [pageIndex, pageSize],
   );
 
   const table = useReactTable({
@@ -552,7 +555,7 @@ const DynamicDataGrid = () => {
 
       const columnId = column.id;
       const headerCell = document.querySelector(
-        `[data-column-id="${columnId}"]`
+        `[data-column-id="${columnId}"]`,
       );
       if (!headerCell) return;
 
@@ -618,7 +621,7 @@ const DynamicDataGrid = () => {
       e.preventDefault();
       searchInputRef.current?.focus();
     },
-    { enableOnFormTags: true }
+    { enableOnFormTags: true },
   );
 
   useHotkeys(
@@ -627,7 +630,7 @@ const DynamicDataGrid = () => {
       e.preventDefault();
       setShowUpload(true);
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys("d", () => toggleTheme(), { enableOnFormTags: false });
@@ -647,7 +650,7 @@ const DynamicDataGrid = () => {
       e.preventDefault();
       clearAllFilters();
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -663,7 +666,7 @@ const DynamicDataGrid = () => {
         }
       }
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -685,7 +688,7 @@ const DynamicDataGrid = () => {
         }, 3000);
       }
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -696,7 +699,7 @@ const DynamicDataGrid = () => {
         setExportMode(null);
       }
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -705,7 +708,7 @@ const DynamicDataGrid = () => {
       e.preventDefault();
       setViewMenuOpen((v) => !v);
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -714,7 +717,7 @@ const DynamicDataGrid = () => {
       e.preventDefault();
       setGroupMenuOpen((v) => !v);
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -761,7 +764,7 @@ const DynamicDataGrid = () => {
         setIsFullscreen(false);
       }
     },
-    { enableOnFormTags: true }
+    { enableOnFormTags: true },
   );
 
   useHotkeys(
@@ -770,7 +773,7 @@ const DynamicDataGrid = () => {
       e.preventDefault();
       if (table.getCanPreviousPage()) table.previousPage();
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -779,7 +782,7 @@ const DynamicDataGrid = () => {
       e.preventDefault();
       if (table.getCanNextPage()) table.nextPage();
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -792,7 +795,7 @@ const DynamicDataGrid = () => {
         .getVisibleLeafColumns()
         .filter(
           (col) =>
-            col.id !== "select" && col.id !== "expand" && !col.getIsPinned()
+            col.id !== "select" && col.id !== "expand" && !col.getIsPinned(),
         );
 
       if (visibleColumns.length === 0) return;
@@ -809,7 +812,7 @@ const DynamicDataGrid = () => {
         return newIndex;
       });
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   useHotkeys(
@@ -822,7 +825,7 @@ const DynamicDataGrid = () => {
         .getVisibleLeafColumns()
         .filter(
           (col) =>
-            col.id !== "select" && col.id !== "expand" && !col.getIsPinned()
+            col.id !== "select" && col.id !== "expand" && !col.getIsPinned(),
         );
 
       if (visibleColumns.length === 0) return;
@@ -838,7 +841,7 @@ const DynamicDataGrid = () => {
         return newIndex;
       });
     },
-    { enableOnFormTags: false }
+    { enableOnFormTags: false },
   );
 
   const handleExport = useCallback(
@@ -855,7 +858,7 @@ const DynamicDataGrid = () => {
         console.error("Export error:", error);
       }
     },
-    [table]
+    [table],
   );
 
   const handleResetPreferences = useCallback(() => {
@@ -907,11 +910,11 @@ const DynamicDataGrid = () => {
 
   const getLeftPos = useCallback(
     (column) => getLeftPosition(column, table),
-    [table]
+    [table],
   );
   const getRightPos = useCallback(
     (column) => getRightPosition(column, table),
-    [table]
+    [table],
   );
 
   return (
@@ -943,28 +946,28 @@ const DynamicDataGrid = () => {
           className={`max-w-[1600px] mx-auto ${isFullscreen ? "h-screen" : ""}`}
         >
           {/* <AnimatePresence> */}
-            {!isFullscreen && (
-              <motion.div
-                initial={{ opacity: 0, y: -50 }} // Start from hidden and above
-                animate={{ opacity: 1, y: 0 }} // Animate to visible and in position
-                exit={{ opacity: 0, y: -50 }} // Exit by fading and sliding up
-                transition={{
-                  duration: 0.3,
-                  ease: [0.25, 1, 0.5, 1], // Matches your other smooth easings
-                }}
-                className="mb-4 w-full text-center"
-              >
-                <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
-                  Nimbus<span className="text-white!">☁️</span>- Enterprise
-                  DataGrid
-                </h1>
-                <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
-                  Complete table with Advanced Filters, Multi-Column Sort,
-                  Column Reordering, Pinning, Resizing, Row Expansion, Grouping
-                  Aggregation & More
-                </p>
-              </motion.div>
-            )}
+          {!isFullscreen && (
+            <motion.div
+              initial={{ opacity: 0, y: -50 }} // Start from hidden and above
+              animate={{ opacity: 1, y: 0 }} // Animate to visible and in position
+              exit={{ opacity: 0, y: -50 }} // Exit by fading and sliding up
+              transition={{
+                duration: 0.3,
+                ease: [0.25, 1, 0.5, 1], // Matches your other smooth easings
+              }}
+              className="mb-4 w-full text-center"
+            >
+              <h1 className="text-4xl font-black mb-1 bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
+                Nimbus<span className="text-white!">☁️</span>- Enterprise
+                DataGrid
+              </h1>
+              <p className="text-md max-w-2xl mx-auto tracking-tighter leading-tight text-muted-foreground">
+                Complete table with Advanced Filters, Multi-Column Sort, Column
+                Reordering, Pinning, Resizing, Row Expansion, Grouping
+                Aggregation & More
+              </p>
+            </motion.div>
+          )}
           {/* </AnimatePresence> */}
           {!isFullscreen && (
             <>
@@ -1061,6 +1064,7 @@ const DynamicDataGrid = () => {
                 exportMenuOpen={exportMenuOpen}
                 setExportMenuOpen={setExportMenuOpen}
                 clearAllFilters={clearAllFilters}
+                onConfigChange={handleConfigChange}
                 pivotMode={pivotMode}
                 setPivotMode={setPivotMode}
                 extraButtons={
@@ -1193,4 +1197,4 @@ const DynamicDataGrid = () => {
   );
 };
 
-export default DynamicDataGrid
+export default DynamicDataGrid;
