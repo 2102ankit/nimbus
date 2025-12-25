@@ -759,10 +759,6 @@ const DynamicDataGrid = () => {
         setShowUpload(false);
         return;
       }
-      // Finally close fullscreen if nothing else is open
-      if (isFullscreen) {
-        setIsFullscreen(false);
-      }
     },
     { enableOnFormTags: true },
   );
